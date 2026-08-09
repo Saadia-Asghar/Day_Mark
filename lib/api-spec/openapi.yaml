@@ -3,20 +3,30 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Daymark memory app API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: memories
+    description: Memory (gift) operations
+  - name: people
+    description: People operations
+  - name: calendar
+    description: Calendar and upcoming dates
+  - name: future-gifts
+    description: Future gift operations
+  - name: home
+    description: Home screen data
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +34,281 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /home/summary:
+    get:
+      operationId: getHomeSummary
+      tags: [home]
+      summary: Get home screen summary — upcoming events, gift from the past, recent people
+      responses:
+        "200":
+          description: Home summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomeSummary"
+
+  /memories:
+    get:
+      operationId: listMemories
+      tags: [memories]
+      summary: List all memories
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum: [grid, timeline, calendar, map]
+      responses:
+        "200":
+          description: List of memories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Memory"
+    post:
+      operationId: createMemory
+      tags: [memories]
+      summary: Create a new memory (wrap a memory)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoryInput"
+      responses:
+        "201":
+          description: Created memory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memory"
+
+  /memories/{id}:
+    get:
+      operationId: getMemory
+      tags: [memories]
+      summary: Get a single memory by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Memory detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memory"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateMemory
+      tags: [memories]
+      summary: Update a memory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoryUpdate"
+      responses:
+        "200":
+          description: Updated memory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memory"
+    delete:
+      operationId: deleteMemory
+      tags: [memories]
+      summary: Delete a memory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+
+  /memories/{id}/keep-close:
+    post:
+      operationId: keepMemoryClose
+      tags: [memories]
+      summary: Mark a memory as kept close (favorited)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Memory"
+
+  /people:
+    get:
+      operationId: listPeople
+      tags: [people]
+      summary: List all people
+      responses:
+        "200":
+          description: List of people
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Person"
+    post:
+      operationId: createPerson
+      tags: [people]
+      summary: Add a person
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonInput"
+      responses:
+        "201":
+          description: Created person
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+
+  /people/{id}:
+    get:
+      operationId: getPerson
+      tags: [people]
+      summary: Get a person and their shared memories
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Person detail with memories
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonDetail"
+        "404":
+          description: Not found
+
+  /calendar/events:
+    get:
+      operationId: listCalendarEvents
+      tags: [calendar]
+      summary: List upcoming and past events/dates
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: number
+        - name: year
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of calendar events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CalendarEvent"
+
+  /calendar/on-this-day:
+    get:
+      operationId: getOnThisDay
+      tags: [calendar]
+      summary: Get memories from this day in past years
+      responses:
+        "200":
+          description: On this day memories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Memory"
+
+  /future-gifts:
+    get:
+      operationId: listFutureGifts
+      tags: [future-gifts]
+      summary: List all future gifts
+      responses:
+        "200":
+          description: List of future gifts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FutureGift"
+    post:
+      operationId: createFutureGift
+      tags: [future-gifts]
+      summary: Create a future gift
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FutureGiftInput"
+      responses:
+        "201":
+          description: Created future gift
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FutureGift"
+
+  /future-gifts/{id}:
+    get:
+      operationId: getFutureGift
+      tags: [future-gifts]
+      summary: Get a future gift (only returns content if unlock date has passed)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Future gift
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FutureGift"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +319,248 @@ components:
       required:
         - status
 
+    Memory:
+      type: object
+      required: [id, title, date, category, giftColor, ribbon, isKeptClose, createdAt]
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        story:
+          type: ["string", "null"]
+        date:
+          type: string
+          format: date
+        location:
+          type: ["string", "null"]
+        category:
+          type: string
+          enum: [travel, friends, family, achievements, everyday]
+        mood:
+          type: ["string", "null"]
+        giftColor:
+          type: string
+        ribbon:
+          type: string
+        sticker:
+          type: ["string", "null"]
+        photoUrls:
+          type: array
+          items:
+            type: string
+        people:
+          type: array
+          items:
+            $ref: "#/components/schemas/Person"
+        isKeptClose:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    MemoryInput:
+      type: object
+      required: [title, date, category]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        story:
+          type: string
+        date:
+          type: string
+          format: date
+        location:
+          type: string
+        category:
+          type: string
+          enum: [travel, friends, family, achievements, everyday]
+        mood:
+          type: string
+        giftColor:
+          type: string
+        ribbon:
+          type: string
+        sticker:
+          type: string
+        photoUrls:
+          type: array
+          items:
+            type: string
+        personIds:
+          type: array
+          items:
+            type: number
+
+    MemoryUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        story:
+          type: string
+        date:
+          type: string
+          format: date
+        location:
+          type: string
+        category:
+          type: string
+          enum: [travel, friends, family, achievements, everyday]
+        mood:
+          type: string
+        giftColor:
+          type: string
+        ribbon:
+          type: string
+        sticker:
+          type: string
+        photoUrls:
+          type: array
+          items:
+            type: string
+        personIds:
+          type: array
+          items:
+            type: number
+
+    Person:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        relationship:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        birthday:
+          type: ["string", "null"]
+          format: date
+        memoriesCount:
+          type: number
+
+    PersonDetail:
+      type: object
+      required: [id, name, memories]
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        relationship:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        birthday:
+          type: ["string", "null"]
+          format: date
+        memoriesCount:
+          type: number
+        nextImportantDate:
+          type: ["string", "null"]
+        memories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Memory"
+
+    PersonInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        relationship:
+          type: string
+        avatarUrl:
+          type: string
+        birthday:
+          type: string
+          format: date
+
+    CalendarEvent:
+      type: object
+      required: [id, title, date, type]
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        date:
+          type: string
+          format: date
+        type:
+          type: string
+          enum: [birthday, memory, travel, anniversary, achievement]
+        memoryId:
+          type: ["number", "null"]
+        personId:
+          type: ["number", "null"]
+        daysUntil:
+          type: ["number", "null"]
+
+    FutureGift:
+      type: object
+      required: [id, title, recipientName, unlockDate, isLocked, createdAt]
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        recipientName:
+          type: string
+        unlockDate:
+          type: string
+          format: date
+        isLocked:
+          type: boolean
+        message:
+          type: ["string", "null"]
+        photoUrls:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    FutureGiftInput:
+      type: object
+      required: [title, recipientName, unlockDate]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        recipientName:
+          type: string
+          minLength: 1
+        unlockDate:
+          type: string
+          format: date
+        message:
+          type: string
+        photoUrls:
+          type: array
+          items:
+            type: string
+
+    HomeSummary:
+      type: object
+      required: [upcomingEvents, giftFromPast, recentPeople, totalMemories]
+      properties:
+        upcomingEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarEvent"
+        giftFromPast:
+          $ref: "#/components/schemas/Memory"
+        recentPeople:
+          type: array
+          items:
+            $ref: "#/components/schemas/Person"
+        totalMemories:
+          type: number

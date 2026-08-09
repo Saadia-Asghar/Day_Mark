@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Daymark"
+description = "Daymark is a mobile-first memory app that turns everyday moments into beautifully wrapped digital gifts. Users save memories with photos, voice notes, stories, moods, and people — and each memory becomes a colorful gift box they can open again someday. The app features a mascot character (Marky), a rich visual gift metaphor, and screens for landing page, home, memory creation (Wrap a Memory), gift library (My Gifts), memory detail (Open Memory), and onboarding."
+version = "1.0.0"
+id = "artifacts/daymark"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22716
+
+[services.development]
+run = "pnpm --filter @workspace/daymark run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/daymark", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/daymark/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22716"
+BASE_PATH = "/"

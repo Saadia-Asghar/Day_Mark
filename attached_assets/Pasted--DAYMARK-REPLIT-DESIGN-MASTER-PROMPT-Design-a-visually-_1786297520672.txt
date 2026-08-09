@@ -1,0 +1,1069 @@
+# DAYMARK — REPLIT DESIGN MASTER PROMPT
+
+Design a visually exceptional, mobile-first memory app called **Daymark**.
+
+## 1. PRODUCT IDEA
+
+Daymark turns everyday memories into little gifts.
+
+Users save meaningful moments with photos, videos, voice notes, written stories, dates, locations, moods, and the people who were there.
+
+Instead of presenting memories as boring files, folders, or social-media posts, Daymark represents each saved memory as a beautifully wrapped digital gift.
+
+The emotional idea is:
+
+**Life gives you moments. Daymark helps you keep them.**
+
+Main tagline:
+
+**Every day leaves you a little something.**
+
+Alternative:
+
+**Keep the little gifts life gives you.**
+
+The product should feel like something users WANT to open every day.
+
+It should feel:
+
+* joyful
+* warm
+* youthful
+* emotional
+* vibrant
+* friendly
+* highly polished
+* character-driven
+* nostalgic without looking vintage
+* playful without looking childish
+
+---
+
+# 2. UI INSPIRATION
+
+Use the following products only as UX and interaction references.
+
+DO NOT copy their branding, screens, illustrations, characters, layouts, logos, or proprietary visual assets.
+
+## Retro
+
+Reference:
+https://retro.app/
+
+Study Retro for:
+
+* memory-first product thinking
+* photo-focused layouts
+* intimate social experience
+* emphasis on real friends rather than public followers
+* clean photo presentation
+* low-clutter interfaces
+* making ordinary life feel meaningful
+
+Daymark should borrow Retro's emotional simplicity while developing a completely original visual identity.
+
+---
+
+## Locket
+
+Reference:
+https://locket.camera/
+
+Study Locket for:
+
+* intimacy between close friends
+* putting people before metrics
+* simple photo interactions
+* emotional immediacy
+* making small everyday moments feel important
+
+Daymark should have the same feeling of closeness without copying Locket's UI.
+
+---
+
+## Finch
+
+Reference:
+https://finchcare.com/
+
+Study Finch primarily for:
+
+* character integration
+* mascot-led experiences
+* friendly onboarding
+* positive reinforcement
+* character reactions
+* progress celebrations
+* playful empty states
+* making a utility product emotionally engaging
+
+DO NOT make Daymark look like Finch.
+
+Daymark has its own mascot universe based around gifts and memories.
+
+---
+
+## How We Feel
+
+Reference:
+https://howwefeel.org/
+
+Study How We Feel for:
+
+* emotional color systems
+* mood selection
+* large touch-friendly controls
+* approachable interfaces
+* visual categorization
+* making abstract emotions understandable through design
+
+Use this inspiration specifically when designing Daymark's mood and emotion experience.
+
+---
+
+# 3. ORIGINAL DAYMARK VISUAL UNIVERSE
+
+The references above should influence UX principles only.
+
+Daymark must have its own recognizable universe.
+
+The visual metaphor is:
+
+MEMORY = GIFT
+
+The recurring visual language should therefore include:
+
+* gift boxes
+* ribbons
+* bows
+* gift tags
+* stickers
+* photographs
+* postcards
+* stars
+* hearts
+* calendars
+* handwritten notes
+* flowers
+* location pins
+* little sparkles
+* collectible objects
+
+Avoid excessive galaxy imagery.
+
+Stars can appear as supporting decorative elements, but the primary identity should be GIFT + MEMORY.
+
+---
+
+# 4. DAYMARK LOGO
+
+Create an original Daymark logo.
+
+Primary icon:
+
+A rounded purple gift box.
+
+Use a warm golden-yellow ribbon.
+
+Integrate the letter:
+
+D
+
+into the gift-box/ribbon construction.
+
+Add one tiny heart or star charm.
+
+The icon should be recognizable at app-icon size.
+
+Create:
+
+1. Full Daymark wordmark
+2. Gift-box icon
+3. Small monochrome icon
+4. App icon
+5. Character version
+
+The logo should feel premium enough to exist as a real consumer startup.
+
+---
+
+# 5. MAIN CHARACTER — MARKY
+
+Create an original Daymark mascot called:
+
+**Marky**
+
+Marky is the Memory Keeper.
+
+Marky is a small purple gift-box creature.
+
+Characteristics:
+
+* purple rounded gift-box body
+* golden ribbon
+* tiny heart charm
+* expressive eyes
+* small arms
+* small legs
+* expressive eyebrows
+* subtle blush
+* soft 3D appearance
+
+Marky should feel adorable and expressive without looking like a children's cartoon.
+
+Generate poses for:
+
+* waving
+* celebrating
+* thinking
+* sleeping
+* surprised
+* carrying photos
+* holding a heart
+* wrapping a memory
+* opening a gift
+* looking nostalgic
+* cheering
+* taking a photograph
+
+Marky should appear naturally throughout the UI rather than being placed everywhere.
+
+---
+
+# 6. SUPPORTING CHARACTERS
+
+Create a small Daymark character universe.
+
+### Stella
+
+Golden star.
+
+Represents:
+
+special moments + important memories.
+
+Personality:
+
+optimistic, energetic and encouraging.
+
+---
+
+### Pix
+
+Small animated photo-frame character.
+
+Represents:
+
+photos + visual memories.
+
+Personality:
+
+creative and curious.
+
+---
+
+### Cal
+
+Small calendar character.
+
+Represents:
+
+birthdays + anniversaries + milestones.
+
+Personality:
+
+organized and dependable.
+
+---
+
+### Hearty
+
+Small pink heart character.
+
+Represents:
+
+relationships + people + emotional connections.
+
+Personality:
+
+warm and affectionate.
+
+---
+
+Keep character proportions, rendering, lighting, expressions, and visual language consistent.
+
+They should clearly belong to one universe.
+
+---
+
+# 7. COLOR SYSTEM
+
+Primary Purple
+#6D4AFF
+
+Deep Purple
+#31206F
+
+Warm Pink
+#FF6F9F
+
+Golden Yellow
+#FFC857
+
+Sky Blue
+#75C8FF
+
+Mint
+#9CE2B1
+
+Lavender
+#E9E1FF
+
+Cream
+#FFF9F5
+
+Dark Text
+#1D1933
+
+Use cream as the primary background.
+
+Do NOT cover every screen in gradients.
+
+Use gradients selectively for:
+
+* hero illustrations
+* celebrations
+* memory covers
+* onboarding
+
+Keep functional areas clean.
+
+---
+
+# 8. UI STYLE
+
+Use:
+
+large rounded corners
+
+soft shadows
+
+generous spacing
+
+large typography
+
+floating illustrations
+
+pastel cards
+
+expressive icons
+
+photography mixed with illustration
+
+subtle gradients
+
+beautiful micro-interactions
+
+Avoid:
+
+generic SaaS dashboard layouts
+
+glassmorphism everywhere
+
+neon cyberpunk design
+
+dark galaxy backgrounds everywhere
+
+excessive cards
+
+tiny typography
+
+corporate illustrations
+
+generic AI gradients
+
+overloaded screens
+
+The product should look like a polished consumer app rather than a dashboard.
+
+---
+
+# 9. LANDING PAGE
+
+THIS IS EXTREMELY IMPORTANT.
+
+The Designathon evaluates strong above-the-fold design.
+
+Make the first viewport unforgettable.
+
+Desktop hero layout:
+
+LEFT:
+
+small Daymark logo
+
+large headline:
+
+**Keep the little gifts life gives you.**
+
+Supporting text:
+
+Save the moments, people and places that make life yours. Daymark wraps them into memories you can open again someday.
+
+Primary CTA:
+
+**Start Your Daymark**
+
+Secondary CTA:
+
+**See how it works**
+
+RIGHT:
+
+Create a large original illustration.
+
+Show Marky opening a beautiful purple gift box.
+
+Coming out of the box:
+
+photos
+
+a birthday card
+
+a handwritten note
+
+a tiny voice waveform
+
+a location pin
+
+a heart
+
+a calendar
+
+flowers
+
+small stars
+
+Polaroid-style memories
+
+These elements should float naturally around Marky.
+
+Behind the scene create a dreamy warm landscape with:
+
+soft hills
+
+sunset
+
+clouds
+
+flowers
+
+small stars
+
+Use depth.
+
+Some objects should appear closer to the viewer.
+
+Make the illustration feel alive.
+
+---
+
+# 10. SCROLL TRANSITION
+
+As the user scrolls from the hero, animate the floating objects into actual Daymark UI components.
+
+For example:
+
+The floating photograph becomes a memory card.
+
+The calendar becomes an upcoming birthday.
+
+The location pin becomes a travel memory.
+
+The heart becomes a friend's profile.
+
+This should visually communicate:
+
+Daymark turns life into memories worth keeping.
+
+---
+
+# 11. HOME SCREEN
+
+Design an exceptional mobile home screen.
+
+Header:
+
+Good morning, Saadia ✨
+
+Subheading:
+
+Let's make today a memory.
+
+Show Marky subtly waving nearby.
+
+Then:
+
+## Coming Up
+
+Examples:
+
+Sarah's Birthday
+3 days
+
+Trip Home
+8 days
+
+Graduation Anniversary
+12 days
+
+---
+
+Then create the emotional centerpiece:
+
+## A Gift From Your Past 🎁
+
+Large beautiful memory card.
+
+Example:
+
+Murree Trip
+
+August 2025
+
+Include:
+
+large photograph
+
+people avatars
+
+location
+
+short memory text
+
+gift ribbon element
+
+Button:
+
+**Open My Gift**
+
+This should be the most emotionally compelling element on the home screen.
+
+---
+
+Then:
+
+## Your People
+
+Show close friends/family as warm circular avatars.
+
+---
+
+Bottom navigation:
+
+Home
+
+Calendar
+
+*
+
+Memories
+
+Profile
+
+Make the central + button larger.
+
+---
+
+# 12. WRAP A MEMORY
+
+Do NOT call this:
+
+Add Memory.
+
+Call it:
+
+**Wrap a Memory ✨**
+
+This should be one of Daymark's signature experiences.
+
+Start with:
+
+What happened today?
+
+Present beautiful large choices:
+
+📷 Photo
+
+🎥 Video
+
+🎙 Voice
+
+✏️ Story
+
+📍 Place
+
+❤️ Person
+
+Then collect:
+
+title
+
+story
+
+date
+
+location
+
+people
+
+mood
+
+photos
+
+voice recording
+
+---
+
+# 13. WRAPPING EXPERIENCE
+
+After the user creates the memory:
+
+show the content visually folding inward.
+
+A ribbon crosses the screen.
+
+The memory becomes a small gift.
+
+Ask:
+
+**How should we wrap this memory?**
+
+Allow selection of:
+
+gift color
+
+ribbon
+
+sticker
+
+memory category
+
+Then:
+
+**Wrap It 🎁**
+
+Animate the box closing.
+
+Marky celebrates.
+
+Display:
+
+**Another little piece of life, safely kept.**
+
+This interaction should feel magical.
+
+---
+
+# 14. MY GIFTS
+
+Do NOT title the memory library:
+
+Memories.
+
+Use:
+
+**My Gifts**
+
+Show colorful wrapped memories.
+
+Examples:
+
+Beach Day
+
+First Hackathon
+
+Sarah's Birthday
+
+Eid Dinner
+
+Trip to Hunza
+
+Graduation
+
+Coffee With Friends
+
+Different categories can have different wrapping styles.
+
+Travel:
+blue wrapping
+
+Friends:
+pink
+
+Family:
+yellow
+
+Achievements:
+purple
+
+Everyday:
+mint
+
+Allow:
+
+Grid
+
+Timeline
+
+Calendar
+
+Map
+
+---
+
+# 15. OPENING A MEMORY
+
+Clicking a memory should feel like opening a present.
+
+Animate:
+
+ribbon loosens
+
+gift opens
+
+photograph expands
+
+Then reveal the full memory.
+
+Example:
+
+BEACH DAY
+
+May 10, 2026
+
+Karachi
+
+with Sarah, Areeba +2
+
+Large photo.
+
+Story:
+
+One of those days where nothing extraordinary happened, but somehow everything felt perfect.
+
+Below:
+
+photo gallery
+
+voice memory
+
+location
+
+people
+
+reactions
+
+Button:
+
+**Keep This Close ♡**
+
+---
+
+# 16. CALENDAR
+
+Design a playful but highly usable calendar.
+
+Important days can contain tiny visual markers.
+
+Birthday:
+balloon
+
+Memory:
+gift
+
+Travel:
+location pin
+
+Anniversary:
+heart
+
+Achievement:
+star
+
+Below:
+
+**On This Day**
+
+Example:
+
+2 years ago
+
+First University Hackathon
+
+Button:
+
+Open Memory
+
+---
+
+# 17. PEOPLE
+
+Create:
+
+**My People**
+
+This should feel emotional, not like a contacts list.
+
+Each person card includes:
+
+photo
+
+name
+
+relationship
+
+shared memories
+
+next important date
+
+Example:
+
+Sarah
+
+Best Friend
+
+120 memories together
+
+Birthday in 3 days
+
+CTA:
+
+**Our Story**
+
+Opening Sarah should show a shared memory timeline.
+
+---
+
+# 18. MEMORY MAP
+
+Create an illustrated interactive map.
+
+Instead of normal pins, use tiny gift pins.
+
+Selecting one opens:
+
+Hunza
+
+June 2026
+
+12 memories
+
+Show photographs from that place.
+
+Make the map visually delightful but still functional.
+
+---
+
+# 19. FUTURE GIFTS
+
+Create one highly distinctive feature:
+
+**A Gift for Later**
+
+Users can create:
+
+a message
+
+photos
+
+video
+
+voice note
+
+letter
+
+and select a future date.
+
+The gift stays locked.
+
+Example:
+
+For Sarah
+
+🎁
+
+Opens January 13, 2027
+
+Show a sealed animated gift.
+
+CTA:
+
+**Create a Future Gift**
+
+This should be visually strong enough to feature in marketing.
+
+---
+
+# 20. EMPTY STATES
+
+Do not use generic illustrations.
+
+Use the Daymark characters.
+
+No Memories:
+
+Marky sitting beside an empty box.
+
+"Your first little gift is waiting."
+
+---
+
+No Photos:
+
+Pix holding an empty frame.
+
+"There's room for something beautiful here."
+
+---
+
+No Dates:
+
+Cal relaxing.
+
+"Nothing to remember yet."
+
+---
+
+No People:
+
+Hearty looking around.
+
+"Memories are better with people."
+
+---
+
+# 21. MICRO-INTERACTIONS
+
+Add subtle animation throughout.
+
+Examples:
+
+Marky waves when opening Home.
+
+Stella sparkles beside important memories.
+
+Gift boxes gently bounce when hovered.
+
+Opening memories unties ribbons.
+
+Saving produces a small confetti burst.
+
+Characters react to user actions.
+
+Photos gently lift when hovered.
+
+Buttons compress slightly when tapped.
+
+Use animation intentionally.
+
+Do NOT make everything move.
+
+---
+
+# 22. PHOTOGRAPHY
+
+Photography is important.
+
+Characters should NOT replace actual memories.
+
+Use realistic warm photographs for:
+
+friends
+
+university life
+
+travel
+
+birthdays
+
+coffee
+
+family dinners
+
+graduations
+
+small everyday moments
+
+Combine photography with illustrated Daymark elements.
+
+For example:
+
+REAL PHOTO
++
+illustrated ribbon
++
+tiny Stella character
++
+handwritten date
+
+This creates a distinctive mixed-media identity.
+
+---
+
+# 23. DESIGN PRINCIPLE
+
+Use approximately:
+
+50% original Daymark identity
+
+20% emotional memory-journal simplicity inspired by Retro
+
+15% character integration principles inspired by Finch
+
+10% intimacy principles inspired by Locket
+
+5% emotional color categorization inspired by How We Feel
+
+Do NOT visually reproduce any of those products.
+
+Daymark should be recognizable without seeing its name.
+
+---
+
+# 24. FIRST DESIGN GENERATION
+
+DO NOT generate twenty mediocre screens.
+
+Start by creating ONLY:
+
+1. Desktop landing-page hero
+2. Mobile Home
+3. Wrap a Memory
+4. My Gifts
+5. Open Memory
+6. Three onboarding screens
+
+Spend significantly more design attention on these screens.
+
+Prioritize:
+
+visual hierarchy
+
+spacing
+
+illustration quality
+
+character consistency
+
+typography
+
+interaction
+
+emotion
+
+above-the-fold impact
+
+The final result should look strong enough to enter a global product-design competition.
+
+Before expanding the product, establish a consistent Daymark design system and reuse it across every screen.
