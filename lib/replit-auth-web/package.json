@@ -1,0 +1,21 @@
+{
+  "name": "@workspace/replit-auth-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "dependencies": {
+    "@workspace/api-client-react": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  }
+}

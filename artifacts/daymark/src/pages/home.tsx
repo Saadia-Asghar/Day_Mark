@@ -5,10 +5,20 @@ import markyWaving from "@assets/generated_images/marky_waving.png";
 import { Gift, Bell, Camera, Mic, MapPin, Plus, Edit3 } from "lucide-react";
 import { format } from "date-fns";
 import { DmPersonAvatar, DmDatePill, DmErrorState } from "@/components/daymark";
+import { useAppAuth } from "@/App";
 
 export default function HomePage() {
+  const { user } = useAppAuth();
   const { data: summary, isLoading: loadingSummary, isError: isSummaryError, refetch: refetchSummary } = useGetHomeSummary();
   const { data: people, isLoading: loadingPeople, isError: isPeopleError, refetch: refetchPeople } = useListPeople();
+
+  const greeting = (() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  })();
+  const firstName = user?.firstName || null;
 
   const getPillStyle = (type: string) => {
     switch (type) {
@@ -34,9 +44,17 @@ export default function HomePage() {
           <button className="w-10 h-10 flex items-center justify-center rounded-full text-foreground hover:bg-muted transition-colors" aria-label="Notifications">
             <Bell className="w-5 h-5" />
           </button>
-          <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-white font-bold text-sm shadow-sm border border-white">
-            S
-          </div>
+          {user?.profileImageUrl ? (
+            <img
+              src={user.profileImageUrl}
+              alt={firstName ?? ""}
+              className="w-10 h-10 rounded-full object-cover border border-white shadow-sm"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-white font-bold text-sm shadow-sm border border-white">
+              {firstName ? firstName[0].toUpperCase() : "M"}
+            </div>
+          )}
         </div>
       </header>
 
@@ -45,7 +63,9 @@ export default function HomePage() {
         {/* Greeting section */}
         <section className="px-5 pt-4 pb-2 relative">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <p className="text-sm font-semibold text-muted-foreground">Good morning, Saadia ✨</p>
+            <p className="text-sm font-semibold text-muted-foreground">
+              {firstName ? `${greeting}, ${firstName} ✨` : `${greeting} ✨`}
+            </p>
             <h1 className="text-[28px] leading-tight font-bold text-foreground mt-1 max-w-[280px]">
               What will you remember about today?
             </h1>

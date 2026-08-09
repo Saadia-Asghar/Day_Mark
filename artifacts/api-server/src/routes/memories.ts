@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, inArray } from "drizzle-orm";
+import { eq, desc, inArray, and } from "drizzle-orm";
 import { db, memoriesTable, peopleTable, memoryPeopleTable } from "@workspace/db";
 import {
   ListMemoriesQueryParams,
@@ -15,6 +15,7 @@ import {
   KeepMemoryCloseParams,
   KeepMemoryCloseResponse,
 } from "@workspace/api-zod";
+import { emitToUser } from "./events";
 
 const router: IRouter = Router();
 
@@ -51,26 +52,38 @@ async function getMemoryWithPeople(id: number) {
 }
 
 router.get("/memories", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const params = ListMemoriesQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  let query = db.select().from(memoriesTable).orderBy(desc(memoriesTable.date));
-
-  const rows = await query;
+  const userId = req.user.id;
+  const rows = await db
+    .select()
+    .from(memoriesTable)
+    .where(eq(memoriesTable.userId, userId))
+    .orderBy(desc(memoriesTable.date));
 
   const filtered = params.data.category
     ? rows.filter((m) => m.category === params.data.category)
     : rows;
 
   const withPeople = await Promise.all(filtered.map((m) => getMemoryWithPeople(m.id)));
-
   res.json(ListMemoriesResponse.parse(withPeople.filter(Boolean)));
 });
 
 router.post("/memories", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const parsed = CreateMemoryBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -93,6 +106,7 @@ router.post("/memories", async (req, res): Promise<void> => {
     .insert(memoriesTable)
     .values({
       ...rest,
+      userId: req.user.id,
       giftColor,
       ribbon: rest.ribbon || "gold",
       photoUrls: rest.photoUrls || [],
@@ -106,10 +120,16 @@ router.post("/memories", async (req, res): Promise<void> => {
   }
 
   const result = await getMemoryWithPeople(memory.id);
+  emitToUser(req.user.id, "memory.created", { id: memory.id });
   res.status(201).json(CreateMemoryResponse.parse(result));
 });
 
 router.get("/memories/:id", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const params = GetMemoryParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -122,10 +142,21 @@ router.get("/memories/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  // Ownership check
+  if (result.userId && result.userId !== req.user.id) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
   res.json(GetMemoryResponse.parse(result));
 });
 
 router.patch("/memories/:id", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const params = UpdateMemoryParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -138,12 +169,21 @@ router.patch("/memories/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  // Verify ownership before update
+  const existing = await db.query.memoriesTable.findFirst({
+    where: and(eq(memoriesTable.id, params.data.id), eq(memoriesTable.userId, req.user.id)),
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Memory not found" });
+    return;
+  }
+
   const { personIds, ...rest } = parsed.data as typeof parsed.data & { personIds?: number[] };
 
   const [updated] = await db
     .update(memoriesTable)
     .set(rest as Partial<typeof memoriesTable.$inferInsert>)
-    .where(eq(memoriesTable.id, params.data.id))
+    .where(and(eq(memoriesTable.id, params.data.id), eq(memoriesTable.userId, req.user.id)))
     .returning();
 
   if (!updated) {
@@ -161,10 +201,16 @@ router.patch("/memories/:id", async (req, res): Promise<void> => {
   }
 
   const result = await getMemoryWithPeople(params.data.id);
+  emitToUser(req.user.id, "memory.updated", { id: params.data.id });
   res.json(UpdateMemoryResponse.parse(result));
 });
 
 router.delete("/memories/:id", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const params = DeleteMemoryParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -173,7 +219,7 @@ router.delete("/memories/:id", async (req, res): Promise<void> => {
 
   const [deleted] = await db
     .delete(memoriesTable)
-    .where(eq(memoriesTable.id, params.data.id))
+    .where(and(eq(memoriesTable.id, params.data.id), eq(memoriesTable.userId, req.user.id)))
     .returning();
 
   if (!deleted) {
@@ -181,10 +227,16 @@ router.delete("/memories/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  emitToUser(req.user.id, "memory.deleted", { id: params.data.id });
   res.sendStatus(204);
 });
 
 router.post("/memories/:id/keep-close", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const params = KeepMemoryCloseParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -192,7 +244,7 @@ router.post("/memories/:id/keep-close", async (req, res): Promise<void> => {
   }
 
   const existing = await db.query.memoriesTable.findFirst({
-    where: eq(memoriesTable.id, params.data.id),
+    where: and(eq(memoriesTable.id, params.data.id), eq(memoriesTable.userId, req.user.id)),
   });
   if (!existing) {
     res.status(404).json({ error: "Memory not found" });

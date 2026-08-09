@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, count } from "drizzle-orm";
+import { eq, count, and } from "drizzle-orm";
 import { db, peopleTable, memoryPeopleTable, memoriesTable } from "@workspace/db";
 import {
   ListPeopleResponse,
@@ -20,7 +20,15 @@ async function getPersonMemoryCount(personId: number): Promise<number> {
 }
 
 router.get("/people", async (req, res): Promise<void> => {
-  const people = await db.select().from(peopleTable);
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const people = await db
+    .select()
+    .from(peopleTable)
+    .where(eq(peopleTable.userId, req.user.id));
 
   const withCounts = await Promise.all(
     people.map(async (p) => ({
@@ -37,13 +45,22 @@ router.get("/people", async (req, res): Promise<void> => {
 });
 
 router.post("/people", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const parsed = CreatePersonBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
-  const [person] = await db.insert(peopleTable).values(parsed.data).returning();
+  const [person] = await db
+    .insert(peopleTable)
+    .values({ ...parsed.data, userId: req.user.id })
+    .returning();
+
   res.status(201).json(
     CreatePersonResponse.parse({
       ...person,
@@ -56,6 +73,11 @@ router.post("/people", async (req, res): Promise<void> => {
 });
 
 router.get("/people/:id", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const params = GetPersonParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -63,7 +85,7 @@ router.get("/people/:id", async (req, res): Promise<void> => {
   }
 
   const person = await db.query.peopleTable.findFirst({
-    where: eq(peopleTable.id, params.data.id),
+    where: and(eq(peopleTable.id, params.data.id), eq(peopleTable.userId, req.user.id)),
   });
 
   if (!person) {
@@ -73,19 +95,19 @@ router.get("/people/:id", async (req, res): Promise<void> => {
 
   const memoriesCount = await getPersonMemoryCount(params.data.id);
 
-  // Get memories shared with this person
+  // Get memories shared with this person (scoped to user)
   const links = await db
     .select({ memoryId: memoryPeopleTable.memoryId })
     .from(memoryPeopleTable)
     .where(eq(memoryPeopleTable.personId, params.data.id));
 
   const memories = links.length > 0
-    ? await db.select().from(memoriesTable).where(
-        eq(memoriesTable.id, links[0].memoryId)
-      )
+    ? await db
+        .select()
+        .from(memoriesTable)
+        .where(and(eq(memoriesTable.id, links[0].memoryId), eq(memoriesTable.userId, req.user.id)))
     : [];
 
-  // Calculate next important date
   let nextImportantDate: string | null = null;
   if (person.birthday) {
     const today = new Date();
@@ -108,10 +130,7 @@ router.get("/people/:id", async (req, res): Promise<void> => {
       birthday: person.birthday ?? null,
       memoriesCount,
       nextImportantDate,
-      memories: memories.map((m) => ({
-        ...m,
-        people: [],
-      })),
+      memories: memories.map((m) => ({ ...m, people: [] })),
     })
   );
 });

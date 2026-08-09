@@ -1,21 +1,27 @@
 import { Router, type IRouter } from "express";
-import { desc, eq, gte, count, inArray } from "drizzle-orm";
+import { desc, eq, gte, count, inArray, and } from "drizzle-orm";
 import { db, memoriesTable, calendarEventsTable, peopleTable, memoryPeopleTable } from "@workspace/db";
 import { GetHomeSummaryResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
 router.get("/home/summary", async (req, res): Promise<void> => {
-  // Upcoming events (next 30 days)
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const userId = req.user.id;
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
   const future = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
   const futureStr = future.toISOString().slice(0, 10);
 
+  // Upcoming events scoped to user
   const upcomingEvents = await db
     .select()
     .from(calendarEventsTable)
-    .where(gte(calendarEventsTable.date, todayStr))
+    .where(and(eq(calendarEventsTable.userId, userId), gte(calendarEventsTable.date, todayStr)))
     .orderBy(calendarEventsTable.date)
     .limit(5);
 
@@ -32,14 +38,14 @@ router.get("/home/summary", async (req, res): Promise<void> => {
     };
   });
 
-  // Gift from past — a random past memory
+  // Gift from past — a random past memory owned by user
   const pastMemories = await db
     .select()
     .from(memoriesTable)
+    .where(and(eq(memoriesTable.userId, userId), gte(memoriesTable.date, "2000-01-01")))
     .orderBy(desc(memoriesTable.date))
     .limit(20);
 
-  // Pick a memory that's at least 1 month old, or the oldest if all are recent
   const oldMemories = pastMemories.filter((m) => m.date < todayStr);
   const giftMemoryRaw = oldMemories.length > 0
     ? oldMemories[Math.floor(Math.random() * Math.min(oldMemories.length, 5))]
@@ -68,16 +74,20 @@ router.get("/home/summary", async (req, res): Promise<void> => {
       }));
     }
 
-    giftFromPast = {
-      ...giftMemoryRaw,
-      people,
-    };
+    giftFromPast = { ...giftMemoryRaw, people };
   }
 
-  // Recent people
-  const recentPeople = await db.select().from(peopleTable).limit(6);
+  // Recent people scoped to user
+  const recentPeople = await db
+    .select()
+    .from(peopleTable)
+    .where(eq(peopleTable.userId, userId))
+    .limit(6);
 
-  const [totalRow] = await db.select({ count: count() }).from(memoriesTable);
+  const [totalRow] = await db
+    .select({ count: count() })
+    .from(memoriesTable)
+    .where(eq(memoriesTable.userId, userId));
 
   const result = {
     upcomingEvents: eventsWithDays,
