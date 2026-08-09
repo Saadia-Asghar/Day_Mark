@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -7,6 +7,7 @@
 
 @theme inline {
   --color-background: hsl(var(--background));
+  --color-background-soft: hsl(var(--background-soft));
   --color-foreground: hsl(var(--foreground));
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
@@ -44,12 +45,19 @@
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
 
-  --radius-sm: calc(var(--radius) - 4px);
+  --radius-sm: var(--radius-sm);
   --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
+  --radius-lg: var(--radius-lg);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 12px);
   --radius-3xl: calc(var(--radius) + 20px);
+  --radius-input: var(--radius-input);
+  --radius-hero: var(--radius-hero);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-glow: var(--shadow-glow);
 }
 
 /* LIGHT MODE */
@@ -62,64 +70,58 @@
   --elevate-1: rgba(0, 0, 0, 0.03);
   --elevate-2: rgba(0, 0, 0, 0.08);
 
-  /* Cream: #FFF9F5 */
   --background: 24 100% 98%;
+  --background-soft: 252 100% 97%;
   
-  /* Dark Text: #1D1933 */
-  --foreground: 249 34% 15%;
+  --foreground: 257 36% 16%;
+  --muted-foreground: 262 10% 45%;
 
-  /* Lavender: #E9E1FF */
-  --border: 256 100% 94%;
-  --input: 256 100% 94%;
+  --border: 252 100% 94%;
+  --input: 252 100% 94%;
+  --ring: 249 91% 62%;
 
-  /* Primary Purple: #6D4AFF */
-  --ring: 252 100% 65%;
-
-  /* Cards as pure white to stand out from cream, or very light cream */
   --card: 0 0% 100%;
-  --card-foreground: 249 34% 15%;
-  --card-border: 256 100% 94%;
+  --card-foreground: 257 36% 16%;
+  --card-border: 252 100% 94%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 249 34% 15%;
-  --popover-border: 256 100% 94%;
+  --popover-foreground: 257 36% 16%;
+  --popover-border: 252 100% 94%;
 
-  /* Primary Purple: #6D4AFF */
-  --primary: 252 100% 65%;
-  /* Cream foreground */
+  --primary: 249 91% 62%;
   --primary-foreground: 24 100% 98%;
 
-  /* Deep Purple: #31206F */
-  --secondary: 253 55% 28%;
+  --secondary: 253 52% 25%;
   --secondary-foreground: 24 100% 98%;
 
-  /* Lavender: #E9E1FF */
-  --muted: 256 100% 94%;
-  --muted-foreground: 253 55% 28%;
+  --muted: 252 100% 94%;
 
-  /* Warm Pink: #FF6F9F */
   --accent: 340 100% 72%;
   --accent-foreground: 0 0% 100%;
 
-  /* Destructive Pink ish? Maybe a stronger red, but we'll use warm pink for destructive */
   --destructive: 340 100% 72%;
   --destructive-foreground: 0 0% 100%;
 
-  /* Chart Colors - using the vivids */
-  --chart-1: 252 100% 65%; /* Purple */
+  --chart-1: 249 91% 62%; /* Purple */
   --chart-2: 340 100% 72%; /* Pink */
   --chart-3: 40 100% 67%; /* Yellow */
   --chart-4: 204 100% 73%; /* Blue */
   --chart-5: 138 57% 75%; /* Mint */
 
-  --app-font-sans: 'Nunito', sans-serif;
-  --app-font-serif: 'Playfair Display', serif;
+  --app-font-sans: 'Plus Jakarta Sans', sans-serif;
+  --app-font-serif: 'Nunito', sans-serif;
   --app-font-mono: 'Menlo', monospace;
   
-  --radius: 1.25rem; /* 20px */
-  --shadow-sm: 0 2px 8px -2px rgba(109, 74, 255, 0.05), 0 1px 4px -1px rgba(109, 74, 255, 0.03);
-  --shadow-md: 0 4px 16px -4px rgba(109, 74, 255, 0.08), 0 2px 8px -2px rgba(109, 74, 255, 0.04);
-  --shadow-lg: 0 12px 32px -4px rgba(109, 74, 255, 0.1), 0 4px 12px -2px rgba(109, 74, 255, 0.05);
+  --radius: 1.25rem;
+  --radius-sm: 0.75rem;
+  --radius-input: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-hero: 2rem;
+  
+  --shadow-sm: 0 2px 8px -2px rgba(104, 71, 245, 0.06), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px -4px rgba(104, 71, 245, 0.10), 0 2px 8px -2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 12px 32px -4px rgba(104, 71, 245, 0.14), 0 4px 12px -2px rgba(0,0,0,0.06);
+  --shadow-glow: 0 0 24px rgba(104, 71, 245, 0.35);
 
   --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
@@ -129,24 +131,24 @@
 }
 
 .dark {
-  /* Enforce light mode mostly, but just in case provide sensible fallbacks */
-  --background: 249 34% 15%;
+  --background: 257 36% 16%;
+  --background-soft: 253 52% 25%;
   --foreground: 24 100% 98%;
-  --border: 253 55% 28%;
-  --input: 253 55% 28%;
-  --ring: 252 100% 65%;
-  --card: 253 55% 20%;
+  --muted-foreground: 262 10% 65%;
+  --border: 253 52% 25%;
+  --input: 253 52% 25%;
+  --ring: 249 91% 62%;
+  --card: 253 52% 20%;
   --card-foreground: 24 100% 98%;
-  --card-border: 253 55% 28%;
-  --popover: 253 55% 20%;
+  --card-border: 253 52% 25%;
+  --popover: 253 52% 20%;
   --popover-foreground: 24 100% 98%;
-  --popover-border: 253 55% 28%;
-  --primary: 252 100% 65%;
+  --popover-border: 253 52% 25%;
+  --primary: 249 91% 62%;
   --primary-foreground: 24 100% 98%;
-  --secondary: 256 100% 94%;
-  --secondary-foreground: 249 34% 15%;
-  --muted: 253 55% 28%;
-  --muted-foreground: 256 100% 94%;
+  --secondary: 252 100% 94%;
+  --secondary-foreground: 257 36% 16%;
+  --muted: 253 52% 25%;
   --accent: 340 100% 72%;
   --accent-foreground: 0 0% 100%;
   --destructive: 340 100% 72%;
@@ -161,7 +163,24 @@
     @apply font-sans antialiased bg-background text-foreground selection:bg-primary/20 selection:text-primary;
   }
   
+  html, body {
+    overflow-x: hidden;
+  }
+
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif;
+    @apply font-sans;
+  }
+
+  .font-display {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }

@@ -1,0 +1,1055 @@
+# DAYMARK — MOBILE-FIRST DESIGN REFINEMENT
+
+Refine the existing Daymark design. DO NOT restart the project and DO NOT replace the core concept.
+
+The current gift-box memory concept is correct, but the visual system needs to become significantly more distinctive, polished, youthful, vibrant, and MOBILE-FIRST.
+
+From this point onward, prioritize the MOBILE APP.
+
+Do not spend time expanding the desktop landing page yet.
+
+## 1. KEEP THESE EXISTING IDEAS
+
+Keep:
+
+* Daymark name
+* Memory = Gift concept
+* Purple gift-box mascot
+* Warm cream background
+* Purple as the main brand color
+* Pink, yellow, lavender, mint and blue supporting colors
+* Gift boxes
+* ribbons
+* photographs
+* handwritten notes
+* stars
+* hearts
+* flowers
+* emotional memory storytelling
+* tagline concept: "Keep the little gifts life gives you."
+
+Do NOT remove the gift metaphor.
+
+Instead, make it much more deeply integrated into the product.
+
+---
+
+# 2. CHANGE THE CURRENT VISUAL DIRECTION
+
+The current design feels slightly too much like a traditional editorial landing page.
+
+Move Daymark toward a modern consumer mobile app.
+
+The visual personality should be:
+
+FRIENDLY
+VIBRANT
+WARM
+YOUTHFUL
+TACTILE
+EMOTIONAL
+COLLECTIBLE
+CHARACTER-LED
+PREMIUM
+PLAYFUL
+
+It should NOT feel:
+
+corporate
+
+luxury-fashion
+
+formal
+
+SaaS-like
+
+childish
+
+overly cartoonish
+
+generic AI-generated
+
+---
+
+# 3. TYPOGRAPHY REFINEMENT
+
+Replace the current formal editorial serif-heavy typography.
+
+Use a friendly rounded sans-serif as the PRIMARY typography system.
+
+Headings should feel:
+
+bold
+
+soft
+
+rounded
+
+confident
+
+friendly
+
+highly readable
+
+Use approximately:
+
+Display:
+700–800 weight
+
+Section headings:
+650–750
+
+Body:
+400–500
+
+Labels:
+550–650
+
+Buttons:
+650–700
+
+Use serif or handwritten typography ONLY as a tiny emotional accent if needed.
+
+For example:
+
+Keep the little gifts
+[life gives you]
+
+The emotional phrase can occasionally have a handwritten treatment, but never make long headings difficult to read.
+
+Mobile readability comes first.
+
+---
+
+# 4. MOBILE DESIGN CANVAS
+
+Design primarily for:
+
+390 × 844 px
+
+Also ensure it works at:
+
+375 × 812 px
+430 × 932 px
+
+Use:
+
+16–20px horizontal page padding
+
+8px base spacing system
+
+minimum 44px touch targets
+
+large readable typography
+
+safe-area aware bottom navigation
+
+Avoid shrinking desktop layouts into mobile.
+
+Every screen should be designed specifically for a phone.
+
+---
+
+# 5. DAYMARK DESIGN TOKENS
+
+Establish ONE reusable design system before creating more screens.
+
+## Background
+
+Primary:
+#FFF9F5
+
+Secondary:
+#F8F3FF
+
+Surface:
+#FFFFFF
+
+## Brand
+
+Daymark Purple:
+#6847F5
+
+Deep Purple:
+#302060
+
+Lavender:
+#EAE3FF
+
+## Emotional Colors
+
+Memory Pink:
+#FF719D
+
+Gift Yellow:
+#FFC857
+
+Sky:
+#75C8FF
+
+Mint:
+#9CE2B1
+
+Peach:
+#FFB58A
+
+## Text
+
+Primary:
+#211936
+
+Secondary:
+#716A80
+
+Muted:
+#A19AAA
+
+---
+
+# 6. RADIUS SYSTEM
+
+Create consistent rounded geometry.
+
+Small components:
+12px
+
+Inputs:
+16px
+
+Cards:
+20px
+
+Large cards:
+24px
+
+Hero containers:
+28–32px
+
+Pills:
+999px
+
+Do not randomly change corner radius between components.
+
+---
+
+# 7. SHADOW SYSTEM
+
+Avoid generic heavy drop shadows.
+
+Use extremely soft layered shadows.
+
+Cards should feel slightly lifted from the cream background.
+
+Primary CTA can have a subtle purple glow.
+
+Gift objects and mascots can use stronger dimensional shadows because they are physical objects.
+
+---
+
+# 8. CREATE A DAYMARK VISUAL LANGUAGE
+
+The UI should feel like opening a digital keepsake box.
+
+Create recurring elements such as:
+
+ribbons wrapping around cards
+
+tiny gift tags
+
+postage-style date labels
+
+photo corners
+
+Polaroid frames
+
+stickers
+
+tiny flowers
+
+stars
+
+hearts
+
+tape
+
+handwritten annotations
+
+memory stamps
+
+small doodles
+
+Do NOT place all of these everywhere.
+
+Use 1–3 decorative details per major card.
+
+The UI itself should remain clean.
+
+---
+
+# 9. MIX REAL MEMORIES + ILLUSTRATION
+
+This is important.
+
+Do not make every memory a 3D cartoon.
+
+Daymark should combine:
+
+REALISTIC PHOTOGRAPHY
+
+*
+
+DAYMARK ILLUSTRATIONS
+
+*
+
+CHARACTERS
+
+*
+
+SCRAPBOOK DETAILS
+
+For actual memories, use realistic photography.
+
+Examples:
+
+friends having coffee
+
+students together
+
+birthday celebration
+
+road trip
+
+sunset
+
+family dinner
+
+university life
+
+travel
+
+graduation
+
+Use characters primarily for:
+
+onboarding
+
+empty states
+
+celebrations
+
+guidance
+
+notifications
+
+special interactions
+
+This keeps Daymark emotional and credible.
+
+---
+
+# 10. REFINE MARKY
+
+Keep the purple gift-box mascot but simplify it slightly.
+
+Marky should feel like a recognizable BRAND MASCOT rather than a random 3D cartoon.
+
+Keep:
+
+purple box
+
+gold ribbon
+
+tiny heart charm
+
+eyes
+
+small limbs
+
+Create a consistent character sheet.
+
+Marky should have the exact same:
+
+proportions
+
+purple tone
+
+ribbon
+
+eyes
+
+face
+
+arms
+
+legs
+
+rendering style
+
+on every screen.
+
+Do not regenerate a visually different Marky for each illustration.
+
+---
+
+# 11. MOBILE HOME — REDESIGN THIS FIRST
+
+Create ONE exceptional mobile Home screen before continuing.
+
+Do not generate another desktop page.
+
+## TOP AREA
+
+Use a minimal header.
+
+Left:
+
+small Daymark gift icon
+
+Daymark
+
+Right:
+
+profile avatar
+
+notification icon
+
+Below:
+
+Good morning, Saadia ✨
+
+Large heading:
+
+What will you remember
+about today?
+
+Keep this friendly and conversational.
+
+Add a tiny Marky leaning against the heading or waving from one corner.
+
+Do not use a huge character here.
+
+---
+
+# 12. TODAY STRIP
+
+Create a horizontal scroll section:
+
+TODAY
+
+Use compact colorful pills/cards.
+
+Examples:
+
+🎂 Sarah
+Birthday in 3d
+
+✈️ Home
+Trip in 8d
+
+⭐ Hackathon
+1 year ago
+
+Cards should be swipeable.
+
+Use different Daymark colors for each category.
+
+---
+
+# 13. HERO MEMORY CARD
+
+This should be the emotional centerpiece.
+
+Label:
+
+✨ A GIFT FROM YOUR PAST
+
+Create a large approximately 340px-wide card.
+
+Use a REALISTIC full-bleed photograph.
+
+Example:
+
+friends sitting together during sunset.
+
+Overlay subtle scrapbook details:
+
+small tape
+
+date stamp
+
+tiny heart doodle
+
+one ribbon
+
+Text:
+
+Murree Trip
+
+August 9, 2025
+
+"Somehow the unplanned days become the ones you remember most."
+
+Show 3 small overlapping people avatars.
+
+Then create a large button:
+
+🎁 Open this memory
+
+The card should feel like a physical keepsake.
+
+---
+
+# 14. OPENING INTERACTION
+
+When "Open this memory" is tapped:
+
+do NOT simply navigate immediately.
+
+Create a short interaction:
+
+STEP 1
+A ribbon appears across the card.
+
+STEP 2
+Ribbon unties.
+
+STEP 3
+Gift paper/card edges open.
+
+STEP 4
+Photo expands into the Memory Detail screen.
+
+Keep the animation under approximately 1 second.
+
+It should feel satisfying, not slow.
+
+---
+
+# 15. QUICK CAPTURE
+
+Below the hero memory:
+
+What happened today?
+
+Create four tactile buttons:
+
+📷 Photo
+
+✏️ Story
+
+🎙 Voice
+
+📍 Place
+
+Then:
+
+* More
+
+These should feel like objects or stickers rather than generic rectangular buttons.
+
+---
+
+# 16. PEOPLE SECTION
+
+Heading:
+
+Your people ❤️
+
+Horizontal avatar carousel.
+
+Each person should have:
+
+photo
+
+first name
+
+small shared-memory count
+
+Examples:
+
+Sarah
+120
+
+Areeba
+86
+
+Mom
+74
+
+Zain
+51
+
+Add a final:
+
+* Add
+
+circle.
+
+---
+
+# 17. BOTTOM NAVIGATION
+
+Create a premium floating bottom navigation.
+
+Five positions:
+
+Home
+
+Calendar
+
+*
+
+Gifts
+
+You
+
+The middle + should be a larger purple circular button.
+
+When tapped, it should transform into:
+
+Wrap a Memory
+
+Do not label the section "Memories."
+
+Use:
+
+Gifts
+
+because it reinforces Daymark's metaphor.
+
+---
+
+# 18. WRAP A MEMORY SCREEN
+
+Next, create the signature mobile interaction.
+
+Header:
+
+←
+
+Wrap a Memory ✨
+
+Subtext:
+
+Let's keep this one.
+
+Then ask:
+
+What are we wrapping?
+
+Create large playful options:
+
+PHOTO
+STORY
+VOICE
+VIDEO
+PLACE
+
+Do not immediately show a huge form.
+
+Make the process progressive.
+
+---
+
+# 19. STEP-BY-STEP MEMORY CREATION
+
+STEP 1
+
+Choose memory type.
+
+STEP 2
+
+Add content.
+
+STEP 3
+
+Who was there?
+
+STEP 4
+
+Where?
+
+STEP 5
+
+How did it feel?
+
+STEP 6
+
+Wrap it.
+
+Use a small visual progress indicator.
+
+Do not make it look like a boring form wizard.
+
+---
+
+# 20. MOOD PICKER
+
+For:
+
+How did it feel?
+
+Create original expressive mood tokens.
+
+Examples:
+
+☀️ Happy
+
+🥹 Emotional
+
+🌿 Peaceful
+
+😂 Chaotic
+
+✨ Proud
+
+💜 Grateful
+
+🌙 Nostalgic
+
+Use expressive colors inspired by emotional journaling products, but maintain the Daymark visual system.
+
+---
+
+# 21. FINAL WRAPPING SCREEN
+
+This should be visually memorable.
+
+Heading:
+
+How should we wrap this one?
+
+Show the user's memory photo sitting inside an open gift box.
+
+Let them select:
+
+BOX COLOR
+
+Purple
+Pink
+Yellow
+Blue
+Mint
+
+RIBBON
+
+Classic
+Heart
+Stars
+Minimal
+
+TAG
+
+Friends
+Family
+Travel
+College
+Achievement
+Little Things
+
+As selections change, update the gift visually.
+
+Primary CTA:
+
+🎁 Wrap My Memory
+
+---
+
+# 22. SUCCESS STATE
+
+After saving:
+
+Show Marky catching the newly wrapped memory.
+
+Small confetti.
+
+Heading:
+
+It's safe with us. 💜
+
+Text:
+
+Another little piece of your life, beautifully kept.
+
+Buttons:
+
+View Gift
+
+Back Home
+
+Keep this animation short and delightful.
+
+---
+
+# 23. MY GIFTS SCREEN
+
+Title:
+
+My Gifts 🎁
+
+Subheading:
+
+All the little things worth keeping.
+
+At top:
+
+Search memories...
+
+Then horizontally scrollable filters:
+
+All
+Friends
+Family
+Travel
+College
+Achievements
+Little Things
+
+---
+
+# 24. GIFT LIBRARY DESIGN
+
+Do not show literal closed gift boxes for EVERY memory.
+
+That will hide the emotional photographs.
+
+Instead create collectible memory cards.
+
+Each card contains:
+
+photo
+
+colored ribbon edge
+
+gift tag
+
+date
+
+title
+
+category
+
+people
+
+Use different wrapping details to communicate categories.
+
+Some special memories can appear as actual gift boxes.
+
+This keeps the metaphor without hurting usability.
+
+---
+
+# 25. MEMORY DETAIL
+
+Opening a gift reveals a beautiful vertical memory story.
+
+Top:
+
+large immersive photograph
+
+Overlay:
+
+small date stamp
+
+favorite heart
+
+share
+
+Then:
+
+Murree Trip
+
+August 9, 2025
+Murree, Pakistan
+
+People:
+Sarah + Areeba + Zain
+
+Story:
+
+"Somehow the unplanned days become the ones you remember most."
+
+Then:
+
+photo gallery
+
+voice memory
+
+location
+
+mood
+
+related memories
+
+At the bottom:
+
+Keep this close ♡
+
+---
+
+# 26. CHARACTER USAGE RULE
+
+Characters should occupy approximately:
+
+10–20% of normal functional screens.
+
+They can occupy:
+
+30–50% of onboarding and empty states.
+
+Never let mascots overpower the user's actual memories.
+
+THE USER'S LIFE IS THE MAIN CHARACTER.
+
+Marky is the guide.
+
+This is a core Daymark design principle.
+
+---
+
+# 27. COMPONENT SYSTEM
+
+Build reusable components for:
+
+PrimaryButton
+
+SecondaryButton
+
+IconButton
+
+MemoryCard
+
+PersonAvatar
+
+DatePill
+
+CategoryTag
+
+GiftTag
+
+MoodChip
+
+PhotoCard
+
+UpcomingMoment
+
+CharacterMessage
+
+BottomNavigation
+
+PageHeader
+
+SearchField
+
+EmptyState
+
+ProgressIndicator
+
+All screens must reuse these components.
+
+Do not create slightly different versions on every page.
+
+---
+
+# 28. MOTION LANGUAGE
+
+Motion should feel:
+
+soft
+
+springy
+
+warm
+
+physical
+
+Use animation concepts based on:
+
+unwrapping
+
+opening
+
+floating
+
+placing
+
+sticking
+
+folding
+
+stacking
+
+Avoid:
+
+spinning
+
+aggressive bouncing
+
+gaming effects
+
+excessive confetti
+
+---
+
+# 29. MOBILE ABOVE-THE-FOLD TEST
+
+Every screen should pass this test:
+
+Within 3 seconds I should understand:
+
+WHERE I AM
+
+WHAT I CAN DO
+
+WHAT MATTERS MOST
+
+The first mobile viewport should contain ONE dominant emotional element.
+
+Do not overcrowd it.
+
+---
+
+# 30. DESIGNATHON QUALITY BAR
+
+This is being created for a design-focused competition.
+
+Do not simply make the UI functional.
+
+Create moments people will screenshot.
+
+Prioritize these signature moments:
+
+1. A Gift From Your Past
+2. Wrap a Memory
+3. Selecting wrapping style
+4. Unwrapping a saved memory
+5. Future Gift
+6. Marky celebration
+
+These should feel unique to Daymark.
+
+If the same screen could belong to any journaling app after removing the logo, redesign it.
+
+---
+
+# NEXT ACTION
+
+Do NOT generate additional desktop sections.
+
+Do NOT add backend functionality yet.
+
+Do NOT redesign the brand from scratch.
+
+First:
+
+1. Establish the complete mobile design system.
+2. Redesign the 390 × 844 mobile Home screen.
+3. Create Wrap a Memory.
+4. Create the wrapping customization screen.
+5. Create My Gifts.
+6. Create Memory Detail.
+
+Show these screens together as one consistent mobile product family.
+
+Preserve the existing Daymark gift concept and purple identity while significantly improving visual consistency, character consistency, mobile usability, emotional storytelling, and polish.

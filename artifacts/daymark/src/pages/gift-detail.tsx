@@ -3,10 +3,8 @@ import { useRoute, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGetMemory, useKeepMemoryClose } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { 
-  ArrowLeft, Heart, MapPin, Calendar, Users, 
-  MessageSquare, Mic, Play 
-} from "lucide-react";
+import { ArrowLeft, Heart, MapPin, Calendar, Share, ExternalLink } from "lucide-react";
+import { DmCategoryTag, DmMoodChip } from "@/components/daymark";
 
 export default function GiftDetailPage() {
   const [, params] = useRoute("/gifts/:id");
@@ -30,20 +28,31 @@ export default function GiftDetailPage() {
   }, [isOpened]);
 
   if (isLoading || !memory) {
-    return <div className="min-h-screen bg-background p-6 flex items-center justify-center">
-      <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
-    </div>;
+    return (
+      <div className="min-h-[100dvh] bg-background flex items-center justify-center max-w-[500px] mx-auto">
+        <div className="w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+      </div>
+    );
   }
 
   const handleKeepClose = () => {
     keepClose.mutate({ id });
   };
 
+  const getMoodEmoji = (mood?: string | null) => {
+    if (!mood) return "✨";
+    const mapping: Record<string, string> = {
+      "Happy": "☀️", "Emotional": "🥹", "Peaceful": "🌿", 
+      "Chaotic": "😂", "Proud": "✨", "Grateful": "💜", "Nostalgic": "🌙"
+    };
+    return mapping[mood] || "✨";
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans relative overflow-x-hidden">
+    <div className="min-h-[100dvh] max-w-[500px] mx-auto bg-background text-foreground font-sans relative overflow-x-hidden">
       
       {/* Back Button - always visible */}
-      <Link href="/gifts" className="absolute top-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center hover:bg-white transition-colors">
+      <Link href="/gifts" className="fixed top-safe mt-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center hover:bg-white transition-colors active:scale-95">
         <ArrowLeft className="w-5 h-5 text-foreground" />
       </Link>
 
@@ -55,144 +64,147 @@ export default function GiftDetailPage() {
             transition={{ duration: 0.8 }}
           >
             <motion.div
-              animate={isOpened ? { scale: 1.5, opacity: 0, rotate: 10 } : { scale: 1, opacity: 1, rotate: 0 }}
-              transition={{ duration: 0.6, ease: "easeInOut" }}
-              className="w-64 h-64 cursor-pointer relative"
+              animate={isOpened ? { scale: 1.1, opacity: 0 } : { scale: 1, opacity: 1 }}
+              transition={{ duration: 0.6, ease: "easeInOut", delay: 0.2 }}
+              className="w-[200px] h-[220px] cursor-pointer relative"
               onClick={() => setIsOpened(true)}
             >
-              {/* Box Graphic */}
+              {/* The Box Body */}
               <div 
-                className="absolute inset-0 rounded-3xl shadow-2xl border-4 border-white/50 overflow-hidden flex items-center justify-center"
+                className="absolute inset-0 rounded-3xl shadow-2xl overflow-hidden"
                 style={{ backgroundColor: memory.giftColor }}
               >
-                <div className="absolute w-full h-8 bg-white/40 top-1/2 -translate-y-1/2"></div>
-                <div className="absolute w-8 h-full bg-white/40 left-1/2 -translate-x-1/2"></div>
-                
-                {/* Ribbon Bow */}
-                {!isOpened && (
-                  <motion.div 
-                    animate={{ scale: [1, 1.05, 1] }} 
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    className="absolute z-10 w-20 h-20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-white/60 shadow-lg flex items-center justify-center">
-                      <span className="text-xl font-bold text-foreground opacity-50">Tap</span>
-                    </div>
-                  </motion.div>
-                )}
+                {/* Ribbon horizontal & vertical */}
+                <motion.div 
+                  className="absolute w-full h-10 bg-white/40 top-1/2 -translate-y-1/2 mix-blend-overlay"
+                  animate={isOpened ? { height: 0, opacity: 0 } : { height: 40, opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+                <motion.div 
+                  className="absolute w-10 h-full bg-white/40 left-1/2 -translate-x-1/2 mix-blend-overlay"
+                  animate={isOpened ? { width: 0, opacity: 0 } : { width: 40, opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
               </div>
+
+              {/* The Box Lid (animates up) */}
+              <motion.div
+                animate={isOpened ? { y: -80, opacity: 0 } : { y: 0, opacity: 1 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="absolute top-0 left-0 right-0 h-1/3 rounded-t-3xl border-b-[6px] border-black/10 z-10"
+                style={{ backgroundColor: memory.giftColor }}
+              >
+                <div className="absolute w-10 h-full bg-white/40 left-1/2 -translate-x-1/2 mix-blend-overlay" />
+                {/* Bow */}
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex -space-x-2">
+                  <div className="w-10 h-10 rounded-full bg-white/60 shadow-sm mix-blend-overlay" />
+                  <div className="w-10 h-10 rounded-full bg-white/60 shadow-sm mix-blend-overlay" />
+                </div>
+              </motion.div>
             </motion.div>
             
             {!isOpened && (
               <motion.p 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="mt-12 text-xl font-serif font-bold text-muted-foreground"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="mt-12 text-sm font-bold tracking-widest uppercase text-muted-foreground"
               >
-                Tap to open
+                Tap to unwrap ✨
               </motion.p>
             )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Actual Content */}
-      <div className={`pt-24 px-6 pb-32 transition-opacity duration-1000 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
-        {/* Photo Header */}
-        {memory.photoUrls && memory.photoUrls.length > 0 && (
-          <motion.div 
-            initial={{ y: 50, opacity: 0, scale: 0.9 }}
-            animate={showContent ? { y: 0, opacity: 1, scale: 1 } : {}}
-            transition={{ type: "spring", bounce: 0.4 }}
-            className="w-full aspect-[4/3] rounded-3xl overflow-hidden shadow-xl mb-8 relative border-8 border-white bg-lavender"
-          >
+      {/* Content */}
+      <div className={`transition-opacity duration-1000 ${showContent ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+        
+        {/* Hero Area */}
+        <div className="relative w-full aspect-[16/9] rounded-b-[2rem] overflow-hidden bg-muted shadow-sm">
+          {memory.photoUrls && memory.photoUrls.length > 0 ? (
             <img src={memory.photoUrls[0]} alt="Memory" className="w-full h-full object-cover" />
-          </motion.div>
-        )}
-
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={showContent ? { y: 0, opacity: 1 } : {}}
-          transition={{ delay: 0.2 }}
-        >
-          <div className="flex gap-2 mb-4">
-            <span 
-              className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-white"
-              style={{ backgroundColor: memory.giftColor }}
-            >
-              {memory.category}
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-[var(--gcolor)] to-black/40 flex items-center justify-center p-8 text-center" style={{ '--gcolor': memory.giftColor } as any}>
+              <h2 className="text-3xl font-bold text-white drop-shadow-md">{memory.title}</h2>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+          
+          <div className="absolute bottom-4 left-4">
+            <span className="bg-white text-foreground text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">
+              {format(new Date(memory.date), "MMM d, yyyy")}
             </span>
           </div>
-
-          <h1 className="text-4xl font-serif font-bold leading-tight mb-4">{memory.title}</h1>
           
-          <div className="flex flex-wrap gap-4 text-sm font-medium text-muted-foreground mb-8">
-            <div className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {format(new Date(memory.date), "MMMM d, yyyy")}</div>
+          <div className="absolute top-safe mt-6 right-4 flex gap-2">
+            <button className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-foreground hover:bg-white transition-colors shadow-sm">
+              <Share className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Details Area */}
+        <div className="px-5 pt-6 pb-12">
+          <div className="flex items-center gap-3 mb-4">
+            <DmCategoryTag category={memory.category} color={memory.giftColor} />
+            {memory.mood && (
+              <span className="text-sm bg-muted text-muted-foreground px-3 py-1 rounded-full font-bold inline-flex items-center gap-1.5">
+                {getMoodEmoji(memory.mood)} {memory.mood}
+              </span>
+            )}
+          </div>
+
+          {memory.photoUrls && memory.photoUrls.length > 0 && (
+            <h1 className="text-[32px] font-bold leading-tight mb-4 text-foreground">{memory.title}</h1>
+          )}
+
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold text-muted-foreground mb-8">
+            <div className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {format(new Date(memory.date), "EEEE")}</div>
             {memory.location && <div className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {memory.location}</div>}
           </div>
-        </motion.div>
 
-        {memory.story && (
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={showContent ? { y: 0, opacity: 1 } : {}}
-            transition={{ delay: 0.3 }}
-            className="bg-white p-6 rounded-3xl border border-border shadow-sm mb-8"
-          >
-            <MessageSquare className="w-6 h-6 text-primary mb-4 opacity-50" />
-            <p className="text-lg leading-relaxed font-medium text-foreground">
-              {memory.story}
-            </p>
-          </motion.div>
-        )}
-
-        {memory.people && memory.people.length > 0 && (
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={showContent ? { y: 0, opacity: 1 } : {}}
-            transition={{ delay: 0.4 }}
-            className="mb-8"
-          >
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5 text-muted-foreground" /> Shared with
-            </h3>
-            <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
-              {memory.people.map(person => (
-                <div key={person.id} className="flex flex-col items-center gap-2 w-16 flex-shrink-0">
-                  <div className="w-16 h-16 rounded-full bg-lavender border-2 border-white shadow-sm flex items-center justify-center overflow-hidden">
-                    {person.avatarUrl ? (
-                      <img src={person.avatarUrl} alt={person.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="font-bold text-xl text-primary">{person.name.charAt(0)}</span>
-                    )}
+          {memory.people && memory.people.length > 0 && (
+            <div className="mb-8 border-t border-border pt-6">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Shared With</h3>
+              <div className="flex flex-wrap gap-4">
+                {memory.people.map(person => (
+                  <div key={person.id} className="flex items-center gap-3 bg-white border border-border rounded-full py-1.5 pr-4 pl-1.5 shadow-sm">
+                    <div className="w-8 h-8 rounded-full bg-lavender border border-white overflow-hidden flex items-center justify-center shadow-sm shrink-0">
+                      {person.avatarUrl ? (
+                        <img src={person.avatarUrl} alt={person.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-[10px] font-bold text-primary">{person.name.charAt(0)}</span>
+                      )}
+                    </div>
+                    <span className="text-sm font-bold">{person.name}</span>
                   </div>
-                  <span className="text-xs font-bold truncate w-full text-center">{person.name}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </motion.div>
-        )}
+          )}
 
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={showContent ? { y: 0, opacity: 1 } : {}}
-          transition={{ delay: 0.5 }}
-          className="flex justify-center mt-12 mb-8"
-        >
+          {memory.story && (
+            <div className="bg-white p-6 rounded-[24px] border border-border shadow-sm mb-10 relative">
+              <div className="absolute -top-4 -left-2 text-[48px] text-primary/20 font-serif leading-none opacity-50 select-none pointer-events-none">"</div>
+              <p className="text-base font-semibold leading-relaxed text-foreground relative z-10 whitespace-pre-wrap">
+                {memory.story}
+              </p>
+            </div>
+          )}
+
           <button 
             onClick={handleKeepClose}
-            className={`flex items-center gap-2 px-8 py-4 rounded-full text-lg font-bold transition-all shadow-md active:scale-95 ${
+            className={`w-full py-4 rounded-full text-base font-bold transition-all flex items-center justify-center gap-2 active:scale-95 ${
               memory.isKeptClose 
-                ? "bg-accent text-accent-foreground shadow-accent/30" 
-                : "bg-white text-foreground border border-border"
+                ? "bg-accent text-white shadow-md shadow-accent/30 border-2 border-accent" 
+                : "bg-white text-foreground border-2 border-border hover:bg-muted"
             }`}
           >
-            <Heart className={`w-5 h-5 ${memory.isKeptClose ? "fill-current" : ""}`} />
-            {memory.isKeptClose ? "Kept Close" : "Keep This Close ♡"}
+            <Heart className={`w-5 h-5 ${memory.isKeptClose ? "fill-white" : ""}`} />
+            {memory.isKeptClose ? "Kept Close ♡" : "Keep this close ♡"}
           </button>
-        </motion.div>
-
+        </div>
       </div>
     </div>
   );
