@@ -1,0 +1,675 @@
+Use the attached/provided “Family” mobile design as VISUAL COMPOSITION INSPIRATION for Daymark.
+
+IMPORTANT:
+Do not copy the design, assets, branding, exact layout, illustrations, or components.
+Extract its design principles and reinterpret them through Daymark's original identity.
+
+DAYMARK'S IDENTITY MUST REMAIN:
+- Memory = Gift
+- Marky, the purple gift-box mascot
+- warm cream + vibrant purple identity
+- real photographs as emotional content
+- ribbons, gift tags, stickers and scrapbook details
+- friendly character-led experience
+- mobile-first 390 × 844 design
+
+========================================
+WHAT TO LEARN FROM THE REFERENCE
+========================================
+
+The current Daymark UI is too dependent on conventional cards and sections.
+
+Use the reference to move toward:
+
+1. More immersive vertical storytelling
+2. Larger visual moments
+3. Better use of the full mobile canvas
+4. More playful overlapping elements
+5. Less rigid card-after-card structure
+6. Stronger hierarchy between primary and secondary content
+7. Decorative elements that connect sections
+8. More personality between functional UI areas
+9. A screen that feels designed as one composition
+10. Better visual rhythm while scrolling
+
+The goal is:
+
+Daymark should feel like a living digital memory scrapbook, not a productivity dashboard.
+
+========================================
+NEW DESIGN CONCEPT:
+"THE MEMORY SHELF"
+========================================
+
+Introduce an original Daymark visual system called:
+
+THE MEMORY SHELF
+
+Imagine that the user's phone is a magical keepsake shelf filled with pieces of their life.
+
+Photos, gifts, notes, dates, people and places appear as collectible objects throughout the interface.
+
+Do NOT literally make every screen a wooden shelf.
+
+Instead use the concept subtly through:
+
+- overlapping photographs
+- stacked memory cards
+- gift boxes
+- hanging tags
+- taped photos
+- little notes
+- ribbons connecting elements
+- flowers
+- stickers
+- postcards
+- ticket stubs
+- location stamps
+- character interactions
+
+This creates visual depth.
+
+========================================
+HOME SCREEN REDESIGN
+========================================
+
+Completely refine the visual composition of /home while preserving its functionality.
+
+Do not make it look like:
+
+HEADER
+CARD
+CARD
+CARD
+NAVIGATION
+
+Create a continuous visual story.
+
+TOP
+
+Small Daymark logo.
+
+Greeting:
+
+Good morning, Saadia ✨
+
+Main heading:
+
+What will you remember
+about today?
+
+Place a small Marky character beside or partially behind the heading.
+
+Marky should feel integrated into the scene rather than placed inside a separate card.
+
+========================================
+TODAY'S MOMENTS
+========================================
+
+Instead of normal rectangular event cards, create floating collectible objects.
+
+Examples:
+
+Sarah's Birthday
+3 days
+
+could appear as a small birthday gift with a tag.
+
+Trip Home
+8 days
+
+could appear as a tiny illustrated suitcase with a date tag.
+
+Hackathon
+1 year ago
+
+could appear as a photo/card pinned with a star sticker.
+
+These should horizontally scroll.
+
+Use different silhouettes instead of making every element a rounded rectangle.
+
+========================================
+A GIFT FROM YOUR PAST
+========================================
+
+This remains the most important Home feature.
+
+Make it dramatically more visual.
+
+Instead of a standard rectangular card:
+
+show a large realistic photograph tilted approximately 1–2 degrees.
+
+Give it a physical photograph feeling.
+
+Add:
+
+small tape at one corner
+
+date stamp
+
+tiny handwritten annotation
+
+one Daymark ribbon
+
+small location stamp
+
+overlapping friend avatars
+
+Example:
+
+MURREE TRIP
+
+August 9, 2025
+
+Murree, Pakistan
+
+"Somehow the unplanned days become the ones you remember most."
+
+Place:
+
+🎁 Open this memory
+
+as a tactile button attached to the memory rather than a generic UI button.
+
+Marky can peek from behind the photograph.
+
+Do not let Marky cover the people in the photo.
+
+========================================
+CREATE VISUAL DEPTH
+========================================
+
+Use three visual layers.
+
+BACKGROUND LAYER
+
+cream canvas
+very subtle doodles
+tiny stars
+small flowers
+extremely subtle paper texture
+
+CONTENT LAYER
+
+photos
+memory cards
+people
+gift objects
+
+FOREGROUND LAYER
+
+tape
+stickers
+ribbons
+tags
+tiny characters
+handwritten annotations
+
+This should create depth without clutter.
+
+========================================
+QUICK CAPTURE
+========================================
+
+Transform:
+
+Photo
+Story
+Voice
+Place
+
+into physical-looking collectible buttons.
+
+PHOTO
+
+looks like a tiny instant photo.
+
+STORY
+
+looks like a folded note.
+
+VOICE
+
+looks like a tiny cassette / waveform sticker.
+
+PLACE
+
+looks like a postcard/location stamp.
+
+When tapped, each object should gently lift.
+
+Do not use four identical rectangular cards.
+
+========================================
+YOUR PEOPLE
+========================================
+
+Make "Your People" emotionally stronger.
+
+Heading:
+
+The people in your story ❤️
+
+Use circular real photographs.
+
+But make them feel like scrapbook objects.
+
+For example:
+
+slightly overlapping photos
+
+tiny handwritten first names
+
+small heart/star stickers
+
+shared-memory counts
+
+Sarah
+120 moments
+
+Areeba
+86 moments
+
+Mom
+74 moments
+
+Allow horizontal swiping.
+
+========================================
+MY GIFTS
+========================================
+
+Redesign /gifts using the same visual language.
+
+Do NOT create a boring two-column gallery of identical cards.
+
+Use a controlled scrapbook grid.
+
+Mix:
+
+large memory
+small memory
+portrait photograph
+landscape photograph
+special gift
+future gift
+
+Example rhythm:
+
+LARGE PHOTO
+
+two smaller photos
+
+FEATURED MEMORY
+
+two smaller memories
+
+SPECIAL GIFT
+
+Repeat.
+
+Maintain enough structure that it remains easy to use.
+
+========================================
+SPECIAL MEMORY VISUALS
+========================================
+
+Normal memories:
+photographs with small gift details.
+
+Important memories:
+more decorative wrapping.
+
+Milestones:
+gold star/ribbon.
+
+Birthdays:
+pink/yellow celebration details.
+
+Travel:
+postcard/location treatment.
+
+Family:
+warm yellow/cream treatment.
+
+Friends:
+pink/lavender treatment.
+
+Achievements:
+purple/gold treatment.
+
+Little Things:
+mint/cream treatment.
+
+This makes the library visually understandable without needing lots of labels.
+
+========================================
+WRAP A MEMORY
+========================================
+
+Make this feel like a CREATIVE PROCESS.
+
+Do not make it feel like filling a form.
+
+STEP 1
+
+What are we keeping?
+
+Show:
+
+Photo
+Story
+Voice
+Video
+Place
+
+as illustrated objects.
+
+STEP 2
+
+Show the uploaded photo as a physical memory card.
+
+Let the user add:
+
+title
+short story
+date
+
+around the photograph.
+
+STEP 3
+
+Who was there?
+
+Show people as movable/collectible portrait chips.
+
+STEP 4
+
+Where were you?
+
+Use a small postcard/map treatment.
+
+STEP 5
+
+How did it feel?
+
+Use colorful expressive mood stickers.
+
+STEP 6
+
+Wrap it.
+
+Transform the whole memory composition into a gift.
+
+========================================
+WRAPPING SCREEN
+========================================
+
+This should become one of the strongest Designathon screens.
+
+Place the uploaded REAL photograph in the center.
+
+Animate wrapping paper underneath it.
+
+Allow users to choose:
+
+BOX COLOR
+RIBBON
+TAG
+STICKER
+
+As the user changes options, update the visual immediately.
+
+Then:
+
+Wrap My Memory 🎁
+
+On tap:
+
+photo gently shrinks
+
+paper folds inward
+
+ribbon crosses
+
+bow appears
+
+Marky catches the finished gift
+
+Use subtle confetti.
+
+========================================
+GIFT DETAIL
+========================================
+
+Do not make Gift Detail feel like an article.
+
+Make it feel like opening a physical keepsake.
+
+Start with an unwrapping transition.
+
+Then reveal:
+
+large photograph
+
+date stamp
+
+location
+
+people
+
+story
+
+voice memory
+
+other photographs
+
+related moments
+
+Allow the story to unfold vertically like a scrapbook page.
+
+========================================
+CHARACTERS
+========================================
+
+Use characters as part of the composition.
+
+MARKY
+
+can:
+
+peek behind photos
+carry a gift
+hold tape
+sit on a card edge
+catch a memory
+hold a heart
+sleep beside old memories
+
+STELLA
+
+can appear beside milestones.
+
+PIX
+
+can appear around photography features.
+
+CAL
+
+can appear around important dates.
+
+HEARTY
+
+can appear around relationships.
+
+IMPORTANT:
+
+Characters are SUPPORTING ACTORS.
+
+The user's memories and photographs remain the main characters.
+
+========================================
+PHOTOGRAPHY
+========================================
+
+Increase the amount of realistic photography.
+
+Use authentic-looking photographs of:
+
+friends laughing
+
+university life
+
+road trips
+
+family dinners
+
+birthdays
+
+coffee dates
+
+sunsets
+
+graduations
+
+travel
+
+ordinary everyday moments
+
+Avoid overly polished corporate stock imagery.
+
+Photos should feel candid and personal.
+
+========================================
+TYPOGRAPHY
+========================================
+
+Keep a rounded sans-serif as the primary UI font.
+
+Use:
+
+bold rounded headings
+
+clean body typography
+
+small uppercase labels
+
+occasional handwritten annotations
+
+Handwriting should only appear for:
+
+dates
+small notes
+names
+tiny emotional messages
+
+Never use handwriting for long paragraphs.
+
+========================================
+MOTION
+========================================
+
+Use physical motion inspired by real objects.
+
+Photos:
+slight lift
+
+Sticker:
+peel/place
+
+Gift:
+wrap/unwrap
+
+Note:
+unfold
+
+Memory:
+expand
+
+Ribbon:
+untie
+
+Characters:
+small wave/bounce
+
+Avoid generic fade-in animation everywhere.
+
+========================================
+BOTTOM NAVIGATION
+========================================
+
+Keep navigation extremely functional.
+
+Home
+Calendar
++
+Gifts
+You
+
+Do not scrapbook-style the navigation excessively.
+
+It should provide visual stability while the content above is expressive.
+
+Use the central purple + as the strongest navigation action.
+
+========================================
+IMPORTANT BALANCE
+========================================
+
+Use approximately:
+
+60% clean functional UI
+25% photographs and memory content
+15% playful decoration/characters
+
+Do not decorate every empty space.
+
+White/cream space is important.
+
+The reference should inspire composition and personality, NOT visual clutter.
+
+========================================
+COMPETITION TEST
+========================================
+
+After redesigning each important screen, ask:
+
+"If the Daymark logo disappeared, would this still look recognizably like Daymark?"
+
+If not, strengthen:
+
+gift metaphor
+memory objects
+ribbons
+photographs
+Marky
+scrapbook interactions
+
+Also ask:
+
+"Would someone want to screenshot this screen?"
+
+If not, improve its visual composition.
+
+========================================
+DO THIS NOW
+========================================
+
+Do not redesign the entire application simultaneously.
+
+First produce/refine these FOUR screens:
+
+1. Mobile Home
+2. Wrap a Memory
+3. Wrapping Customization
+4. My Gifts
+
+Use the provided Family design only as composition inspiration.
+
+Preserve all current functionality, authentication work, APIs, persistent photo storage, routes and database logic.
+
+Do not break working features.
+
+After these four screens are visually consistent, apply the same design system to the remaining screens.
