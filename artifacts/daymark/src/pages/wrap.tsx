@@ -49,7 +49,7 @@ const CONFETTI = [
   { x: "80%", y: "75%", color: "#FF719D" },
 ];
 
-function GiftPreview({ color, ribbon }: { color: string; ribbon: string }) {
+function GiftPreview({ color, ribbon, photoUrl, mood }: { color: string; ribbon: string; photoUrl?: string | null; mood?: string }) {
   const ribbonColors: Record<string, string> = {
     Classic: "#FFFFFF",
     Heart: "#FF719D", 
@@ -57,12 +57,17 @@ function GiftPreview({ color, ribbon }: { color: string; ribbon: string }) {
     Minimal: "rgba(255,255,255,0.4)",
   };
   const rbColor = ribbonColors[ribbon] || "#FFFFFF";
+  const moodEmojis: Record<string, string> = {
+    Happy: "☀️", Emotional: "🥹", Peaceful: "🌿",
+    Chaotic: "😂", Proud: "✨", Grateful: "💜", Nostalgic: "🌙",
+  };
+  const moodEmoji = mood ? moodEmojis[mood] : null;
   
   return (
     <motion.div
       animate={{ y: [0, -6, 0] }}
       transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-      className="relative w-44 h-44 mx-auto"
+      className="relative w-44 h-52 mx-auto"
     >
       <motion.div 
         key={color+ribbon}
@@ -70,18 +75,38 @@ function GiftPreview({ color, ribbon }: { color: string; ribbon: string }) {
         animate={{ opacity: 1 }}
         className="absolute inset-0"
       >
-        <div className="absolute bottom-0 left-0 right-0 h-36 rounded-2xl" style={{ backgroundColor: color, boxShadow: `0 8px 32px ${color}60` }}>
+        {/* Box body */}
+        <div className="absolute bottom-0 left-0 right-0 h-36 rounded-2xl overflow-hidden" style={{ backgroundColor: color, boxShadow: `0 8px 32px ${color}60` }}>
+          {/* Photo peek inside box */}
+          {photoUrl && (
+            <div className="absolute inset-0 opacity-40">
+              <img src={photoUrl} alt="" className="w-full h-full object-cover" />
+            </div>
+          )}
           <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-5" style={{ backgroundColor: rbColor, opacity: 0.7 }} />
         </div>
-        <div className="absolute top-0 left-[-4px] right-[-4px] h-12 rounded-2xl" style={{ backgroundColor: color, filter: "brightness(0.85)", boxShadow: `0 4px 12px ${color}40` }}>
+        {/* Lid */}
+        <div className="absolute top-8 left-[-4px] right-[-4px] h-12 rounded-2xl" style={{ backgroundColor: color, filter: "brightness(0.85)", boxShadow: `0 4px 12px ${color}40` }}>
           <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-5" style={{ backgroundColor: rbColor, opacity: 0.7 }} />
           <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex gap-1">
             <div className="w-5 h-5 rounded-full" style={{ backgroundColor: rbColor, opacity: 0.9 }} />
             <div className="w-5 h-5 rounded-full" style={{ backgroundColor: rbColor, opacity: 0.9 }} />
           </div>
         </div>
-        {ribbon === "Heart" && <div className="absolute top-9 left-1/2 -translate-x-1/2 text-xs">❤️</div>}
-        {ribbon === "Stars" && <div className="absolute top-9 left-1/2 -translate-x-1/2 text-xs">⭐</div>}
+        {/* Photo peeking out of the top of the box */}
+        {photoUrl && (
+          <div className="absolute top-0 left-4 right-4 h-12 rounded-xl overflow-hidden border-2 border-white shadow-md">
+            <img src={photoUrl} alt="" className="w-full h-full object-cover" />
+          </div>
+        )}
+        {ribbon === "Heart" && <div className="absolute top-17 left-1/2 -translate-x-1/2 text-xs">❤️</div>}
+        {ribbon === "Stars" && <div className="absolute top-17 left-1/2 -translate-x-1/2 text-xs">⭐</div>}
+        {/* Mood sticker */}
+        {moodEmoji && (
+          <div className="absolute -bottom-2 -right-2 w-9 h-9 rounded-full bg-white shadow-md border-2 border-white flex items-center justify-center text-lg">
+            {moodEmoji}
+          </div>
+        )}
       </motion.div>
     </motion.div>
   );
@@ -212,7 +237,7 @@ export default function WrapMemoryPage() {
   );
 
   return (
-    <div className="min-h-[100dvh] max-w-[500px] mx-auto bg-background text-foreground font-sans flex flex-col relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-background text-foreground font-sans flex flex-col relative overflow-hidden">
       {step < 7 && renderHeader()}
 
       <div className="flex-1 flex flex-col relative px-5 pb-safe overflow-y-auto hide-scrollbar">
@@ -352,12 +377,18 @@ export default function WrapMemoryPage() {
                   className="w-full bg-white border border-border rounded-[16px] pl-12 pr-4 py-4 text-base font-bold shadow-sm outline-none focus:border-primary"
                 />
               </div>
+              {isUploading && (
+                <p className="text-xs text-muted-foreground font-semibold text-center mb-2 flex items-center justify-center gap-1.5">
+                  <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  Upload in progress — please wait before continuing
+                </p>
+              )}
               <button 
                 onClick={() => setStep(3)}
-                disabled={!formData.title}
+                disabled={!formData.title || isUploading}
                 className="mt-auto w-full bg-primary text-white py-4 rounded-full text-lg font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] disabled:opacity-50 disabled:shadow-none active:scale-95 transition-all mb-4"
               >
-                Next
+                {isUploading ? "Uploading photo…" : "Next"}
               </button>
             </motion.div>
           )}
@@ -455,8 +486,13 @@ export default function WrapMemoryPage() {
             <motion.div key="step6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 flex flex-col mt-2 pb-6">
               <h2 className="text-2xl font-bold mb-4 text-center">How should we wrap this?</h2>
               
-              <div className="flex justify-center mb-8 h-48 items-center">
-                <GiftPreview color={formData.giftColor} ribbon={formData.ribbon} />
+              <div className="flex justify-center mb-6 h-56 items-center">
+                <GiftPreview
+                  color={formData.giftColor}
+                  ribbon={formData.ribbon}
+                  photoUrl={formData.photoPreview}
+                  mood={formData.mood}
+                />
               </div>
 
               <div className="space-y-6">
@@ -509,10 +545,10 @@ export default function WrapMemoryPage() {
               <div className="mt-8">
                 <button 
                   onClick={handleWrap}
-                  disabled={createMemory.isPending}
-                  className="w-full bg-primary text-white py-4 rounded-full text-lg font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] active:scale-95 transition-all flex items-center justify-center gap-2"
+                  disabled={createMemory.isPending || isUploading}
+                  className="w-full bg-primary text-white py-4 rounded-full text-lg font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] disabled:opacity-50 disabled:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
-                  {createMemory.isPending ? "Wrapping..." : "🎁 Wrap My Memory"}
+                  {createMemory.isPending ? "Wrapping..." : isUploading ? "Upload in progress…" : "🎁 Wrap My Memory"}
                 </button>
               </div>
             </motion.div>

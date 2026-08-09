@@ -10,14 +10,10 @@ export default function GiftDetailPage() {
   const [, params] = useRoute("/gifts/:id");
   const id = Number(params?.id);
   
-  const { data: memory, isLoading, isError, refetch } = useGetMemory(id, { 
-    query: { enabled: !!id } 
-  });
+  const { data: memory, isLoading, isError, refetch } = useGetMemory(id || 0);
   
   // Client-side approx related memories
-  const { data: allMemories } = useListMemories({ category: memory?.category }, {
-    query: { enabled: !!memory?.category }
-  });
+  const { data: allMemories } = useListMemories(memory?.category ? { category: memory.category } : {});
   
   const keepClose = useKeepMemoryClose();
   
@@ -26,10 +22,9 @@ export default function GiftDetailPage() {
 
   // Trigger content reveal after box opens
   useEffect(() => {
-    if (isOpened) {
-      const timer = setTimeout(() => setShowContent(true), 600);
-      return () => clearTimeout(timer);
-    }
+    if (!isOpened) return;
+    const timer = setTimeout(() => setShowContent(true), 600);
+    return () => clearTimeout(timer);
   }, [isOpened]);
 
   // Handle timeout for slow loading
@@ -41,7 +36,7 @@ export default function GiftDetailPage() {
 
   if (isError || (isLoading && showTimeout)) {
     return (
-      <div className="min-h-[100dvh] bg-background flex flex-col max-w-[500px] mx-auto pt-20">
+      <div className="min-h-[100dvh] bg-background flex flex-col pt-20">
          <Link href="/gifts" className="fixed top-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center hover:bg-white transition-colors active:scale-95">
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </Link>
@@ -52,7 +47,7 @@ export default function GiftDetailPage() {
 
   if (isLoading || !memory) {
     return (
-      <div className="min-h-[100dvh] bg-background flex items-center justify-center max-w-[500px] mx-auto">
+      <div className="min-h-[100dvh] bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -88,13 +83,14 @@ export default function GiftDetailPage() {
     return mapping[mood] || "✨";
   };
 
+  // Stable shuffle seeded from memory id — avoids unstable Math.random() during render
   const relatedMemories = (allMemories || [])
     .filter(m => m.id !== id)
-    .sort(() => Math.random() - 0.5)
+    .sort((a, b) => ((a.id * 2654435761) % id || 1) - ((b.id * 2654435761) % id || 1))
     .slice(0, 2);
 
   return (
-    <div className="min-h-[100dvh] max-w-[500px] mx-auto bg-background text-foreground font-sans relative overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-background text-foreground font-sans relative overflow-x-hidden">
       
       {/* Back Button - always visible */}
       <Link href="/gifts" className="fixed top-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center hover:bg-white transition-colors active:scale-95">

@@ -1,0 +1,501 @@
+Review the current Daymark repository and implement secure authentication, user-owned data, and focused real-time synchronization.
+
+Do not rebuild the app.
+Do not replace the existing React, TypeScript, Wouter, TanStack Query, Express, database, Object Storage, or API code.
+Do not convert it into a native app.
+
+The app currently has persistent memories and photo storage, but it needs real user accounts and correct data ownership.
+
+MAIN GOAL
+
+Add:
+
+1. Secure authentication
+2. Persistent user sessions
+3. User-specific memories and people
+4. Protected routes
+5. Focused real-time updates for shared and changing data
+6. A complete first-time-user flow
+
+Use Replit Auth if it is available and compatible with the current Replit project.
+
+Do not build password authentication manually.
+
+PHASE 1: INSPECT THE CURRENT ARCHITECTURE
+
+Before editing, inspect:
+
+- API server
+- database schema
+- generated API client
+- OpenAPI specification
+- current memory tables
+- people tables
+- future gifts tables
+- object storage ACL logic
+- route structure
+- TanStack Query usage
+
+Identify every table and API route that currently lacks a user ownership field.
+
+Do not assume a fixed demo user.
+
+Remove any logic that treats every visitor as the same account.
+
+PHASE 2: IMPLEMENT AUTHENTICATION
+
+Use Replit Auth where available.
+
+Support:
+
+- sign in
+- sign out
+- persistent session
+- current-user endpoint
+- session restoration after refresh
+- authentication loading state
+- unauthorized state
+- protected backend endpoints
+- protected frontend routes
+
+Do not expose access tokens to localStorage unless required by the official authentication integration.
+
+Prefer secure HTTP-only session cookies.
+
+Add a backend endpoint such as:
+
+GET /api/auth/user
+
+It should return only safe profile data:
+
+- id
+- name
+- email
+- profile image
+- created date
+
+Never return sensitive provider tokens.
+
+PHASE 3: ADD USER OWNERSHIP TO THE DATABASE
+
+Add a users table if one does not already exist.
+
+Recommended fields:
+
+users
+
+- id
+- providerUserId
+- email
+- name
+- avatarUrl
+- createdAt
+- updatedAt
+
+Add ownerId or userId to:
+
+- memories
+- people
+- futureGifts
+- notifications
+- collections, if present
+- drafts, if present
+
+Add indexes on frequently queried user ownership fields.
+
+Every query must be scoped to the authenticated user.
+
+Examples:
+
+A user must only see:
+
+- their memories
+- their people
+- their Future Gifts
+- their notifications
+- their uploads
+
+Do not trust userId sent from the frontend.
+
+Always derive the authenticated user ID from the server session.
+
+PHASE 4: MIGRATION AND DEMO DATA
+
+Create and run a safe database migration.
+
+Do not delete existing demo records.
+
+Assign current demo data to a demo or first authenticated user where appropriate.
+
+If assigning legacy data automatically is unsafe, preserve it as seed data and explain the migration choice.
+
+The application must continue to load after migration.
+
+PHASE 5: PROTECT API ROUTES
+
+Protect all user-data routes.
+
+Require authentication for:
+
+- creating memories
+- listing memories
+- reading memory details
+- updating memories
+- deleting memories
+- people routes
+- Future Gift routes
+- upload URL generation
+- private object retrieval
+- notification routes
+- shared memory actions
+
+Return:
+
+401 for unauthenticated requests
+
+403 for authenticated users attempting to access another user’s resource
+
+404 where revealing resource existence would be unsafe
+
+Validate ownership on the server for every resource ID.
+
+PHASE 6: OBJECT STORAGE SECURITY
+
+Update the existing Replit Object Storage integration so uploaded photos belong to the authenticated user.
+
+Store the authenticated user ID as the object owner in the ACL policy.
+
+Users must not be able to retrieve another user’s private memory photos by guessing an object path.
+
+Check:
+
+- upload URL generation
+- ACL assignment
+- private object retrieval
+- memory image display
+- Future Gift image display
+
+Use public visibility only for explicitly shared content.
+
+Normal personal memories should remain private.
+
+PHASE 7: FRONTEND AUTH FLOW
+
+Create mobile-first authentication screens consistent with Daymark.
+
+Required screens:
+
+1. Welcome
+2. Sign in
+3. First-time profile setup
+4. Authentication loading state
+5. Session expired state
+
+Welcome screen:
+
+Daymark logo
+
+Headline:
+
+Keep the little gifts life gives you.
+
+Text:
+
+Save your moments, people and places in one beautiful space that belongs to you.
+
+Primary CTA:
+
+Continue with Replit
+
+Secondary text:
+
+Your memories stay private unless you choose to share them.
+
+Do not create a generic corporate login screen.
+
+Keep:
+
+- cream background
+- Daymark purple
+- Marky
+- gift metaphor
+- rounded mobile cards
+- friendly visual style
+
+PHASE 8: ROUTE PROTECTION
+
+Public routes:
+
+- /
+- /auth
+- authentication callback route
+
+Protected routes:
+
+- /onboarding
+- /home
+- /wrap
+- /gifts
+- /gifts/:id
+- /calendar
+- /people
+- /people/:id
+- /future-gifts
+- /future-gifts/new
+
+Routing behavior:
+
+Unauthenticated user opening a protected route:
+redirect to /auth
+
+Authenticated first-time user:
+redirect to onboarding
+
+Authenticated user who completed onboarding:
+redirect to /home
+
+Do not briefly render protected content before authentication resolves.
+
+Add an app-level authentication loading screen.
+
+PHASE 9: USER PROFILE AND SIGN OUT
+
+Connect the existing profile/avatar area to the authenticated user.
+
+Profile page should show:
+
+- name
+- email
+- avatar
+- memory count
+- people count
+- account creation date
+
+Add:
+
+- Edit Profile
+- Privacy Settings
+- Sign Out
+
+The header avatar on Home must use the authenticated user’s avatar or initials.
+
+Remove hard-coded “Saadia” from normal app logic.
+
+Use the authenticated user’s first name.
+
+Fallback:
+
+Good morning ✨
+
+if no name is available.
+
+PHASE 10: REAL-TIME SCOPE
+
+Do not add real-time updates everywhere.
+
+Add real-time behavior only where it creates clear value.
+
+Real-time updates should support:
+
+1. Shared memories
+2. Future Gifts
+3. Notifications
+4. People and shared-memory counts
+5. Newly created memories appearing in lists
+
+Use the best real-time mechanism compatible with the current stack.
+
+Preferred options:
+
+- Server-Sent Events for simple server-to-client updates
+- WebSockets if two-way collaboration is needed
+- database-backed subscriptions if officially supported by the chosen platform
+
+Do not poll every second.
+
+Keep a normal REST API as the source of truth.
+
+Real-time events should trigger TanStack Query invalidation or cache updates.
+
+Suggested events:
+
+memory.created
+memory.updated
+memory.deleted
+sharedMemory.updated
+futureGift.created
+futureGift.unlocked
+notification.created
+person.updated
+
+PHASE 11: SHARED MEMORY MODEL
+
+Prepare the architecture for shared memories.
+
+Add a memoryParticipants or memoryCollaborators table if needed.
+
+Suggested fields:
+
+- id
+- memoryId
+- userId
+- role
+- invitedBy
+- status
+- createdAt
+
+Roles:
+
+- owner
+- contributor
+- viewer
+
+Statuses:
+
+- pending
+- accepted
+- declined
+
+Do not allow users to access shared memories unless they are the owner or an accepted participant.
+
+A shared-memory update should appear without refreshing.
+
+PHASE 12: REAL-TIME UI FEEDBACK
+
+Add small, polished UI reactions.
+
+Examples:
+
+- “Areeba added a photo”
+- “This memory was updated”
+- “Your Future Gift is ready”
+- notification badge updates
+- new memory appears in My Gifts
+- shared-memory count updates
+
+Use subtle toast notifications.
+
+Do not interrupt the user with large modals.
+
+PHASE 13: OFFLINE AND CONNECTION STATES
+
+Add:
+
+- reconnecting indicator
+- offline state
+- failed real-time connection fallback
+- query refresh after reconnect
+
+The app must continue to work using normal REST requests even if the real-time connection fails.
+
+Do not make real-time connectivity required for basic use.
+
+PHASE 14: SECURITY REQUIREMENTS
+
+Do not:
+
+- trust frontend user IDs
+- expose another user’s memories
+- use plain-text passwords
+- store provider secrets in frontend code
+- make private uploads public
+- permit insecure direct object references
+- expose session cookies to JavaScript if avoidable
+
+Add validation for:
+
+- ownership
+- authentication
+- shared access permissions
+- upload file type
+- upload file size
+- resource IDs
+
+Review all API routes for authorization, not only authentication.
+
+PHASE 15: AUTHENTICATION DESIGN STATES
+
+Create polished states for:
+
+- checking session
+- signing in
+- sign-in failed
+- session expired
+- no network
+- signing out
+- first-time setup
+
+Use Marky sparingly.
+
+Example session-expired message:
+
+Your Daymark needs to be reopened.
+
+Sign in again to return to your memories.
+
+Button:
+
+Sign In Again
+
+PHASE 16: TESTING
+
+Test these scenarios:
+
+1. New user signs in
+2. New user completes onboarding
+3. User creates a memory with a photo
+4. User refreshes and stays signed in
+5. Memory remains available
+6. User signs out
+7. Protected route redirects to auth
+8. Second user signs in
+9. Second user cannot see first user’s memories
+10. Second user cannot access first user’s image URL
+11. User opens the app in two browser tabs
+12. New memory created in one tab appears in the other
+13. Future Gift update appears without refresh
+14. Session expiry is handled safely
+15. Real-time connection failure falls back to REST
+
+PHASE 17: BUILD AND TYPE CHECK
+
+Run:
+
+- database migration
+- API code generation
+- TypeScript type checking
+- production build
+- lint if configured
+
+Fix all errors.
+
+Do not leave placeholder authentication logic.
+
+FINAL REPORT
+
+After implementation, report:
+
+1. Authentication provider used
+2. Session method used
+3. Database tables changed
+4. Routes protected
+5. How object ownership is enforced
+6. Real-time transport used
+7. Events implemented
+8. Whether two-user isolation was tested
+9. Whether two-tab real-time sync was tested
+10. Whether type checking passed
+11. Whether production build passed
+12. Any Replit configuration still required
+
+PRIORITY ORDER
+
+1. Authentication
+2. User data ownership
+3. Storage privacy
+4. Protected routes
+5. Two-user isolation testing
+6. Real-time notifications and shared updates
+7. UI polish
+
+Do not add voice recording or native-app conversion until authentication and ownership are secure.

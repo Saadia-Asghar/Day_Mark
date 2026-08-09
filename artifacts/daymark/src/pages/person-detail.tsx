@@ -9,13 +9,11 @@ export default function PersonDetailPage() {
   const [, params] = useRoute("/people/:id");
   const id = Number(params?.id);
   
-  const { data: person, isLoading, isError, refetch } = useGetPerson(id, { 
-    query: { enabled: !!id } 
-  });
+  const { data: person, isLoading, isError, refetch } = useGetPerson(id || 0);
 
   if (isError) {
     return (
-      <div className="min-h-[100dvh] bg-background p-5 pt-20 max-w-[500px] mx-auto flex flex-col">
+      <div className="min-h-[100dvh] bg-background p-5 pt-20 flex flex-col">
         <Link href="/people" className="fixed top-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center hover:bg-white transition-colors">
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </Link>
@@ -25,13 +23,13 @@ export default function PersonDetailPage() {
   }
 
   if (isLoading || !person) {
-    return <div className="min-h-[100dvh] bg-background p-5 flex items-center justify-center max-w-[500px] mx-auto">
+    return <div className="min-h-[100dvh] bg-background p-5 flex items-center justify-center">
       <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
     </div>;
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground font-sans relative max-w-[500px] mx-auto overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-background text-foreground font-sans relative overflow-x-hidden">
       {/* Header Back Button */}
       <Link href="/people" className="absolute top-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center hover:bg-white transition-colors">
         <ArrowLeft className="w-5 h-5 text-foreground" />

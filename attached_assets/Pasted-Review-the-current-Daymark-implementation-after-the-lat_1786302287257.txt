@@ -1,0 +1,224 @@
+Review the current Daymark implementation after the latest persistent-storage and mobile-shell update.
+
+Do not add new major features.
+Do not convert the project into a native app.
+Do not add voice recording yet.
+
+Your task is to test, fix and polish the existing mobile experience.
+
+PHASE 1: VERIFY PERSISTENT PHOTO STORAGE
+
+Test the complete upload flow using a real image.
+
+1. Open Wrap a Memory.
+2. Select Photo.
+3. Upload an image.
+4. Confirm upload progress appears.
+5. Save the memory.
+6. Open My Gifts.
+7. Open Gift Detail.
+8. Refresh the browser.
+9. Confirm the image still appears.
+10. Restart the app and confirm the image still appears.
+
+Also test a photo uploaded to a Future Gift.
+
+Check that these environment variables or Replit Object Storage settings are configured correctly:
+
+- PRIVATE_OBJECT_DIR
+- PUBLIC_OBJECT_SEARCH_PATHS, if required
+- any Replit Object Storage bucket configuration
+
+If configuration is missing, report exactly what needs to be added.
+
+Do not silently fall back to blob URLs or temporary object URLs.
+
+Confirm that photoUrls stored in the database contain permanent application URLs.
+
+PHASE 2: FIX IMAGE ACCESS
+
+Inspect the current object ACL and image-serving logic.
+
+Ensure uploaded memory images can be displayed by the frontend after creation.
+
+If uploaded objects are private, make sure the app can access them correctly.
+
+Check:
+
+- newly uploaded image
+- refreshed page
+- Home hero card
+- My Gifts card
+- Gift Detail hero
+- Future Gift preview
+
+Fix any 401, 403, 404, CORS or broken-image errors.
+
+Add a graceful fallback image when a stored image fails to load.
+
+PHASE 3: VERIFY MOBILE LAYOUT
+
+Test these viewport widths:
+
+- 375 × 812
+- 390 × 844
+- 430 × 932
+
+The entire app, including the landing page, must remain mobile-first.
+
+On desktop:
+
+- keep the mobile canvas centered
+- keep max-width at 430px
+- show the soft lavender background outside the app
+- do not expand into a wide website layout
+
+Check every route for:
+
+- horizontal overflow
+- clipped text
+- oversized images
+- hidden buttons
+- content under the bottom navigation
+- incorrect safe-area spacing
+- awkward empty space
+- inconsistent padding
+
+PHASE 4: REFINE THE MOBILE LANDING PAGE
+
+The root page should feel like the opening screen of a mobile app, not a miniature desktop website.
+
+The first viewport should contain:
+
+- compact Daymark logo
+- Memory = Gift pill
+- headline
+- short supporting copy
+- Start Your Daymark CTA
+- See how it works action
+- main Marky illustration
+
+The primary CTA must remain visible without excessive scrolling.
+
+Reduce any oversized blank space.
+
+Make the illustration responsive and ensure it does not appear cropped or too small.
+
+Keep the layout single-column at all supported widths.
+
+PHASE 5: TEST BOTTOM NAVIGATION
+
+Bottom navigation should appear only on:
+
+- /home
+- /calendar
+- /gifts
+- /people
+
+It should not appear on:
+
+- /
+- /onboarding
+- /wrap
+- /gifts/:id
+- /people/:id
+- /future-gifts
+- /future-gifts/new
+- full-screen success states
+
+Verify active states work correctly.
+
+Verify the navigation does not cover the final section of any page.
+
+Add safe-area padding using:
+
+env(safe-area-inset-bottom)
+
+PHASE 6: REVIEW THE WRAP FLOW
+
+Test all six steps.
+
+Verify:
+
+- selected image is preserved when moving backward
+- form information is not lost
+- uploaded image can be replaced
+- uploaded image can be removed
+- failed uploads can be retried
+- mood selection does not skip unexpectedly
+- the Next button works correctly
+- loading state prevents duplicate submission
+- save errors preserve user input
+- successful creation opens the correct gift
+
+Do not allow users to submit while an image is still uploading.
+
+Disable Wrap My Memory during upload.
+
+PHASE 7: POLISH THE IMAGE EXPERIENCE
+
+Use the uploaded image inside the wrapping preview.
+
+Instead of showing only a plain colored gift box, show:
+
+- gift-box color
+- selected ribbon
+- category tag
+- small portion of the memory image
+- mood sticker
+
+After saving, animate the uploaded memory into the gift.
+
+Keep the animation under 1.5 seconds.
+
+PHASE 8: ERROR AND LOADING STATES
+
+Add clear states for:
+
+- image uploading
+- upload failed
+- storage unavailable
+- memory creation failed
+- no gifts
+- no past memory
+- API loading
+- broken image URL
+
+Do not show raw technical errors to users.
+
+Use Daymark-style friendly messages.
+
+PHASE 9: BUILD CHECK
+
+Run:
+
+- type checking
+- production build
+- available lint command
+
+Fix all errors and warnings caused by the latest changes.
+
+Also check for:
+
+- unused imports
+- stale createObjectURL logic
+- object URL memory leaks
+- duplicated mobile width constraints
+- incorrect React dependency overrides
+- unstable random values during render
+
+PHASE 10: FINAL REPORT
+
+After completing the task, report:
+
+1. Whether persistent images survived refresh
+2. Whether Future Gift uploads survived refresh
+3. Which storage settings were required
+4. Whether all image URLs loaded successfully
+5. Which routes show BottomNav
+6. Which viewport sizes were tested
+7. Whether type checking passed
+8. Whether the production build passed
+9. Any issue that still requires manual configuration
+
+Do not start another feature until this verification is complete.

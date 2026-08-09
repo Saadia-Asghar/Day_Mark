@@ -69,7 +69,7 @@ export default function CreateFutureGiftPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] max-w-[500px] mx-auto bg-background text-foreground font-sans flex flex-col">
+    <div className="min-h-[100dvh] bg-background text-foreground font-sans flex flex-col">
       <header className="px-5 pt-8 pb-4 flex items-center justify-between z-10 sticky top-0 bg-background/90 backdrop-blur-md">
         <Link href="/future-gifts">
           <button className="w-10 h-10 rounded-full bg-white border border-border shadow-sm flex items-center justify-center hover:bg-muted transition-colors active:scale-95">

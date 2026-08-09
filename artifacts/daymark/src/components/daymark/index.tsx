@@ -71,26 +71,46 @@ interface DmMemoryCardProps {
 }
 
 export const DmMemoryCard = ({ title, date, category, giftColor, photoUrl, people, isKeptClose }: DmMemoryCardProps) => {
+  const gradientFallback = (
+    <div
+      className="w-full h-full flex flex-col justify-end p-4 text-white"
+      style={{ background: `linear-gradient(135deg, ${giftColor} 0%, ${giftColor}cc 100%)` }}
+    >
+      <h4 className="font-bold text-lg leading-tight line-clamp-3 drop-shadow-md">{title}</h4>
+    </div>
+  );
+
   return (
     <div className="bg-white rounded-[20px] overflow-hidden shadow-sm border border-border flex flex-col h-full hover:shadow-md transition-shadow relative">
       <div className="relative aspect-[4/3] w-full flex-shrink-0">
         {photoUrl ? (
-          <img src={photoUrl} alt={title} className="w-full h-full object-cover" />
-        ) : (
-          <div 
-            className="w-full h-full flex flex-col justify-end p-4 text-white" 
-            style={{ 
-              background: `linear-gradient(135deg, ${giftColor} 0%, ${giftColor}cc 100%)`
-            }} 
-          >
-            <h4 className="font-bold text-lg leading-tight line-clamp-3 drop-shadow-md">{title}</h4>
-          </div>
-        )}
+          <>
+            <img
+              src={photoUrl}
+              alt={title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fall back to gradient when the image fails to load
+                const img = e.currentTarget;
+                img.style.display = "none";
+                const next = img.nextElementSibling as HTMLElement | null;
+                if (next) next.style.removeProperty("display");
+              }}
+            />
+            {/* Hidden gradient shown by onError */}
+            <div
+              className="w-full h-full flex-col justify-end p-4 text-white"
+              style={{ display: "none", background: `linear-gradient(135deg, ${giftColor} 0%, ${giftColor}cc 100%)` }}
+            >
+              <h4 className="font-bold text-lg leading-tight line-clamp-3 drop-shadow-md">{title}</h4>
+            </div>
+          </>
+        ) : gradientFallback}
         {/* Ribbon overlay top */}
         <div className="absolute top-0 left-0 right-0 h-2 opacity-80" style={{ backgroundColor: giftColor }} />
         {/* Left thin ribbon */}
         <div className="absolute top-0 bottom-0 left-0 w-1" style={{ backgroundColor: giftColor }} />
-        
+
         {isKeptClose && (
           <div className="absolute top-3 right-3 text-accent bg-white/80 backdrop-blur-sm w-6 h-6 rounded-full flex items-center justify-center shadow-sm">
             <span className="text-xs">❤️</span>

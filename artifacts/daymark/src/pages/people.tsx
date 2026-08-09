@@ -24,7 +24,7 @@ export default function PeoplePage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground font-sans p-5 pb-32 max-w-[500px] mx-auto">
+    <div className="min-h-[100dvh] bg-background text-foreground font-sans p-5 pb-32">
       <header className="pt-8 pb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">My People</h1>

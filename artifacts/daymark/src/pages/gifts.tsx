@@ -29,7 +29,7 @@ export default function GiftsPage() {
   }) || [];
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground font-sans w-full max-w-[500px] mx-auto overflow-hidden flex flex-col">
+    <div className="min-h-[100dvh] bg-background text-foreground font-sans w-full overflow-hidden flex flex-col">
       <header className="pt-10 pb-4 px-5 shrink-0 bg-background/90 backdrop-blur-md z-10 sticky top-0 border-b border-border/50">
         <div className="flex justify-between items-center mb-1">
           <h1 className="text-[28px] font-bold text-foreground">My Gifts 🎁</h1>
