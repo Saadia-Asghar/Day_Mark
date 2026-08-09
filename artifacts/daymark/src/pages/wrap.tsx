@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCreateMemory, useListPeople } from "@workspace/api-client-react";
+import { useUpload } from "@workspace/object-storage-web";
 import { 
   Camera, Video, Mic, Edit3, MapPin, Heart, 
-  ArrowLeft, Gift, Calendar as CalendarIcon, Users, Check
+  ArrowLeft, Gift, Calendar as CalendarIcon, Users, Check, Upload, X, AlertCircle, Loader2
 } from "lucide-react";
 import markyCelebrating from "@assets/generated_images/marky_celebrating.png";
 import { DmPersonAvatar } from "@/components/daymark";
@@ -104,8 +105,38 @@ export default function WrapMemoryPage() {
     giftColor: COLORS[0].hex,
     category: "everyday",
     ribbon: "Classic",
-    photoPreview: null as string | null,
+    photoPreview: null as string | null,   // local blob URL for display only
+    photoObjectPath: null as string | null, // persisted GCS path
   });
+
+  const { uploadFile, isUploading, progress, error: uploadError } = useUpload({
+    onSuccess: (response) => {
+      setFormData(prev => ({
+        ...prev,
+        photoObjectPath: response.objectPath,
+      }));
+    },
+  });
+
+  const handleFileSelect = async (file: File) => {
+    if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+      alert("Please select an image or video file.");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      alert("File must be under 20 MB.");
+      return;
+    }
+    // Show local preview immediately
+    const localUrl = URL.createObjectURL(file);
+    setFormData(prev => ({ ...prev, photoPreview: localUrl, photoObjectPath: null }));
+    // Upload to GCS
+    await uploadFile(file);
+  };
+
+  const removePhoto = () => {
+    setFormData(prev => ({ ...prev, photoPreview: null, photoObjectPath: null }));
+  };
 
   const updateForm = (key: string, value: any) => {
     setFormData(prev => ({ ...prev, [key]: value }));
@@ -122,6 +153,10 @@ export default function WrapMemoryPage() {
   };
 
   const handleWrap = () => {
+    const photoUrls = formData.photoObjectPath
+      ? [`/api/storage${formData.photoObjectPath}`]
+      : [];
+
     createMemory.mutate({
       data: {
         title: formData.title || "A Little Gift",
@@ -132,6 +167,7 @@ export default function WrapMemoryPage() {
         mood: formData.mood,
         giftColor: formData.giftColor,
         ribbon: formData.ribbon,
+        photoUrls,
         personIds: formData.personIds.length > 0 ? formData.personIds : undefined,
       }
     }, {
@@ -220,42 +256,89 @@ export default function WrapMemoryPage() {
               />
               
               {(formData.type === "photo" || formData.type === "video") && (
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-border rounded-[16px] p-6 flex flex-col items-center gap-2 cursor-pointer hover:border-primary/50 transition-colors bg-white active:scale-[0.98] mb-4"
-                >
-                  <input 
-                    ref={fileInputRef} 
-                    type="file" 
-                    accept="image/*,video/*" 
+                <div className="mb-4">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,video/*"
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (!file) return;
-                      if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
-                        alert("Please select an image or video file.");
-                        return;
-                      }
-                      const url = URL.createObjectURL(file);
-                      updateForm("photoPreview", url);
+                      if (file) handleFileSelect(file);
                     }}
                   />
+
                   {formData.photoPreview ? (
-                    <div className="w-full relative">
-                      <img src={formData.photoPreview} alt="Preview" className="w-full h-48 object-cover rounded-xl" />
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); updateForm("photoPreview", null); }}
-                        className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center text-xs font-bold"
-                      >✕</button>
+                    <div className="relative rounded-[16px] overflow-hidden bg-muted">
+                      <img
+                        src={formData.photoPreview}
+                        alt="Preview"
+                        className="w-full h-52 object-cover"
+                      />
+                      {/* Upload progress overlay */}
+                      {isUploading && (
+                        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2">
+                          <Loader2 className="w-8 h-8 text-white animate-spin" />
+                          <div className="w-32 h-1.5 bg-white/30 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-white rounded-full transition-all"
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                          <span className="text-white text-xs font-bold">Uploading {progress}%</span>
+                        </div>
+                      )}
+                      {/* Success badge */}
+                      {formData.photoObjectPath && !isUploading && (
+                        <div className="absolute top-2 left-2 bg-emerald-500 text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow">
+                          <Check className="w-3 h-3" strokeWidth={3} /> Saved
+                        </div>
+                      )}
+                      {/* Error badge */}
+                      {uploadError && !isUploading && (
+                        <div className="absolute top-2 left-2 bg-red-500 text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow">
+                          <AlertCircle className="w-3 h-3" /> Upload failed
+                        </div>
+                      )}
+                      <div className="absolute top-2 right-2 flex gap-2">
+                        {/* Replace */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                          className="w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
+                          title="Replace photo"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                        </button>
+                        {/* Remove */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removePhoto(); }}
+                          className="w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
+                          title="Remove photo"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      {/* Retry button on error */}
+                      {uploadError && !isUploading && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                          className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white text-foreground px-4 py-1.5 rounded-full text-xs font-bold shadow flex items-center gap-1.5 hover:bg-muted"
+                        >
+                          <AlertCircle className="w-3 h-3 text-red-500" /> Retry upload
+                        </button>
+                      )}
                     </div>
                   ) : (
-                    <>
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full border-2 border-dashed border-border rounded-[16px] p-6 flex flex-col items-center gap-2 cursor-pointer hover:border-primary/50 transition-colors bg-white active:scale-[0.98]"
+                    >
                       <div className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center">
                         <Camera className="w-6 h-6 text-muted-foreground" />
                       </div>
                       <p className="font-semibold text-sm text-foreground">Add a photo</p>
-                      <p className="text-xs text-muted-foreground">Tap to select from your device</p>
-                    </>
+                      <p className="text-xs text-muted-foreground">Tap to select · JPEG, PNG, WebP · max 20 MB</p>
+                    </div>
                   )}
                 </div>
               )}

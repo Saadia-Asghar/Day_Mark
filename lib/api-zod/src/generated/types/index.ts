@@ -24,3 +24,5 @@ export * from './memoryUpdateCategory';
 export * from './person';
 export * from './personDetail';
 export * from './personInput';
+export * from './uploadUrlRequest';
+export * from './uploadUrlResponse';

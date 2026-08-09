@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useCreateFutureGift } from "@workspace/api-client-react";
-import { ArrowLeft, Calendar, Image as ImageIcon, Lock, Camera } from "lucide-react";
+import { useUpload } from "@workspace/object-storage-web";
+import { ArrowLeft, Calendar, Lock, Camera, Upload, X, AlertCircle, Check, Loader2 } from "lucide-react";
 import { addDays, format } from "date-fns";
 
 const COLORS = [
@@ -20,12 +21,33 @@ export default function CreateFutureGiftPage() {
   const [formData, setFormData] = useState({
     title: "",
     recipientName: "",
-    unlockDate: format(addDays(new Date(), 30), "yyyy-MM-dd"), // default 30 days from now
+    unlockDate: format(addDays(new Date(), 30), "yyyy-MM-dd"),
     message: "",
     giftColor: COLORS[0].hex,
     photoPreview: null as string | null,
+    photoObjectPath: null as string | null,
     isPrivate: true,
   });
+
+  const { uploadFile, isUploading, progress, error: uploadError } = useUpload({
+    onSuccess: (response) => {
+      setFormData(prev => ({ ...prev, photoObjectPath: response.objectPath }));
+    },
+  });
+
+  const handleFileSelect = async (file: File) => {
+    if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+      alert("Please select an image or video file.");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      alert("File must be under 20 MB.");
+      return;
+    }
+    const localUrl = URL.createObjectURL(file);
+    setFormData(prev => ({ ...prev, photoPreview: localUrl, photoObjectPath: null }));
+    await uploadFile(file);
+  };
 
   const updateForm = (key: string, value: any) => {
     setFormData(prev => ({ ...prev, [key]: value }));
@@ -38,7 +60,6 @@ export default function CreateFutureGiftPage() {
         recipientName: formData.recipientName || "Myself",
         unlockDate: new Date(formData.unlockDate).toISOString(),
         message: formData.message,
-        // (Assuming backend will eventually support color and private flags)
       }
     }, {
       onSuccess: () => {
@@ -116,42 +137,73 @@ export default function CreateFutureGiftPage() {
           />
         </div>
 
-        <div 
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full border-2 border-dashed border-border rounded-2xl p-6 flex flex-col items-center gap-2 cursor-pointer hover:border-primary/50 transition-colors bg-white active:scale-[0.98]"
-        >
-          <input 
-            ref={fileInputRef} 
-            type="file" 
-            accept="image/*,video/*" 
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (!file) return;
-              if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
-                alert("Please select an image or video file.");
-                return;
-              }
-              const url = URL.createObjectURL(file);
-              updateForm("photoPreview", url);
+              if (file) handleFileSelect(file);
             }}
           />
           {formData.photoPreview ? (
-            <div className="w-full relative">
-              <img src={formData.photoPreview} alt="Preview" className="w-full h-48 object-cover rounded-xl" />
-              <button 
-                onClick={(e) => { e.stopPropagation(); updateForm("photoPreview", null); }}
-                className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center text-xs font-bold"
-              >✕</button>
+            <div className="relative rounded-2xl overflow-hidden">
+              <img src={formData.photoPreview} alt="Preview" className="w-full h-48 object-cover" />
+              {isUploading && (
+                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2">
+                  <Loader2 className="w-7 h-7 text-white animate-spin" />
+                  <div className="w-28 h-1.5 bg-white/30 rounded-full overflow-hidden">
+                    <div className="h-full bg-white rounded-full transition-all" style={{ width: `${progress}%` }} />
+                  </div>
+                  <span className="text-white text-xs font-bold">Uploading {progress}%</span>
+                </div>
+              )}
+              {formData.photoObjectPath && !isUploading && (
+                <div className="absolute top-2 left-2 bg-emerald-500 text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
+                  <Check className="w-3 h-3" strokeWidth={3} /> Saved
+                </div>
+              )}
+              {uploadError && !isUploading && (
+                <div className="absolute top-2 left-2 bg-red-500 text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
+                  <AlertCircle className="w-3 h-3" /> Upload failed
+                </div>
+              )}
+              <div className="absolute top-2 right-2 flex gap-2">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setFormData(prev => ({ ...prev, photoPreview: null, photoObjectPath: null }))}
+                  className="w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {uploadError && !isUploading && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white text-foreground px-4 py-1.5 rounded-full text-xs font-bold shadow"
+                >
+                  Retry upload
+                </button>
+              )}
             </div>
           ) : (
-            <>
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full border-2 border-dashed border-border rounded-2xl p-6 flex flex-col items-center gap-2 cursor-pointer hover:border-primary/50 transition-colors bg-white active:scale-[0.98]"
+            >
               <div className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center">
                 <Camera className="w-6 h-6 text-muted-foreground" />
               </div>
               <p className="font-semibold text-sm text-foreground">Add a photo</p>
-              <p className="text-xs text-muted-foreground">Tap to select from your device</p>
-            </>
+              <p className="text-xs text-muted-foreground">Tap to select · JPEG, PNG, WebP · max 20 MB</p>
+            </div>
           )}
         </div>
         

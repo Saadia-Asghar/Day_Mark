@@ -5,6 +5,7 @@ import memoriesRouter from "./memories";
 import peopleRouter from "./people";
 import calendarRouter from "./calendar";
 import futureGiftsRouter from "./future-gifts";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(memoriesRouter);
 router.use(peopleRouter);
 router.use(calendarRouter);
 router.use(futureGiftsRouter);
+router.use(storageRouter);
 
 export default router;

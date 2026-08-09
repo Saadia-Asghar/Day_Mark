@@ -1,0 +1,275 @@
+Review the current Daymark repository before editing.
+
+Do not rebuild the project.
+Do not replace the existing stack, routes, API hooks, or completed pages.
+Make focused improvements to the existing implementation.
+
+PRIORITY 1: CONNECT PERSISTENT PHOTO STORAGE
+
+Start with the suggested task:
+
+“Connect real photo storage so uploaded images persist.”
+
+Daymark is a memory product, so real photographs are part of the core experience rather than an optional enhancement.
+
+Implement persistent image upload for:
+
+1. Wrap a Memory
+2. Create a Future Gift
+3. User profile image if supported
+4. Person avatars if supported
+
+Use the storage solution already supported by the current Replit project or backend architecture. Inspect the existing API server and database before choosing an implementation.
+
+Do not store images as temporary browser object URLs or base64 strings in the database.
+
+PHOTO UPLOAD REQUIREMENTS
+
+On the Wrap a Memory details step, add a polished mobile upload component.
+
+It must support:
+
+- tapping to choose an image on mobile
+- drag and drop on desktop
+- image preview
+- replacing an image
+- removing an image
+- upload progress
+- upload error with retry
+- JPEG, PNG and WebP
+- reasonable file-size validation
+- multiple images if the backend supports it
+- at least one persistent cover image
+
+Store the returned image URL with the memory.
+
+After refreshing the page, the uploaded image must still appear in:
+
+- Home, A Gift From Your Past
+- My Gifts
+- Gift Detail
+- related memory cards
+
+Do not mark the work complete until persistence has been tested after a full browser refresh.
+
+If storage configuration or secrets are missing, prepare the integration cleanly and clearly state which secret must be configured. Do not silently fall back to temporary image URLs.
+
+PRIORITY 2: MAKE THE ENTIRE EXPERIENCE MOBILE-FIRST
+
+The current root route `/` is treated as a full-width desktop landing page.
+
+Change this.
+
+Daymark should be presented primarily as a mobile consumer app, including the first screen.
+
+Target device:
+
+390 × 844 px
+
+Also test:
+
+375 × 812 px
+430 × 932 px
+
+On large desktop screens, center the mobile experience inside a tasteful device-sized container instead of stretching the page across the browser.
+
+Recommended shell behavior:
+
+- page background may fill the browser
+- Daymark content should stay between 375px and 430px wide
+- content should be centered on desktop
+- use min-height: 100dvh
+- avoid horizontal scrolling
+- use safe-area padding
+- do not make content appear tiny inside the mobile frame
+
+The landing page should now feel like the first screen of a mobile app, not a traditional marketing website.
+
+MOBILE LANDING PAGE
+
+Redesign the existing `/` route for mobile while preserving the Daymark identity.
+
+Above the fold should contain:
+
+1. Compact Daymark logo
+2. Small “Memory = Gift” pill
+3. Headline:
+   Keep the little gifts life gives you.
+4. Short supporting copy
+5. One primary CTA:
+   Start Your Daymark
+6. One smaller secondary action:
+   See how it works
+7. The existing Marky gift illustration
+
+Mobile layout order:
+
+- logo
+- headline and copy
+- buttons
+- hero illustration
+
+Do not place text and image side by side on mobile.
+
+Use approximately:
+
+- 20px horizontal padding
+- 32–40px top spacing
+- 36–44px display heading
+- 16px body text
+- 52px primary button height
+- 24px card radius
+
+The hero illustration should be visually strong but should not push the CTA below the first viewport.
+
+The Start Your Daymark button must navigate to `/onboarding`.
+
+Remove the desktop navigation bar on small screens.
+
+Do not include tiny links such as Features and How It Works in the top bar on mobile. Place supporting information lower on the page.
+
+OPTIONAL DESKTOP PRESENTATION
+
+At widths above 768px:
+
+- keep the app centered at approximately 430px wide
+- use a soft lavender or cream page background outside the app
+- add a subtle shadow around the mobile canvas
+- do not restore the wide desktop landing layout
+
+This project should look mobile-focused even when opened on a laptop.
+
+PRIORITY 3: FIX APP SHELL AND BOTTOM NAVIGATION
+
+Inspect `src/App.tsx`.
+
+The current code calculates `isOnboarding` but does not use it.
+
+Create a clear route-based navigation rule.
+
+Show BottomNav only on these main screens:
+
+- `/home`
+- `/calendar`
+- `/gifts`
+- `/people` or the selected profile route
+
+Hide BottomNav on:
+
+- `/`
+- `/onboarding`
+- `/wrap`
+- `/gifts/:id`
+- `/people/:id`
+- `/future-gifts/new`
+- full-screen success states
+
+Do not let BottomNav overlap page content.
+
+Add enough bottom padding only on pages where BottomNav is visible.
+
+Use a fixed or sticky navigation implementation that respects:
+
+env(safe-area-inset-bottom)
+
+PRIORITY 4: MOBILE HOME SCREEN QA
+
+The `/home` page should remain a true mobile layout.
+
+Remove duplicated width constraints from individual pages where the shared app shell already provides them.
+
+Verify:
+
+- no content exceeds the viewport
+- Today cards scroll horizontally
+- hero memory card fits within 100% width
+- Quick Capture buttons remain readable at 375px
+- Your People scrolls horizontally
+- text does not clip
+- images use correct object-fit
+- the bottom navigation does not cover Your People
+- loading states do not change page width
+
+The mobile Home hierarchy should remain:
+
+1. Header
+2. Greeting
+3. Today strip
+4. A Gift From Your Past
+5. Quick Capture
+6. Your People
+
+PRIORITY 5: PRESERVE THE DAYMARK DESIGN SYSTEM
+
+Keep:
+
+- cream background
+- Daymark purple
+- gift metaphor
+- Marky mascot
+- realistic memory photography
+- rounded mobile cards
+- warm, vibrant tone
+
+Use:
+
+Background: #FFF9F5
+Secondary background: #F8F3FF
+Primary: #6847F5
+Deep purple: #302060
+Pink: #FF719D
+Yellow: #FFC857
+Blue: #75C8FF
+Mint: #9CE2B1
+Primary text: #211936
+Secondary text: #716A80
+
+Do not turn the interface into a dark app.
+Do not redesign all characters.
+Do not introduce an unrelated visual style.
+
+PRIORITY 6: TEST THE CORE FLOW
+
+Test this exact sequence:
+
+1. Open `/`
+2. Tap Start Your Daymark
+3. Complete onboarding
+4. Arrive at Home
+5. Open Wrap a Memory
+6. Select Photo
+7. Upload a real image
+8. Enter the memory details
+9. Complete the wrapping customization
+10. Save
+11. Open My Gifts
+12. Open the newly created gift
+13. Refresh the browser
+14. Confirm the image and memory still exist
+
+Also verify:
+
+- back buttons
+- route transitions
+- loading state
+- upload progress
+- upload failure and retry
+- empty state
+- no BottomNav on immersive routes
+- no horizontal scroll at 375px, 390px and 430px
+
+FINAL OUTPUT
+
+After implementation, report:
+
+1. Which persistent storage service was connected
+2. Which database/API fields were changed
+3. Which routes show BottomNav
+4. Which routes hide BottomNav
+5. Whether uploaded photos survived refresh
+6. Whether the build and type check passed
+7. Any secret or configuration still required
+
+Do not start native app conversion.
+Do not add voice recording yet.
+Complete photo persistence and mobile responsiveness first.

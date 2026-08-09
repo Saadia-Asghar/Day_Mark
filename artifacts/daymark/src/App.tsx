@@ -27,27 +27,29 @@ import CreateFutureGiftPage from '@/pages/future-gift-new';
 
 const queryClient = new QueryClient();
 
+// Routes where BottomNav is visible
+const BOTTOM_NAV_ROUTES = ['/home', '/calendar', '/gifts', '/people'];
+
 function Shell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
-  const isLanding = location === "/";
-  const isOnboarding = location.startsWith("/onboarding");
-  
-  // Only Landing page is truly full-width responsive.
-  // The app screens (and onboarding) stay constrained to a mobile aspect ratio on desktop.
-  if (isLanding) {
-    return (
-      <div className="w-full min-h-[100dvh] bg-background">
-        {children}
-      </div>
-    );
-  }
-  
+
+  const showBottomNav = BOTTOM_NAV_ROUTES.some(
+    (r) => location === r || location.startsWith(r + '?')
+  );
+
   return (
-    <div className="mx-auto bg-background min-h-[100dvh] max-w-[500px] shadow-2xl relative overflow-hidden flex flex-col md:border-x md:border-border">
-      <div className="flex-1 w-full relative">
-        {children}
+    // Outer: fills viewport, cream bg shows on desktop around the phone frame
+    <div className="min-h-[100dvh] bg-[#EAE3FF]/40 flex justify-center">
+      {/* Inner: mobile frame — centered, max 430px, cream bg, shadow on desktop */}
+      <div
+        className="w-full max-w-[430px] bg-[#FFF9F5] min-h-[100dvh] relative flex flex-col shadow-[0_0_60px_rgba(104,71,245,0.08)] md:shadow-[0_0_80px_rgba(104,71,245,0.14)]"
+        style={{ isolation: 'isolate' }}
+      >
+        <div className={`flex-1 w-full relative ${showBottomNav ? 'pb-[80px]' : ''}`}>
+          {children}
+        </div>
+        {showBottomNav && <BottomNav />}
       </div>
-      <BottomNav />
     </div>
   );
 }
@@ -59,7 +61,7 @@ function Router() {
         <Switch>
           <Route path="/" component={LandingPage} />
           <Route path="/onboarding" component={OnboardingPage} />
-          
+
           <Route path="/home" component={HomePage} />
           <Route path="/wrap" component={WrapMemoryPage} />
           <Route path="/gifts" component={GiftsPage} />
@@ -69,7 +71,7 @@ function Router() {
           <Route path="/people/:id" component={PersonDetailPage} />
           <Route path="/future-gifts" component={FutureGiftsPage} />
           <Route path="/future-gifts/new" component={CreateFutureGiftPage} />
-          
+
           <Route component={NotFound} />
         </Switch>
       </Shell>

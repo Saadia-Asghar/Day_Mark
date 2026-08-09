@@ -21,7 +21,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground font-sans w-full max-w-[500px] mx-auto overflow-hidden flex flex-col">
+    <div className="min-h-[100dvh] bg-background text-foreground font-sans w-full overflow-hidden flex flex-col">
       {/* Header strip */}
       <header className="px-5 pt-12 pb-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
