@@ -1,112 +1,165 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useListPeople } from "@workspace/api-client-react";
-import { Heart, Plus, Calendar, Image as ImageIcon } from "lucide-react";
-import heartyLooking from "@assets/generated_images/hearty_looking.png";
-import { differenceInDays } from "date-fns";
+import { Plus, Search } from "lucide-react";
+import { differenceInDays, format } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
+import { ScrapbookPortrait, TapeStrip } from "@/components/scrapbook";
+import heartyLooking from "@assets/generated_images/hearty_looking.png";
+
+const ROTATIONS = [-2.5, 1.8, -1.2, 2.1, -1.8, 1.4, -2, 1.5];
+
+function getBirthdayLabel(birthday?: string | null): string | null {
+  if (!birthday) return null;
+  const today = new Date();
+  const bday = new Date(birthday);
+  bday.setFullYear(today.getFullYear());
+  if (bday < today) bday.setFullYear(today.getFullYear() + 1);
+  const days = differenceInDays(bday, today);
+  if (days === 0) return "🎂 Today!";
+  if (days === 1) return "🎂 Tomorrow";
+  if (days <= 30) return `🎂 in ${days}d`;
+  return `🎂 ${format(new Date(birthday), "MMM d")}`;
+}
 
 export default function PeoplePage() {
   const { data: people, isLoading, isError, refetch } = useListPeople();
+  const [search, setSearch] = useState("");
 
-  const getBirthdayText = (birthday?: string | null) => {
-    if (!birthday) return null;
-    const days = differenceInDays(new Date(birthday), new Date());
-    if (days >= 0 && days <= 30) {
-      return `in ${days} days`;
-    }
-    const month = new Date(birthday).toLocaleString('default', { month: 'short' });
-    return month;
-  };
-
-  const handleAddPerson = () => {
-    alert("Coming soon — add people when wrapping a memory!");
-  };
+  const filtered = (people ?? []).filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground font-sans p-5 pb-32">
-      <header className="pt-8 pb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">My People</h1>
-          <p className="text-muted-foreground font-medium mt-1">The ones who make it special.</p>
-        </div>
-        <button 
-          onClick={handleAddPerson}
-          className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center hover:bg-primary/20 transition-colors"
-          aria-label="Add person"
-        >
-          <Plus className="w-5 h-5" />
-        </button>
+    <div className="min-h-[100dvh] bg-[#FFF9F5] text-foreground font-sans pb-32">
+
+      {/* Header */}
+      <header className="px-5 pt-12 pb-4">
+        <h1 className="text-[28px] font-extrabold leading-tight">The People in Your Story ❤️</h1>
+        <p className="text-sm text-muted-foreground font-medium mt-1">
+          Every memory is better when you remember who was there.
+        </p>
       </header>
 
+      {/* Search */}
+      {people && people.length > 0 && (
+        <div className="px-5 mb-5">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search people…"
+              className="w-full bg-white border border-border rounded-2xl pl-11 pr-4 py-3 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+          </div>
+        </div>
+      )}
+
       {isError ? (
-         <DmErrorState message="Couldn't load your people." onRetry={refetch} />
+        <DmErrorState message="We couldn't load your people." onRetry={refetch} />
       ) : isLoading ? (
-        <div className="space-y-4 mt-6">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-32 bg-muted rounded-3xl animate-pulse"></div>
+        <div className="px-5 grid grid-cols-2 gap-4 mt-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-48 bg-muted/60 rounded-3xl animate-pulse" />
           ))}
         </div>
-      ) : people && people.length > 0 ? (
-        <div className="space-y-4 mt-6">
-          {people.map((person, i) => (
-            <motion.div
-              key={person.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-white p-5 rounded-3xl border border-border shadow-sm flex flex-col gap-4 relative overflow-hidden group"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full -mr-10 -mt-10 z-0"></div>
-              
-              <div className="flex items-center gap-4 relative z-10">
-                <div className="w-16 h-16 rounded-full border-2 border-white shadow-md bg-[#EAE3FF] flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {person.avatarUrl ? (
-                    <img src={person.avatarUrl} alt={person.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-2xl font-bold text-primary">{person.name.charAt(0)}</span>
-                  )}
-                </div>
-                
-                <div className="flex-1">
-                  <h3 className="font-bold text-xl leading-tight">{person.name}</h3>
-                  {person.relationship && (
-                    <p className="text-sm font-medium text-muted-foreground">{person.relationship}</p>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5 text-sm font-bold text-muted-foreground">
-                    <ImageIcon className="w-4 h-4 text-primary" />
-                    {person.memoriesCount || 0} memories
-                  </div>
-                  {person.birthday && (
-                    <div className="flex items-center gap-1.5 text-sm font-bold text-muted-foreground">
-                      <Calendar className="w-4 h-4 text-accent" />
-                      {getBirthdayText(person.birthday)}
+      ) : filtered.length > 0 ? (
+        <div className="px-5 grid grid-cols-2 gap-4">
+          {filtered.map((person, i) => {
+            const rotate = ROTATIONS[i % ROTATIONS.length];
+            const bdayLabel = getBirthdayLabel(person.birthday);
+
+            return (
+              <motion.div
+                key={person.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.07 }}
+              >
+                <Link href={`/people/${person.id}`} className="block outline-none">
+                  <div
+                    className="relative bg-white shadow-[0_4px_20px_rgba(0,0,0,0.09)] p-4 flex flex-col items-center gap-3 active:scale-[0.97] transition-transform"
+                    style={{ transform: `rotate(${rotate}deg)`, borderRadius: 4 }}
+                  >
+                    {/* Tape corner */}
+                    <TapeStrip rotate={-5} className="-top-2 left-1/2 -translate-x-1/2" />
+
+                    {/* Portrait */}
+                    <div
+                      className="bg-[#EAE3FF] rounded-sm overflow-hidden border-4 border-white shadow-md"
+                      style={{ width: 88, height: 88 }}
+                    >
+                      {person.avatarUrl ? (
+                        <img src={person.avatarUrl} alt={person.name} className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-4xl font-bold text-primary">{person.name.charAt(0)}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                
-                <Link href={`/people/${person.id}`}>
-                  <button className="bg-[#EAE3FF] text-primary px-4 py-2 rounded-full text-sm font-bold shadow-sm hover:scale-105 active:scale-95 transition-all">
-                    Our Story
-                  </button>
+
+                    {/* Info */}
+                    <div className="text-center">
+                      <p className="font-bold text-sm leading-tight">{person.name}</p>
+                      {person.relationship && (
+                        <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{person.relationship}</p>
+                      )}
+                    </div>
+
+                    {/* Stats row */}
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
+                      {person.memoriesCount != null && (
+                        <span>🎁 {person.memoriesCount}</span>
+                      )}
+                      {bdayLabel && (
+                        <span>{bdayLabel}</span>
+                      )}
+                    </div>
+
+                    {/* Heart sticker */}
+                    <div className="absolute top-2 right-2 text-xs">❤️</div>
+                  </div>
                 </Link>
+              </motion.div>
+            );
+          })}
+
+          {/* Add person — empty printed-photo slot */}
+          <Link href="/wrap">
+            <div
+              className="relative bg-white shadow-sm p-4 flex flex-col items-center justify-center gap-3 border-2 border-dashed border-border active:scale-[0.97] transition-transform"
+              style={{ transform: "rotate(1.2deg)", borderRadius: 4, minHeight: 180 }}
+            >
+              <div
+                className="w-[88px] h-[88px] bg-[#FFF9F5] border-2 border-dashed border-border/60 flex items-center justify-center"
+                style={{ borderRadius: 2 }}
+              >
+                <Plus className="w-7 h-7 text-muted-foreground/50" />
               </div>
-            </motion.div>
-          ))}
+              <p className="text-[11px] font-bold text-muted-foreground text-center">Add someone</p>
+            </div>
+          </Link>
+        </div>
+      ) : people && people.length === 0 ? (
+        <div className="px-5 mt-12 flex flex-col items-center text-center">
+          <img src={heartyLooking} alt="Hearty" className="w-40 h-40 object-contain mb-5" />
+          <h2 className="text-xl font-bold mb-1">Every story begins with someone.</h2>
+          <p className="text-sm text-muted-foreground mb-7 max-w-xs">
+            Add the people who make your memories worth keeping.
+          </p>
+          <Link href="/wrap">
+            <button className="bg-primary text-white px-8 py-3.5 rounded-full font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] flex items-center gap-2 active:scale-95 transition-all">
+              <Plus className="w-5 h-5" /> Add your first person
+            </button>
+          </Link>
         </div>
       ) : (
-        <div className="mt-20 flex flex-col items-center justify-center text-center">
-          <img src={heartyLooking} alt="Hearty" className="w-48 h-48 object-contain mb-6" />
-          <h2 className="text-2xl font-bold mb-2">No people yet</h2>
-          <p className="text-muted-foreground font-medium mb-8 max-w-xs">Memories are better when they're shared. Add the people you love.</p>
-          <button onClick={handleAddPerson} className="bg-primary text-primary-foreground px-8 py-3 rounded-full font-bold shadow-lg shadow-primary/30 flex items-center gap-2">
-            <Plus className="w-5 h-5" /> Add Someone
-          </button>
+        /* Empty search result */
+        <div className="px-5 mt-12 text-center">
+          <p className="text-muted-foreground font-medium">No one matches "{search}"</p>
         </div>
       )}
     </div>

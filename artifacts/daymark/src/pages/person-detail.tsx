@@ -1,145 +1,220 @@
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useGetPerson } from "@workspace/api-client-react";
-import { ArrowLeft, Calendar, Gift, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Calendar, Gift } from "lucide-react";
 import { format } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
+import { TapeStrip, DateStamp, RibbonDivider, GiftTag, OnThisDayCard } from "@/components/scrapbook";
 
 export default function PersonDetailPage() {
   const [, params] = useRoute("/people/:id");
   const id = Number(params?.id);
-  
+  const [, setLocation] = useLocation();
+
   const { data: person, isLoading, isError, refetch } = useGetPerson(id || 0);
 
   if (isError) {
     return (
-      <div className="min-h-[100dvh] bg-background p-5 pt-20 flex flex-col">
-        <Link href="/people" className="fixed top-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center hover:bg-white transition-colors">
-          <ArrowLeft className="w-5 h-5 text-foreground" />
+      <div className="min-h-[100dvh] bg-[#FFF9F5] p-5 pt-20 flex flex-col">
+        <Link href="/people" className="fixed top-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center active:scale-95">
+          <ArrowLeft className="w-5 h-5" />
         </Link>
-        <DmErrorState message="Couldn't load this person." onRetry={refetch} />
+        <DmErrorState message="We couldn't load this person's story." onRetry={refetch} />
       </div>
     );
   }
 
   if (isLoading || !person) {
-    return <div className="min-h-[100dvh] bg-background p-5 flex items-center justify-center">
-      <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
-    </div>;
+    return (
+      <div className="min-h-[100dvh] bg-[#FFF9F5] flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+      </div>
+    );
   }
 
+  const handleWrapTogether = () => {
+    setLocation(`/wrap?personId=${id}`);
+  };
+
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground font-sans relative overflow-x-hidden">
-      {/* Header Back Button */}
-      <Link href="/people" className="absolute top-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center hover:bg-white transition-colors">
-        <ArrowLeft className="w-5 h-5 text-foreground" />
+    <div className="min-h-[100dvh] bg-[#FFF9F5] text-foreground font-sans pb-32 overflow-x-hidden">
+
+      {/* Back */}
+      <Link href="/people" className="fixed top-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center active:scale-95">
+        <ArrowLeft className="w-5 h-5" />
       </Link>
 
-      {/* Hero Profile */}
-      <div className="pt-24 px-5 pb-8 bg-white border-b border-border text-center flex flex-col items-center shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-bl-full -mr-20 -mt-20 z-0"></div>
-        <div className="absolute bottom-0 left-0 w-40 h-40 bg-primary/5 rounded-tr-full -ml-10 -mb-10 z-0"></div>
-        
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="w-24 h-24 rounded-full border-4 border-white shadow-xl bg-[#EAE3FF] flex items-center justify-center overflow-hidden mb-4 relative z-10"
-        >
-          {person.avatarUrl ? (
-            <img src={person.avatarUrl} alt={person.name} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-4xl font-bold text-primary">{person.name.charAt(0)}</span>
-          )}
-        </motion.div>
-        
-        <motion.h1 
-          initial={{ y: 10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="text-3xl font-bold relative z-10"
-        >
-          {person.name}
-        </motion.h1>
-        
-        {person.relationship && (
-          <motion.div 
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="mt-2 bg-[#EAE3FF] text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider relative z-10"
+      {/* ── Hero — portrait postcard ───────────────────────────── */}
+      <div className="px-4 pt-20 pb-6">
+        <div className="relative">
+          <TapeStrip rotate={-4} className="-top-2 left-8" />
+          <TapeStrip rotate={3} className="-top-2 right-8" />
+
+          <div
+            className="bg-white shadow-[0_8px_40px_rgba(0,0,0,0.13)]"
+            style={{ transform: "rotate(-0.6deg)", borderRadius: 4 }}
           >
-            {person.relationship}
-          </motion.div>
-        )}
-        
-        <motion.div 
-          initial={{ y: 10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="flex items-center gap-6 mt-6 relative z-10"
-        >
-          <div className="flex flex-col items-center">
-            <span className="text-2xl font-bold">{person.memoriesCount || 0}</span>
-            <span className="text-xs text-muted-foreground font-bold uppercase">Memories</span>
-          </div>
-          {person.nextImportantDate && (
-            <>
-              <div className="w-px h-8 bg-border"></div>
-              <div className="flex flex-col items-center">
-                <span className="text-sm font-bold flex items-center gap-1">
-                  <Calendar className="w-4 h-4 text-accent" /> {format(new Date(person.nextImportantDate), "MMM d")}
-                </span>
-                <span className="text-xs text-muted-foreground font-bold uppercase">Next Event</span>
+            {/* Portrait photo */}
+            <div className="p-3 pb-0">
+              <div
+                className="relative bg-[#EAE3FF] overflow-hidden"
+                style={{ aspectRatio: "3/2" }}
+              >
+                {person.avatarUrl ? (
+                  <img
+                    src={person.avatarUrl}
+                    alt={person.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-8xl font-bold text-primary/20">{person.name.charAt(0)}</span>
+                  </div>
+                )}
+                {/* Date stamp */}
+                {person.nextImportantDate && (
+                  <DateStamp
+                    date={format(new Date(person.nextImportantDate), "MMM d")}
+                    className="absolute top-3 right-3"
+                  />
+                )}
               </div>
-            </>
-          )}
-        </motion.div>
+            </div>
+
+            {/* Caption strip */}
+            <div className="px-4 pt-3 pb-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">{person.name}</h1>
+                  {person.relationship && (
+                    <div className="mt-1">
+                      <span className="inline-block bg-[#EAE3FF] text-primary text-xs font-bold px-3 py-1 rounded-full">
+                        {person.relationship}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {/* Stats */}
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-1.5 text-sm font-bold">
+                    <Gift className="w-4 h-4 text-primary" />
+                    <span>{person.memoriesCount || 0} memories</span>
+                  </div>
+                  {person.nextImportantDate && (
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{format(new Date(person.nextImportantDate), "MMM d")}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Handwritten note */}
+              <p
+                className="mt-3 text-sm text-muted-foreground italic border-t border-dashed border-border/50 pt-2"
+                style={{ fontFamily: "cursive" }}
+              >
+                {person.memoriesCount
+                  ? `${person.memoriesCount} shared moment${person.memoriesCount !== 1 ? "s" : ""} — and counting.`
+                  : "Your story together starts here."}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Timeline */}
-      <div className="p-5 pb-32">
-        <h2 className="text-xl font-bold mb-6">Our Story</h2>
-        
+      <div className="px-5">
+        <RibbonDivider />
+
+        {/* ── Our Story Timeline ───────────────────────────────── */}
+        <h2 className="text-base font-extrabold uppercase tracking-widest text-muted-foreground mb-5 mt-4">
+          Our Story
+        </h2>
+
         {person.memories && person.memories.length > 0 ? (
-          <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-border before:via-border/50 before:to-transparent">
+          <div className="space-y-5 relative">
+            {/* Ribbon line */}
+            <div
+              className="absolute top-0 bottom-0 left-5 w-0.5 rounded-full bg-gradient-to-b from-primary/20 via-primary/10 to-transparent"
+              aria-hidden="true"
+            />
+
             {person.memories.map((memory, i) => (
-              <motion.div 
+              <motion.div
                 key={memory.id}
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active"
+                transition={{ delay: i * 0.08 }}
+                className="relative pl-12"
               >
                 {/* Timeline dot */}
-                <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10" style={{ backgroundColor: memory.giftColor }}>
+                <div
+                  className="absolute left-0 top-4 w-10 h-10 rounded-full border-4 border-[#FFF9F5] flex items-center justify-center shadow-sm z-10"
+                  style={{ backgroundColor: memory.giftColor }}
+                >
                   <Gift className="w-4 h-4 text-white" />
                 </div>
-                
-                {/* Card */}
-                <Link href={`/gifts/${memory.id}`} className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)]">
-                  <div className="bg-white p-4 rounded-3xl border border-border shadow-sm hover:shadow-md transition-shadow active:scale-95">
-                    <span className="text-xs font-bold text-muted-foreground mb-1 block">
+
+                {/* Memory card */}
+                <Link href={`/gifts/${memory.id}`} className="block outline-none">
+                  <div className="bg-white rounded-2xl border border-border shadow-sm p-4 active:scale-[0.98] transition-transform">
+                    <p className="text-xs font-bold text-muted-foreground mb-1">
                       {format(new Date(memory.date), "MMMM d, yyyy")}
-                    </span>
-                    <h3 className="font-bold text-lg leading-tight mb-2">{memory.title}</h3>
+                    </p>
+                    <h3 className="font-bold text-base leading-snug mb-2">{memory.title}</h3>
+
                     {memory.photoUrls && memory.photoUrls.length > 0 && (
-                      <div className="h-24 w-full rounded-xl overflow-hidden mb-2">
-                        <img src={memory.photoUrls[0]} className="w-full h-full object-cover" />
+                      <div className="h-20 w-full rounded-xl overflow-hidden mb-2 border border-border/40">
+                        <img
+                          src={memory.photoUrls[0]}
+                          className="w-full h-full object-cover"
+                          alt={memory.title}
+                          loading="lazy"
+                        />
                       </div>
                     )}
+
                     {memory.story && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">{memory.story}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-2 italic"
+                        style={{ fontFamily: "cursive" }}>
+                        "{memory.story}"
+                      </p>
                     )}
+
+                    <div className="mt-2">
+                      <GiftTag category={memory.category} />
+                    </div>
                   </div>
                 </Link>
               </motion.div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-10">
-            <Gift className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-            <h3 className="font-bold text-lg mb-1">No shared memories</h3>
-            <p className="text-sm text-muted-foreground">Wrap a memory with {person.name} and it will appear here.</p>
+          <div className="text-center py-10 bg-white rounded-3xl border border-border shadow-sm">
+            <Gift className="w-12 h-12 text-muted-foreground/20 mx-auto mb-3" />
+            <h3 className="font-bold text-lg mb-1">No shared memories yet</h3>
+            <p className="text-sm text-muted-foreground mb-5">
+              Wrap a memory with {person.name} and it will appear here.
+            </p>
+            <button
+              onClick={handleWrapTogether}
+              className="bg-primary text-white text-sm font-bold px-5 py-2.5 rounded-full shadow-[0_0_16px_rgba(104,71,245,0.25)] active:scale-95 transition-all"
+            >
+              Wrap a memory together
+            </button>
+          </div>
+        )}
+
+        {/* ── Wrap together CTA ───────────────────────────────── */}
+        {person.memories && person.memories.length > 0 && (
+          <div className="mt-8">
+            <button
+              onClick={handleWrapTogether}
+              className="w-full bg-primary text-white py-4 rounded-full text-base font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] active:scale-95 transition-all flex items-center justify-center gap-2"
+            >
+              🎁 Wrap a memory together
+            </button>
           </div>
         )}
       </div>

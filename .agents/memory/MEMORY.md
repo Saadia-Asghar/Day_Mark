@@ -1,0 +1,5 @@
+- [OpenAPI integer/format rules](openapi-rules.md) — All integers must use `type: number`; no `format: email` or `format: uri`; inline request bodies generate duplicate exports — always use `$ref` to named schemas.
+- [Scrapbook component library](scrapbook-components.md) — Shared scrapbook/Memory Shelf components live in `artifacts/daymark/src/components/scrapbook.tsx`; PhysicalGiftAnimation is the step-7 success component.
+- [Asset paths](asset-paths.md) — Generated images are at `attached_assets/generated_images/` resolved via `@assets` alias in Vite config.
+- [DB schema additions](db-schema.md) — `onboardingCompleted: boolean` added to usersTable; `notificationsTable` added; always run `pnpm --filter @workspace/db run push` after schema changes.
+- [Calendar security fix](calendar-security.md) — `/calendar/events` and `/calendar/on-this-day` now auth-guarded and userId-scoped (was the critical security gap).

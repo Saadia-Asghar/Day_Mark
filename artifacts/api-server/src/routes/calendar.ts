@@ -18,12 +18,18 @@ function daysUntil(dateStr: string): number {
 }
 
 router.get("/calendar/events", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const params = ListCalendarEventsQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
+  const userId = req.user.id;
   const today = new Date();
   const month = params.data.month ?? today.getMonth() + 1;
   const year = params.data.year ?? today.getFullYear();
@@ -37,6 +43,7 @@ router.get("/calendar/events", async (req, res): Promise<void> => {
     .from(calendarEventsTable)
     .where(
       and(
+        eq(calendarEventsTable.userId, userId),
         gte(calendarEventsTable.date, start),
         lte(calendarEventsTable.date, end)
       )
@@ -56,10 +63,21 @@ router.get("/calendar/events", async (req, res): Promise<void> => {
 });
 
 router.get("/calendar/on-this-day", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const userId = req.user.id;
   const today = new Date();
   const monthDay = `${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-  const memories = await db.select().from(memoriesTable);
+  // Only fetch user's own memories for "On This Day"
+  const memories = await db
+    .select()
+    .from(memoriesTable)
+    .where(eq(memoriesTable.userId, userId));
+
   const onThisDay = memories.filter((m) => m.date.slice(5) === monthDay);
 
   const result = onThisDay.map((m) => ({

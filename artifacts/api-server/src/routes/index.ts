@@ -8,6 +8,7 @@ import calendarRouter from "./calendar";
 import futureGiftsRouter from "./future-gifts";
 import storageRouter from "./storage";
 import eventsRouter from "./events";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(peopleRouter);
 router.use(calendarRouter);
 router.use(futureGiftsRouter);
 router.use(storageRouter);
+router.use(notificationsRouter);
 
 export default router;

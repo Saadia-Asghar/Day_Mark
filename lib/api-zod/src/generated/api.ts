@@ -21,7 +21,8 @@ export const GetCurrentAuthUserResponse = zod.object({
   "email": zod.string().nullable(),
   "firstName": zod.string().nullable(),
   "lastName": zod.string().nullable(),
-  "profileImageUrl": zod.string().nullable()
+  "profileImageUrl": zod.string().nullable(),
+  "onboardingCompleted": zod.boolean()
 }),zod.null()])
 })
 
@@ -580,6 +581,81 @@ export const GetFutureGiftResponse = zod.object({
   "message": zod.string().nullish(),
   "photoUrls": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List notifications for the authenticated user
+ */
+export const ListNotificationsResponse = zod.object({
+  "notifications": zod.array(zod.object({
+  "id": zod.number(),
+  "userId": zod.string(),
+  "type": zod.string(),
+  "title": zod.string(),
+  "message": zod.string().nullish(),
+  "relatedMemoryId": zod.number().nullish(),
+  "relatedFutureGiftId": zod.number().nullish(),
+  "readAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "unreadCount": zod.number()
+})
+
+
+/**
+ * @summary Mark a notification as read
+ */
+export const MarkNotificationReadParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const MarkNotificationReadResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Mark all notifications as read
+ */
+export const MarkAllNotificationsReadResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Update authenticated user profile fields
+ */
+export const PatchUserProfileBody = zod.object({
+  "firstName": zod.string().optional(),
+  "lastName": zod.string().optional(),
+  "profileImageUrl": zod.string().optional()
+})
+
+export const PatchUserProfileResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullable(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "profileImageUrl": zod.string().nullable(),
+  "onboardingCompleted": zod.boolean()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Mark onboarding as completed for the authenticated user
+ */
+export const CompleteOnboardingResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullable(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "profileImageUrl": zod.string().nullable(),
+  "onboardingCompleted": zod.boolean()
+}),zod.null()])
 })
 
 

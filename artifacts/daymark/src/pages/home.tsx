@@ -1,11 +1,12 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { useGetHomeSummary, useListPeople } from "@workspace/api-client-react";
+import { useGetHomeSummary, useListPeople, useListNotifications } from "@workspace/api-client-react";
 import type { CalendarEvent } from "@workspace/api-client-react";
 import markyWaving from "@assets/generated_images/marky_waving.png";
 import { Gift, Bell, Camera, Mic, MapPin, Edit3, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
+import { TapeStrip, GiftFromPastSkeleton, EmptyPastGiftState } from "@/components/scrapbook";
 import { useAppAuth } from "@/App";
 
 // ── Background doodles ────────────────────────────────────────────────────
@@ -176,6 +177,7 @@ export default function HomePage() {
   const { user } = useAppAuth();
   const { data: summary, isLoading: loadingSummary, isError: isSummaryError, refetch: refetchSummary } = useGetHomeSummary();
   const { data: people, isLoading: loadingPeople, isError: isPeopleError, refetch: refetchPeople } = useListPeople();
+  const { data: notifications } = useListNotifications();
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -202,22 +204,29 @@ export default function HomePage() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:bg-white hover:shadow-sm transition-all"
+            className="relative w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:bg-white hover:shadow-sm transition-all"
             aria-label="Notifications"
           >
             <Bell className="w-5 h-5" />
+            {(notifications?.unreadCount ?? 0) > 0 && (
+              <span className="absolute top-0 right-0 w-4 h-4 bg-primary text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-white">
+                {(notifications?.unreadCount ?? 0) > 9 ? "9+" : notifications?.unreadCount}
+              </span>
+            )}
           </button>
-          {user?.profileImageUrl ? (
-            <img
-              src={user.profileImageUrl}
-              alt={firstName ?? "You"}
-              className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
-            />
-          ) : (
-            <div className="w-9 h-9 rounded-full bg-primary/90 flex items-center justify-center text-white font-bold text-sm shadow-sm border-2 border-white">
-              {firstName ? firstName[0].toUpperCase() : "M"}
-            </div>
-          )}
+          <Link href="/profile" aria-label="Profile">
+            {user?.profileImageUrl ? (
+              <img
+                src={user.profileImageUrl}
+                alt={firstName ?? "You"}
+                className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-primary/90 flex items-center justify-center text-white font-bold text-sm shadow-sm border-2 border-white">
+                {firstName ? firstName[0].toUpperCase() : "M"}
+              </div>
+            )}
+          </Link>
         </div>
       </header>
 
@@ -286,20 +295,17 @@ export default function HomePage() {
           </div>
 
           {loadingSummary ? (
-            <div className="w-full h-72 bg-muted rounded-2xl animate-pulse" />
+            <GiftFromPastSkeleton />
+          ) : isSummaryError ? (
+            <DmErrorState
+              message="We couldn't open your past gift right now."
+              onRetry={refetchSummary}
+            />
           ) : summary?.giftFromPast ? (
             <Link href={`/gifts/${summary.giftFromPast.id}`} className="block outline-none">
               <div className="relative">
                 {/* Tape strip at top-left */}
-                <div
-                  className="absolute -top-2.5 left-6 z-20 w-11 h-[18px] rounded-[3px]"
-                  style={{
-                    background: "rgba(253,241,200,0.9)",
-                    border: "1px solid rgba(210,170,50,0.25)",
-                    transform: "rotate(-3deg)",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                  }}
-                />
+                <TapeStrip rotate={-3} className="-top-2.5 left-6" />
                 {/* Polaroid card */}
                 <motion.div
                   whileTap={{ scale: 0.98, rotate: 0 }}
@@ -397,14 +403,7 @@ export default function HomePage() {
               </div>
             </Link>
           ) : (
-            <div className="bg-white rounded-2xl border border-border shadow-sm p-8 text-center flex flex-col items-center">
-              <img src={markyWaving} alt="Marky" className="w-20 h-20 mb-3 opacity-60" />
-              <h3 className="font-bold text-lg text-foreground">No past gifts yet</h3>
-              <p className="text-muted-foreground text-sm mt-1 mb-4">Your memories will appear here as time passes.</p>
-              <Link href="/wrap" className="bg-primary text-white px-5 py-2 rounded-full text-sm font-bold shadow-[0_0_16px_rgba(104,71,245,0.25)]">
-                Wrap your first memory
-              </Link>
-            </div>
+            <EmptyPastGiftState />
           )}
         </section>
 

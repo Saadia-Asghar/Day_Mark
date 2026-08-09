@@ -7,8 +7,8 @@ import {
   Camera, Video, Mic, Edit3, MapPin, Heart, 
   ArrowLeft, Gift, Calendar as CalendarIcon, Users, Check, Upload, X, AlertCircle, Loader2
 } from "lucide-react";
-import markyCelebrating from "@assets/generated_images/marky_celebrating.png";
 import { DmPersonAvatar } from "@/components/daymark";
+import { PhysicalGiftAnimation } from "@/components/scrapbook";
 
 const TYPES = [
   { id: "photo", label: "Photo", icon: Camera, emoji: "📷", color: "bg-sky-100 text-sky-700" },
@@ -696,66 +696,20 @@ export default function WrapMemoryPage() {
             </motion.div>
           )}
 
-          {/* STEP 7: Success */}
+          {/* STEP 7: Success — physical gift animation */}
           {step === 7 && (
-            <motion.div key="step7" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-background z-50 flex flex-col items-center justify-center text-center px-5">
-              
-              {/* Confetti effect elements */}
-              {CONFETTI.map((c, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ y: "-10vh", x: c.x, opacity: 1, scale: 0.5 }}
-                  animate={{ 
-                    y: "110vh", 
-                    rotate: 360,
-                  }}
-                  transition={{ 
-                    duration: 3, 
-                    delay: i * 0.1,
-                    ease: "easeOut" 
-                  }}
-                  className="absolute top-0 w-3 h-3 rounded-full"
-                  style={{
-                    backgroundColor: c.color,
-                    left: c.x
-                  }}
-                />
-              ))}
-
-              {/* Animated Gift Reveal */}
-              <motion.div
-                initial={{ scale: 0.5, y: 50, opacity: 0 }}
-                animate={{ scale: 1, y: 0, opacity: 1 }}
-                transition={{ type: "spring", bounce: 0.5, duration: 0.8 }}
-                className="mb-8"
-              >
-                <motion.div
-                  animate={{ rotate: [-2, 2, -2] }}
-                  transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                >
-                  <GiftPreview color={formData.giftColor} ribbon={formData.ribbon} />
-                </motion.div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-              >
-                <h2 className="text-3xl font-bold mb-2">It's safe with us. 💜</h2>
-                <p className="text-muted-foreground font-medium mb-10 px-4">
-                  Another little piece of your life, beautifully kept.
-                </p>
-                
-                <div className="w-full space-y-3">
-                  <Link href="/gifts" className="flex items-center justify-center w-full bg-primary text-white py-4 rounded-full text-lg font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] active:scale-95 transition-all">
-                    View Gifts
-                  </Link>
-                  <Link href="/home" className="flex items-center justify-center w-full bg-white border border-border text-foreground py-4 rounded-full text-lg font-bold active:scale-95 transition-all">
-                    Back Home
-                  </Link>
-                </div>
-              </motion.div>
+            <motion.div key="step7" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0">
+              <PhysicalGiftAnimation
+                giftColor={formData.giftColor}
+                ribbon={formData.ribbon}
+                photoUrl={formData.photoPreview}
+                successTitle="It's safe with us. 💜"
+                successMessage="Another little piece of your life, beautifully kept."
+                primaryHref="/gifts"
+                primaryLabel="View Gifts"
+                secondaryHref="/home"
+                secondaryLabel="Back Home"
+              />
             </motion.div>
           )}
         </AnimatePresence>

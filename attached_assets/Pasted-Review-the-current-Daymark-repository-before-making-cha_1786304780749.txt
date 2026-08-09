@@ -1,0 +1,578 @@
+Review the current Daymark repository before making changes.
+
+Implement all three of these tasks together:
+
+1. Show “A Gift From Your Past” safely when the user has no old memories
+2. Apply the Memory Shelf design to Gift Detail, Calendar, People, Person Detail, Future Gifts, and Create Future Gift
+3. Make wrapping a memory feel like a real physical moment by animating the gift closing
+
+Do not rebuild the app.
+Do not remove authentication, user ownership, persistent storage, SSE updates, API hooks, routes, or existing features.
+Do not redesign Home, My Gifts, or the existing Wrap type-selection screen from scratch.
+Preserve the current Daymark visual identity.
+
+==================================================
+TASK 1: SAFE “A GIFT FROM YOUR PAST” STATE
+==================================================
+
+Audit the Home summary API, generated schemas, query hooks, and Home screen.
+
+The app must not crash when:
+
+- the user is new
+- the user has no memories
+- the user has memories but none old enough to qualify
+- giftFromPast is null
+- the API is loading
+- the API returns an error
+- a stored image is broken
+
+Keep giftFromPast nullable in the API schema.
+
+On Home, render four clear states:
+
+LOADING
+
+Show a stable skeleton with the same approximate dimensions as the final memory card.
+
+EMPTY
+
+Show a warm Daymark empty state.
+
+Heading:
+
+Your first gift from the past is still being made.
+
+Text:
+
+Save a few moments today and Daymark will bring one back to you later.
+
+Primary action:
+
+Wrap a Memory
+
+Visual:
+
+Marky beside an empty gift box or holding a tiny photo.
+
+Do not show a broken blank card.
+
+READY
+
+Show the real memory card with:
+
+- photograph
+- title
+- date
+- people
+- short story
+- Open this memory action
+
+ERROR
+
+Show:
+
+We could not open this part of your Daymark.
+
+Action:
+
+Try Again
+
+Do not expose raw API errors.
+
+BROKEN IMAGE
+
+Use a polished gradient fallback based on giftColor.
+
+Show the memory title and a small photo icon.
+
+Ensure no layout shift between loading, empty, ready, and error states.
+
+==================================================
+TASK 2: APPLY MEMORY SHELF DESIGN TO REMAINING SCREENS
+==================================================
+
+Apply the same visual language already used on Home, My Gifts, and Wrap to:
+
+1. Gift Detail
+2. Calendar
+3. People
+4. Person Detail
+5. Future Gifts
+6. Create Future Gift
+
+Use the Memory Shelf concept:
+
+- realistic photographs
+- Polaroid framing
+- tape strips
+- handwritten micro-notes
+- date stamps
+- location stamps
+- gift tags
+- ribbons
+- postcards
+- ticket stubs
+- subtle doodles
+- layered scrapbook depth
+- small, consistent character appearances
+
+Maintain:
+
+60% clean functional UI
+25% memory content
+15% decoration and characters
+
+Keep the user’s life as the main character.
+
+Do not turn the app into a cluttered scrapbook.
+
+==================================================
+GIFT DETAIL
+==================================================
+
+Keep the existing tap-to-unwrap experience.
+
+After opening, redesign the content as an opened keepsake.
+
+Use:
+
+- slightly tilted photo
+- white printed-photo border
+- tape corner
+- date stamp
+- location stamp
+- people portraits
+- mood sticker
+- category gift tag
+- story shown as a folded letter
+- related memories as mixed scrapbook objects
+
+Keep:
+
+- native share
+- Keep this close
+- loading state
+- error state
+- related memories
+- reduced-motion support
+
+Replace alert-based copy confirmation with a Daymark toast.
+
+==================================================
+CALENDAR
+==================================================
+
+Heading:
+
+Your Days ✨
+
+Subheading:
+
+The moments ahead and the ones worth revisiting.
+
+Keep the month grid clean and readable.
+
+Use small visual markers:
+
+- Birthday: balloon
+- Memory: gift
+- Travel: location pin
+- Anniversary: heart
+- Achievement: star
+- Future Gift: lock
+
+When a date is selected, show a Memory Shelf panel below.
+
+Include:
+
+- On This Day
+- upcoming moments
+- related memories
+- Future Gifts
+- Add a moment action
+
+Use a real photo for the main On This Day card.
+
+Empty state:
+
+Nothing marked here yet.
+
+Button:
+
+Add a moment
+
+==================================================
+PEOPLE
+==================================================
+
+Heading:
+
+The People in Your Story ❤️
+
+Do not make this look like a contact manager.
+
+Each person should show:
+
+- photo
+- first name
+- relationship
+- memory count
+- next important date
+- small heart or star sticker
+
+Use scrapbook portrait treatments with controlled rotation and photo borders.
+
+Keep search clean.
+
+Add Person should look like an empty printed-photo slot.
+
+Empty state:
+
+Every story begins with someone.
+
+Button:
+
+Add your first person
+
+==================================================
+PERSON DETAIL
+==================================================
+
+Create a shared-story page.
+
+Top section:
+
+- large portrait or shared photo
+- name
+- relationship
+- total shared memories
+- next important date
+- short handwritten note
+
+Main section:
+
+Our Story
+
+Use a vertical memory timeline with:
+
+- photos
+- dates
+- locations
+- category stickers
+- ribbon line
+
+Add:
+
+Important Dates
+
+Use a calendar postcard treatment.
+
+CTA:
+
+Wrap a memory together
+
+Preselect that person in Wrap a Memory where technically possible.
+
+==================================================
+FUTURE GIFTS
+==================================================
+
+Heading:
+
+Gifts for Later 🎁
+
+Subheading:
+
+Messages and memories waiting for the right day.
+
+Represent Future Gifts as sealed packages.
+
+Each card should include:
+
+- recipient
+- unlock date
+- countdown
+- gift color
+- ribbon
+- lock tag
+- optional blurred preview
+- privacy label
+
+States:
+
+LOCKED
+
+sealed gift
+
+UNLOCKING SOON
+
+soft glow
+
+READY
+
+slightly loosened ribbon and Open Gift CTA
+
+OPENED
+
+visible memory photo and Opened stamp
+
+Preserve real-time SSE behavior.
+
+Show a subtle toast when a gift is created or becomes ready.
+
+Empty state:
+
+Some moments are meant to arrive later.
+
+Button:
+
+Create a Future Gift
+
+==================================================
+CREATE FUTURE GIFT
+==================================================
+
+Turn this into a progressive “Seal a Gift” flow.
+
+STEP 1
+
+Who is this for?
+
+Support:
+
+- existing person
+- another recipient
+- myself
+
+STEP 2
+
+What should they receive?
+
+Only show supported types.
+
+Examples:
+
+- Letter
+- Photo
+- Memory
+- Mixed Gift
+
+Do not show voice recording unless it is actually implemented.
+
+STEP 3
+
+Add message and media.
+
+Use existing persistent storage.
+
+STEP 4
+
+Choose when it opens.
+
+Use a calendar card.
+
+Show the selected date and countdown.
+
+STEP 5
+
+Seal the gift.
+
+Allow:
+
+- box color
+- ribbon
+- tag
+- privacy option
+
+Show a live preview.
+
+Primary CTA:
+
+Seal This Gift
+
+Success message:
+
+Sealed with care. 💜
+
+It will be ready for [recipient] on [date].
+
+Buttons:
+
+View Future Gifts
+Back Home
+
+==================================================
+TASK 3: PHYSICAL GIFT-CLOSING ANIMATION
+==================================================
+
+Build one reusable physical gift animation component.
+
+Suggested name:
+
+PhysicalGiftAnimation
+
+Reuse it in:
+
+- Wrap a Memory
+- Create Future Gift
+- Gift Detail opening where appropriate
+
+Closing sequence:
+
+1. Memory photo moves into the open box
+2. Box lid lowers
+3. Horizontal ribbon wraps around it
+4. Vertical ribbon wraps around it
+5. Bow forms
+6. Gift tag attaches
+7. Marky catches or presents the finished gift
+8. Success message appears
+
+Duration:
+
+0.9 to 1.4 seconds
+
+Use Framer Motion.
+
+Do not use excessive confetti.
+
+Use deterministic decorative particles.
+
+Do not call Math.random() during render.
+
+Respect prefers-reduced-motion.
+
+Reduced-motion behavior:
+
+- skip complex movement
+- use one soft fade and scale
+- immediately show success state
+
+The animation must not block navigation or trap the user.
+
+==================================================
+SHARED COMPONENTS
+==================================================
+
+Create reusable components where helpful:
+
+- MemoryPhoto
+- TapeStrip
+- DateStamp
+- LocationStamp
+- GiftTag
+- MoodSticker
+- ScrapbookPortrait
+- StoryLetter
+- RibbonDivider
+- SealedGiftCard
+- OnThisDayCard
+- PhysicalGiftAnimation
+- EmptyPastGiftState
+- GiftFromPastSkeleton
+
+Do not duplicate large decorative blocks across pages.
+
+==================================================
+FUNCTIONALITY TO PRESERVE
+==================================================
+
+Do not break:
+
+- Replit Auth
+- protected routes
+- user-scoped data
+- persistent photo uploads
+- private object access
+- SSE updates
+- TanStack Query
+- generated API hooks
+- Home summary
+- Gift Detail
+- Calendar interactions
+- People routes
+- Future Gift creation
+- bottom navigation
+- reduced-motion behavior
+
+==================================================
+MOBILE QUALITY
+==================================================
+
+Target:
+
+390 × 844 px
+
+Also test:
+
+375 × 812 px
+430 × 932 px
+
+Verify:
+
+- no horizontal overflow
+- no clipped text
+- no duplicated max-width wrappers
+- no content hidden under navigation
+- no layout jumps
+- no broken images
+- readable tap targets
+- safe-area support
+- consistent spacing
+- consistent visual language
+
+==================================================
+SECURITY
+==================================================
+
+Do not weaken authentication or authorization.
+
+All data must remain scoped to the authenticated user.
+
+Do not expose another user’s memory, person, Future Gift, or private image.
+
+Do not send private content through SSE payloads.
+
+==================================================
+FINAL TEST FLOW
+==================================================
+
+Test all of these cases:
+
+1. New user with no memories
+2. Home renders without crashing
+3. Empty Gift From Your Past state appears
+4. User creates first memory
+5. Memory persists after refresh
+6. Gift-closing animation plays
+7. Gift appears in My Gifts
+8. Gift Detail opens with Memory Shelf design
+9. Calendar shows the memory
+10. Person Detail shows related memories
+11. Future Gift can be created
+12. Future Gift uses the sealing animation
+13. Future Gift appears without refresh
+14. Reduced motion works
+15. Broken memory image uses fallback
+16. Type checking passes
+17. Production build passes
+
+==================================================
+FINAL REPORT
+==================================================
+
+Report:
+
+1. How the no-old-memory state was handled
+2. Pages redesigned
+3. Shared components created
+4. Gift animation implementation
+5. Reduced-motion behavior
+6. Empty states added
+7. SSE behavior preserved
+8. Type-check result
+9. Production build result
+10. Any remaining issue
+
+Implement all three tasks in this single pass.

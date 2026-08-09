@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import {
   ExchangeMobileAuthorizationCodeBody,
   ExchangeMobileAuthorizationCodeResponse,
@@ -214,6 +215,7 @@ router.get('/callback', async (req: Request, res: Response) => {
       firstName: dbUser.firstName,
       lastName: dbUser.lastName,
       profileImageUrl: dbUser.profileImageUrl,
+      onboardingCompleted: dbUser.onboardingCompleted ?? false,
     },
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token,
@@ -286,6 +288,7 @@ router.post(
           firstName: dbUser.firstName,
           lastName: dbUser.lastName,
           profileImageUrl: dbUser.profileImageUrl,
+          onboardingCompleted: dbUser.onboardingCompleted ?? false,
         },
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
@@ -300,6 +303,44 @@ router.post(
     }
   },
 );
+
+// ── Profile update ────────────────────────────────────────────────────────
+router.patch('/auth/profile', async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  const { firstName, lastName, profileImageUrl } = req.body as {
+    firstName?: string;
+    lastName?: string;
+    profileImageUrl?: string;
+  };
+  const [updated] = await db
+    .update(usersTable)
+    .set({
+      ...(firstName !== undefined ? { firstName } : {}),
+      ...(lastName !== undefined ? { lastName } : {}),
+      ...(profileImageUrl !== undefined ? { profileImageUrl } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(usersTable.id, req.user.id))
+    .returning();
+  res.json({ user: updated });
+});
+
+// ── Onboarding complete ────────────────────────────────────────────────────
+router.post('/auth/onboarding/complete', async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  const [updated] = await db
+    .update(usersTable)
+    .set({ onboardingCompleted: true, updatedAt: new Date() })
+    .where(eq(usersTable.id, req.user.id))
+    .returning();
+  res.json({ user: updated });
+});
 
 router.post('/mobile-auth/logout', async (req: Request, res: Response) => {
   const sid = getSessionId(req);

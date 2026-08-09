@@ -13,7 +13,8 @@ import {
   Redirect,
 } from 'wouter';
 import { useAuth, type AuthUser } from '@workspace/replit-auth-web';
-import { createContext, useContext, useEffect, useRef } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Pages
 import LandingPage from '@/pages/landing';
@@ -28,19 +29,14 @@ import PeoplePage from '@/pages/people';
 import PersonDetailPage from '@/pages/person-detail';
 import FutureGiftsPage from '@/pages/future-gifts';
 import CreateFutureGiftPage from '@/pages/future-gift-new';
+import ProfilePage from '@/pages/profile';
 
 const queryClient = new QueryClient();
 
 // Routes where BottomNav is visible
 const BOTTOM_NAV_ROUTES = ['/home', '/calendar', '/gifts', '/people'];
 
-// Protected routes that require authentication
-const PROTECTED_ROUTES = [
-  '/home', '/wrap', '/gifts', '/calendar',
-  '/people', '/future-gifts', '/onboarding',
-];
-
-// ── Auth context (makes useAuth() available to all children) ──────────────
+// ── Auth context ──────────────────────────────────────────────────────────
 interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
@@ -66,37 +62,115 @@ function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 }
 
-// ── SSE real-time hook ────────────────────────────────────────────────────
+// ── SSE reconnection states ───────────────────────────────────────────────
+type SSEStatus = 'connected' | 'reconnecting' | 'restored';
+
 function useSSEUpdates(isAuthenticated: boolean) {
   const qc = useQueryClient();
   const esRef = useRef<EventSource | null>(null);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [status, setStatus] = useState<SSEStatus>('connected');
 
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
-    const es = new EventSource(`${base}/api/events`, { withCredentials: true });
-    esRef.current = es;
 
-    const invalidate = (keys: string[]) => {
-      keys.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
-    };
+    function connect() {
+      // Prevent duplicate connections
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
 
-    es.addEventListener('memory.created', () => invalidate(['listMemories', 'getHomeSummary']));
-    es.addEventListener('memory.updated', () => invalidate(['listMemories', 'getMemory', 'getHomeSummary']));
-    es.addEventListener('memory.deleted', () => invalidate(['listMemories', 'getHomeSummary']));
-    es.addEventListener('futureGift.created', () => invalidate(['listFutureGifts']));
-    es.addEventListener('futureGift.unlocked', () => invalidate(['listFutureGifts', 'getFutureGift']));
-    es.addEventListener('person.updated', () => invalidate(['listPeople', 'getPerson']));
+      const es = new EventSource(`${base}/api/events`, { withCredentials: true });
+      esRef.current = es;
+
+      const invalidate = (keys: string[]) => {
+        keys.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+      };
+
+      es.addEventListener('memory.created', () => invalidate(['listMemories', 'getHomeSummary']));
+      es.addEventListener('memory.updated', () => invalidate(['listMemories', 'getMemory', 'getHomeSummary']));
+      es.addEventListener('memory.deleted', () => invalidate(['listMemories', 'getHomeSummary']));
+      es.addEventListener('futureGift.created', () => invalidate(['listFutureGifts']));
+      es.addEventListener('futureGift.unlocked', () => invalidate(['listFutureGifts', 'getFutureGift']));
+      es.addEventListener('person.updated', () => invalidate(['listPeople', 'getPerson']));
+      es.addEventListener('notification.created', () => invalidate(['listNotifications']));
+
+      es.addEventListener('open', () => {
+        if (reconnectTimerRef.current) {
+          // We were reconnecting — show "restored" briefly
+          setStatus('restored');
+          setTimeout(() => setStatus('connected'), 2500);
+          // Invalidate all caches on reconnect
+          qc.invalidateQueries();
+        }
+        if (reconnectTimerRef.current) {
+          clearTimeout(reconnectTimerRef.current);
+          reconnectTimerRef.current = null;
+        }
+      });
+
+      es.addEventListener('error', () => {
+        // Set a timer — only show banner after 3 seconds of being offline
+        if (!reconnectTimerRef.current) {
+          reconnectTimerRef.current = setTimeout(() => {
+            setStatus('reconnecting');
+          }, 3000);
+        }
+        // Browser auto-retries SSE; we just track the state
+      });
+    }
+
+    connect();
 
     return () => {
-      es.close();
-      esRef.current = null;
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
     };
   }, [isAuthenticated, qc]);
+
+  return status;
 }
 
-// ── App loading / auth gate ───────────────────────────────────────────────
+// ── SSE status banner ─────────────────────────────────────────────────────
+function SSEBanner({ status }: { status: SSEStatus }) {
+  const show = status === 'reconnecting' || status === 'restored';
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ y: -48, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -48, opacity: 0 }}
+          transition={{ type: 'spring', bounce: 0.3 }}
+          className={`fixed top-0 left-0 right-0 z-[200] flex justify-center pointer-events-none`}
+        >
+          <div className="max-w-[430px] w-full">
+            <div
+              className={`mx-4 mt-3 px-4 py-2 rounded-full text-xs font-bold text-center shadow-md ${
+                status === 'reconnecting'
+                  ? 'bg-amber-100 text-amber-800'
+                  : 'bg-emerald-100 text-emerald-800'
+              }`}
+            >
+              {status === 'reconnecting' ? '⏳ Reconnecting…' : '✅ Back in sync ✨'}
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ── App loading ───────────────────────────────────────────────────────────
 function AppLoadingScreen() {
   return (
     <div className="min-h-[100dvh] bg-[#FFF9F5] flex flex-col items-center justify-center gap-4">
@@ -106,7 +180,7 @@ function AppLoadingScreen() {
   );
 }
 
-// ── Shell (mobile frame) ──────────────────────────────────────────────────
+// ── Shell ─────────────────────────────────────────────────────────────────
 function Shell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
 
@@ -129,12 +203,8 @@ function Shell({ children }: { children: ReactNode }) {
   );
 }
 
-// ── Route guard for protected paths ──────────────────────────────────────
-function ProtectedRoute({
-  component: Component,
-}: {
-  component: React.ComponentType;
-}) {
+// ── Route guard ───────────────────────────────────────────────────────────
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAppAuth();
 
   if (isLoading) return <AppLoadingScreen />;
@@ -142,12 +212,10 @@ function ProtectedRoute({
   return <Component />;
 }
 
-// ── Main router ───────────────────────────────────────────────────────────
+// ── Router ────────────────────────────────────────────────────────────────
 function Router() {
   const { isAuthenticated, isLoading } = useAppAuth();
-
-  // Hook SSE updates — only when authenticated
-  useSSEUpdates(isAuthenticated);
+  const sseStatus = useSSEUpdates(isAuthenticated);
 
   if (isLoading) {
     return <AppLoadingScreen />;
@@ -155,13 +223,14 @@ function Router() {
 
   return (
     <RoutedErrorBoundary>
+      <SSEBanner status={sseStatus} />
       <Shell>
         <Switch>
-          {/* Public routes */}
+          {/* Public */}
           <Route path="/" component={LandingPage} />
           <Route path="/auth" component={AuthPage} />
 
-          {/* Protected routes */}
+          {/* Protected */}
           <Route path="/onboarding">
             <ProtectedRoute component={OnboardingPage} />
           </Route>
@@ -191,6 +260,9 @@ function Router() {
           </Route>
           <Route path="/future-gifts/new">
             <ProtectedRoute component={CreateFutureGiftPage} />
+          </Route>
+          <Route path="/profile">
+            <ProtectedRoute component={ProfilePage} />
           </Route>
 
           <Route component={NotFound} />

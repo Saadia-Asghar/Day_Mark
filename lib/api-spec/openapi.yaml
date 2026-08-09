@@ -499,6 +499,91 @@ paths:
               schema:
                 $ref: "#/components/schemas/FutureGift"
 
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications for the authenticated user
+      responses:
+        "200":
+          description: Notification list with unread count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationList"
+
+  /notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success]
+                properties:
+                  success:
+                    type: boolean
+
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success]
+                properties:
+                  success:
+                    type: boolean
+
+  /auth/profile:
+    patch:
+      operationId: patchUserProfile
+      tags: [auth]
+      summary: Update authenticated user profile fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserEnvelope"
+
+  /auth/onboarding/complete:
+    post:
+      operationId: completeOnboarding
+      tags: [auth]
+      summary: Mark onboarding as completed for the authenticated user
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserEnvelope"
+
 components:
   schemas:
     HealthStatus:
@@ -779,9 +864,53 @@ components:
         totalMemories:
           type: number
 
+    Notification:
+      type: object
+      required: [id, userId, type, title, createdAt]
+      properties:
+        id:
+          type: number
+        userId:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: [string, 'null']
+        relatedMemoryId:
+          type: [number, 'null']
+        relatedFutureGiftId:
+          type: [number, 'null']
+        readAt:
+          type: [string, 'null']
+        createdAt:
+          type: string
+
+    NotificationList:
+      type: object
+      required: [notifications, unreadCount]
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+        unreadCount:
+          type: number
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        profileImageUrl:
+          type: string
+
     AuthUser:
       type: object
-      required: [id, email, firstName, lastName, profileImageUrl]
+      required: [id, email, firstName, lastName, profileImageUrl, onboardingCompleted]
       properties:
         id:
           type: string
@@ -793,6 +922,8 @@ components:
           type: [string, 'null']
         profileImageUrl:
           type: [string, 'null']
+        onboardingCompleted:
+          type: boolean
     AuthUserEnvelope:
       type: object
       required: [user]

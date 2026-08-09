@@ -194,6 +194,33 @@ export interface HomeSummary {
   totalMemories: number;
 }
 
+export interface Notification {
+  id: number;
+  userId: string;
+  type: string;
+  title: string;
+  /** @nullable */
+  message?: string | null;
+  /** @nullable */
+  relatedMemoryId?: number | null;
+  /** @nullable */
+  relatedFutureGiftId?: number | null;
+  /** @nullable */
+  readAt?: string | null;
+  createdAt: string;
+}
+
+export interface NotificationList {
+  notifications: Notification[];
+  unreadCount: number;
+}
+
+export interface UserProfileUpdate {
+  firstName?: string;
+  lastName?: string;
+  profileImageUrl?: string;
+}
+
 export interface AuthUser {
   id: string;
   /** @nullable */
@@ -204,6 +231,7 @@ export interface AuthUser {
   lastName: string | null;
   /** @nullable */
   profileImageUrl: string | null;
+  onboardingCompleted: boolean;
 }
 
 export interface AuthUserEnvelope {
@@ -273,5 +301,13 @@ export const ListMemoriesView = {
 export type ListCalendarEventsParams = {
 month?: number;
 year?: number;
+};
+
+export type MarkNotificationRead200 = {
+  success: boolean;
+};
+
+export type MarkAllNotificationsRead200 = {
+  success: boolean;
 };
 
