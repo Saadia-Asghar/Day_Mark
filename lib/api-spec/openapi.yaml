@@ -769,7 +769,9 @@ components:
           items:
             $ref: "#/components/schemas/CalendarEvent"
         giftFromPast:
-          $ref: "#/components/schemas/Memory"
+          oneOf:
+            - $ref: "#/components/schemas/Memory"
+            - type: "null"
         recentPeople:
           type: array
           items:

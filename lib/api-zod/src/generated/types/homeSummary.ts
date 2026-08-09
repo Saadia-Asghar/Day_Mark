@@ -11,7 +11,7 @@ import type { Person } from './person';
 
 export interface HomeSummary {
   upcomingEvents: CalendarEvent[];
-  giftFromPast: Memory;
+  giftFromPast: Memory | null;
   recentPeople: Person[];
   totalMemories: number;
 }

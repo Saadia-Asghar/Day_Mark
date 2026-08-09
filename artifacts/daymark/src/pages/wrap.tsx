@@ -243,22 +243,117 @@ export default function WrapMemoryPage() {
       <div className="flex-1 flex flex-col relative px-5 pb-safe overflow-y-auto hide-scrollbar">
         <AnimatePresence mode="wait">
           
-          {/* STEP 1: Type */}
+          {/* STEP 1: Type – illustrated object picker */}
           {step === 1 && (
-            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 flex flex-col mt-4">
-              <h2 className="text-2xl font-bold mb-6">What are we wrapping?</h2>
-              <div className="flex flex-wrap gap-3">
-                {TYPES.map(type => (
-                  <button
-                    key={type.id}
-                    onClick={() => { updateForm('type', type.id); setStep(2); }}
-                    className="flex items-center gap-2 px-5 py-3 rounded-full border bg-white shadow-sm transition-transform active:scale-95 hover:border-primary"
-                  >
-                    <span className="text-xl">{type.emoji}</span>
-                    <span className="font-bold text-sm">{type.label}</span>
-                  </button>
-                ))}
+            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 flex flex-col mt-2">
+              <h2 className="text-2xl font-bold mb-2">What are we<br />keeping?</h2>
+              <p className="text-sm text-muted-foreground font-medium mb-7">Choose how you want to capture this moment.</p>
+
+              {/* Illustrated type objects */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Photo — Polaroid frame */}
+                <motion.button
+                  whileTap={{ scale: 0.94, y: -2 }}
+                  onClick={() => { updateForm('type', 'photo'); setStep(2); }}
+                  className="relative bg-white border border-sky-100 rounded-2xl p-5 flex flex-col items-center gap-3 shadow-sm hover:border-sky-300 transition-colors"
+                  style={{ transform: 'rotate(-1deg)' }}
+                >
+                  {/* Polaroid illustration */}
+                  <div className="w-16 h-16 bg-sky-50 border-2 border-sky-200 rounded-lg flex items-center justify-center relative">
+                    <Camera className="w-7 h-7 text-sky-500" />
+                    {/* Polaroid bottom white strip */}
+                    <div className="absolute -bottom-2 -left-1 -right-1 h-3 bg-white border border-sky-100 rounded-b-sm" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-extrabold text-sm text-foreground">Photo</p>
+                    <p className="text-[11px] text-muted-foreground">An image says it all</p>
+                  </div>
+                  <div className="absolute top-2 right-2 text-lg">📷</div>
+                </motion.button>
+
+                {/* Story — folded notebook */}
+                <motion.button
+                  whileTap={{ scale: 0.94, y: -2 }}
+                  onClick={() => { updateForm('type', 'story'); setStep(2); }}
+                  className="relative bg-amber-50 border border-amber-100 rounded-2xl p-5 flex flex-col items-center gap-3 shadow-sm hover:border-amber-300 transition-colors overflow-hidden"
+                  style={{ transform: 'rotate(0.8deg)' }}
+                >
+                  {/* Folded corner */}
+                  <div className="absolute top-0 right-0 w-8 h-8 bg-amber-200 rounded-bl-2xl" />
+                  <div className="w-16 h-16 flex items-center justify-center relative">
+                    <div className="w-12 h-14 bg-white border border-amber-200 rounded-sm shadow-sm flex items-center justify-center">
+                      {/* Lines */}
+                      <div className="space-y-1.5 px-1.5 w-full">
+                        {[1,2,3].map(i => (
+                          <div key={i} className="h-0.5 bg-amber-200 rounded-full" />
+                        ))}
+                      </div>
+                    </div>
+                    <Edit3 className="absolute w-5 h-5 text-amber-600 -bottom-1 -right-1" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-extrabold text-sm text-foreground">Story</p>
+                    <p className="text-[11px] text-muted-foreground">Write it in your words</p>
+                  </div>
+                </motion.button>
+
+                {/* Voice — cassette / waveform */}
+                <motion.button
+                  whileTap={{ scale: 0.94, y: -2 }}
+                  onClick={() => { updateForm('type', 'voice'); setStep(2); }}
+                  className="relative bg-emerald-50 border border-emerald-100 rounded-2xl p-5 flex flex-col items-center gap-3 shadow-sm hover:border-emerald-300 transition-colors"
+                  style={{ transform: 'rotate(-0.5deg)' }}
+                >
+                  <div className="w-16 h-16 flex items-center justify-center">
+                    <div className="w-14 h-9 bg-white border-2 border-emerald-200 rounded-lg flex items-center justify-center px-1.5 gap-0.5 shadow-sm">
+                      {[3, 5, 7, 4, 8, 5, 6, 3, 7, 4].map((h, i) => (
+                        <div key={i} className="w-0.5 rounded-full bg-emerald-400" style={{ height: `${h * 3}px` }} />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-extrabold text-sm text-foreground">Voice</p>
+                    <p className="text-[11px] text-muted-foreground">Say it out loud</p>
+                  </div>
+                  <div className="absolute top-2 right-2 text-lg">🎙</div>
+                </motion.button>
+
+                {/* Place — postcard */}
+                <motion.button
+                  whileTap={{ scale: 0.94, y: -2 }}
+                  onClick={() => { updateForm('type', 'place'); setStep(2); }}
+                  className="relative bg-rose-50 border border-rose-100 rounded-2xl p-5 flex flex-col items-center gap-3 shadow-sm hover:border-rose-300 transition-colors"
+                  style={{ transform: 'rotate(1deg)' }}
+                >
+                  <div className="w-16 h-16 flex items-center justify-center">
+                    <div className="relative w-14 h-10 bg-white border-2 border-rose-200 rounded-sm shadow-sm flex items-center justify-center">
+                      {/* Stamp corner */}
+                      <div className="absolute top-1 right-1.5 w-3.5 h-4 border border-rose-300 rounded-[2px]" />
+                      <MapPin className="w-5 h-5 text-rose-500" />
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-extrabold text-sm text-foreground">Place</p>
+                    <p className="text-[11px] text-muted-foreground">Mark where you were</p>
+                  </div>
+                </motion.button>
               </div>
+
+              {/* Video — bottom full-width */}
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => { updateForm('type', 'video'); setStep(2); }}
+                className="mt-4 w-full bg-purple-50 border border-purple-100 rounded-2xl px-5 py-4 flex items-center gap-4 shadow-sm hover:border-purple-300 transition-colors"
+              >
+                <div className="w-12 h-12 bg-white border-2 border-purple-200 rounded-xl flex items-center justify-center shadow-sm shrink-0">
+                  <Video className="w-6 h-6 text-purple-500" />
+                </div>
+                <div className="text-left">
+                  <p className="font-extrabold text-sm text-foreground">Video</p>
+                  <p className="text-[11px] text-muted-foreground">Capture the moment in motion</p>
+                </div>
+                <span className="ml-auto text-xl">🎬</span>
+              </motion.button>
             </motion.div>
           )}
 
@@ -481,12 +576,19 @@ export default function WrapMemoryPage() {
             </motion.div>
           )}
 
-          {/* STEP 6: Customization */}
+          {/* STEP 6: Wrapping Customization */}
           {step === 6 && (
-            <motion.div key="step6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 flex flex-col mt-2 pb-6">
-              <h2 className="text-2xl font-bold mb-4 text-center">How should we wrap this?</h2>
-              
-              <div className="flex justify-center mb-6 h-56 items-center">
+            <motion.div key="step6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 flex flex-col mt-0 pb-6">
+              <h2 className="text-2xl font-bold mb-1 text-center">How should we<br />wrap this?</h2>
+              <p className="text-sm text-muted-foreground text-center mb-5">Choose your gift's look and feel.</p>
+
+              {/* Large gift preview */}
+              <div className="flex justify-center mb-6 h-64 items-center relative">
+                {/* Subtle glow behind gift */}
+                <div
+                  className="absolute inset-0 rounded-full blur-3xl opacity-20 pointer-events-none"
+                  style={{ backgroundColor: formData.giftColor }}
+                />
                 <GiftPreview
                   color={formData.giftColor}
                   ribbon={formData.ribbon}
@@ -495,45 +597,74 @@ export default function WrapMemoryPage() {
                 />
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-5 bg-white/70 backdrop-blur-sm rounded-3xl p-5 border border-border/60 shadow-sm">
+                {/* Box Color */}
                 <div>
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1 mb-2 block">Box Color</span>
-                  <div className="flex gap-3">
+                  <span className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest mb-3 block flex items-center gap-1.5">
+                    🎁 Box Color
+                  </span>
+                  <div className="flex gap-3 items-center">
                     {COLORS.map(c => (
                       <button
                         key={c.id}
                         onClick={() => updateForm('giftColor', c.hex)}
-                        className={`w-11 h-11 rounded-full shadow-sm border-2 transition-transform ${formData.giftColor === c.hex ? 'scale-110 border-foreground' : 'border-transparent'}`}
-                        style={{ backgroundColor: c.hex }}
+                        className="relative transition-transform active:scale-90"
                         aria-label={`Color ${c.id}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1 mb-2 block">Ribbon</span>
-                  <div className="flex gap-2">
-                    {["Classic", "Heart", "Stars", "Minimal"].map(r => (
-                      <button
-                        key={r}
-                        onClick={() => updateForm('ribbon', r)}
-                        className={`px-4 py-2 rounded-full text-xs font-bold transition-colors border ${formData.ribbon === r ? 'bg-foreground text-background border-foreground' : 'bg-white text-muted-foreground border-border'}`}
                       >
-                        {r}
+                        <div
+                          className={`w-10 h-10 rounded-full shadow-md transition-all ${formData.giftColor === c.hex ? 'scale-125' : 'scale-100 opacity-70 hover:opacity-100'}`}
+                          style={{ backgroundColor: c.hex }}
+                        />
+                        {formData.giftColor === c.hex && (
+                          <div className="absolute inset-0 rounded-full border-2 border-foreground/60 scale-125" />
+                        )}
                       </button>
                     ))}
                   </div>
                 </div>
 
+                {/* Ribbon */}
                 <div>
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1 mb-2 block">Tag</span>
+                  <span className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest mb-3 block">
+                    🎀 Ribbon
+                  </span>
+                  <div className="flex gap-2 flex-wrap">
+                    {[
+                      { id: "Classic", emoji: "🤍" },
+                      { id: "Heart",   emoji: "❤️" },
+                      { id: "Stars",   emoji: "⭐" },
+                      { id: "Minimal", emoji: "🕊️" },
+                    ].map(r => (
+                      <button
+                        key={r.id}
+                        onClick={() => updateForm('ribbon', r.id)}
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+                          formData.ribbon === r.id
+                            ? 'bg-foreground text-background border-foreground shadow-sm'
+                            : 'bg-white text-muted-foreground border-border hover:bg-muted'
+                        }`}
+                      >
+                        <span>{r.emoji}</span> {r.id}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tag / Category */}
+                <div>
+                  <span className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest mb-3 block">
+                    🏷 Gift Tag
+                  </span>
                   <div className="flex flex-wrap gap-2">
                     {CATEGORIES.map(cat => (
                       <button
                         key={cat}
                         onClick={() => updateForm('category', cat.toLowerCase())}
-                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors border ${formData.category === cat.toLowerCase() ? 'bg-foreground text-background border-foreground' : 'bg-white text-muted-foreground border-border'}`}
+                        className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
+                          formData.category === cat.toLowerCase()
+                            ? 'bg-foreground text-background border-foreground shadow-sm'
+                            : 'bg-white/80 text-muted-foreground border-border hover:bg-muted'
+                        }`}
                       >
                         {cat}
                       </button>
@@ -542,14 +673,25 @@ export default function WrapMemoryPage() {
                 </div>
               </div>
 
-              <div className="mt-8">
-                <button 
+              {/* Wrap CTA */}
+              <div className="mt-6">
+                {createMemory.isError && (
+                  <p className="text-xs text-red-500 font-semibold text-center mb-3">
+                    Something went wrong. Please try again.
+                  </p>
+                )}
+                <motion.button
                   onClick={handleWrap}
                   disabled={createMemory.isPending || isUploading}
-                  className="w-full bg-primary text-white py-4 rounded-full text-lg font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] disabled:opacity-50 disabled:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2"
+                  whileTap={{ scale: 0.96 }}
+                  className="w-full bg-primary text-white py-4 rounded-full text-lg font-bold shadow-[0_0_28px_rgba(104,71,245,0.35)] disabled:opacity-50 disabled:shadow-none transition-all flex items-center justify-center gap-2"
                 >
-                  {createMemory.isPending ? "Wrapping..." : isUploading ? "Upload in progress…" : "🎁 Wrap My Memory"}
-                </button>
+                  {createMemory.isPending
+                    ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Wrapping…</>
+                    : isUploading
+                    ? "Upload in progress…"
+                    : "🎁 Wrap My Memory"}
+                </motion.button>
               </div>
             </motion.div>
           )}

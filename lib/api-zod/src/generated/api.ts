@@ -160,7 +160,7 @@ export const GetHomeSummaryResponse = zod.object({
   "personId": zod.number().nullish(),
   "daysUntil": zod.number().nullish()
 })),
-  "giftFromPast": zod.object({
+  "giftFromPast": zod.union([zod.object({
   "id": zod.number(),
   "title": zod.string(),
   "story": zod.string().nullish(),
@@ -182,7 +182,7 @@ export const GetHomeSummaryResponse = zod.object({
 })).optional(),
   "isKeptClose": zod.boolean(),
   "createdAt": zod.coerce.date()
-}),
+}),zod.null()]),
   "recentPeople": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string(),
