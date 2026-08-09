@@ -3,26 +3,48 @@ import { motion } from "framer-motion";
 import { useListPeople } from "@workspace/api-client-react";
 import { Heart, Plus, Calendar, Image as ImageIcon } from "lucide-react";
 import heartyLooking from "@assets/generated_images/hearty_looking.png";
+import { differenceInDays } from "date-fns";
+import { DmErrorState } from "@/components/daymark";
 
 export default function PeoplePage() {
-  const { data: people, isLoading } = useListPeople();
+  const { data: people, isLoading, isError, refetch } = useListPeople();
+
+  const getBirthdayText = (birthday?: string | null) => {
+    if (!birthday) return null;
+    const days = differenceInDays(new Date(birthday), new Date());
+    if (days >= 0 && days <= 30) {
+      return `in ${days} days`;
+    }
+    const month = new Date(birthday).toLocaleString('default', { month: 'short' });
+    return month;
+  };
+
+  const handleAddPerson = () => {
+    alert("Coming soon — add people when wrapping a memory!");
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans p-6 pb-32">
+    <div className="min-h-[100dvh] bg-background text-foreground font-sans p-5 pb-32 max-w-[500px] mx-auto">
       <header className="pt-8 pb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">My People</h1>
+          <h1 className="text-3xl font-bold text-foreground">My People</h1>
           <p className="text-muted-foreground font-medium mt-1">The ones who make it special.</p>
         </div>
-        <button className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center hover:bg-primary/20 transition-colors">
+        <button 
+          onClick={handleAddPerson}
+          className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center hover:bg-primary/20 transition-colors"
+          aria-label="Add person"
+        >
           <Plus className="w-5 h-5" />
         </button>
       </header>
 
-      {isLoading ? (
+      {isError ? (
+         <DmErrorState message="Couldn't load your people." onRetry={refetch} />
+      ) : isLoading ? (
         <div className="space-y-4 mt-6">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-32 bg-white rounded-3xl animate-pulse"></div>
+            <div key={i} className="h-32 bg-muted rounded-3xl animate-pulse"></div>
           ))}
         </div>
       ) : people && people.length > 0 ? (
@@ -38,7 +60,7 @@ export default function PeoplePage() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full -mr-10 -mt-10 z-0"></div>
               
               <div className="flex items-center gap-4 relative z-10">
-                <div className="w-16 h-16 rounded-full border-2 border-white shadow-md bg-lavender flex items-center justify-center overflow-hidden flex-shrink-0">
+                <div className="w-16 h-16 rounded-full border-2 border-white shadow-md bg-[#EAE3FF] flex items-center justify-center overflow-hidden flex-shrink-0">
                   {person.avatarUrl ? (
                     <img src={person.avatarUrl} alt={person.name} className="w-full h-full object-cover" />
                   ) : (
@@ -63,13 +85,13 @@ export default function PeoplePage() {
                   {person.birthday && (
                     <div className="flex items-center gap-1.5 text-sm font-bold text-muted-foreground">
                       <Calendar className="w-4 h-4 text-accent" />
-                      Soon
+                      {getBirthdayText(person.birthday)}
                     </div>
                   )}
                 </div>
                 
                 <Link href={`/people/${person.id}`}>
-                  <button className="bg-lavender text-primary px-4 py-2 rounded-full text-sm font-bold shadow-sm hover:scale-105 active:scale-95 transition-all">
+                  <button className="bg-[#EAE3FF] text-primary px-4 py-2 rounded-full text-sm font-bold shadow-sm hover:scale-105 active:scale-95 transition-all">
                     Our Story
                   </button>
                 </Link>
@@ -80,9 +102,9 @@ export default function PeoplePage() {
       ) : (
         <div className="mt-20 flex flex-col items-center justify-center text-center">
           <img src={heartyLooking} alt="Hearty" className="w-48 h-48 object-contain mb-6" />
-          <h2 className="text-2xl font-serif font-bold mb-2">No people yet</h2>
+          <h2 className="text-2xl font-bold mb-2">No people yet</h2>
           <p className="text-muted-foreground font-medium mb-8 max-w-xs">Memories are better when they're shared. Add the people you love.</p>
-          <button className="bg-primary text-primary-foreground px-8 py-3 rounded-full font-bold shadow-lg shadow-primary/30 flex items-center gap-2">
+          <button onClick={handleAddPerson} className="bg-primary text-primary-foreground px-8 py-3 rounded-full font-bold shadow-lg shadow-primary/30 flex items-center gap-2">
             <Plus className="w-5 h-5" /> Add Someone
           </button>
         </div>

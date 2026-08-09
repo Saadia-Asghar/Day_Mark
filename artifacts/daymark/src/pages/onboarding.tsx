@@ -1,8 +1,7 @@
-import { useState } from "wouter";
-import { Link, useLocation } from "wouter";
+import { useState } from "react";
+import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight } from "lucide-react";
-import React from "react";
 import markyWaving from "@assets/generated_images/marky_waving.png";
 import heroImg from "@assets/generated_images/hero.png";
 import markyCelebrating from "@assets/generated_images/marky_celebrating.png";
@@ -27,7 +26,7 @@ const STEPS = [
 
 export default function OnboardingPage() {
   const [, setLocation] = useLocation();
-  const [step, setStep] = React.useState(0);
+  const [step, setStep] = useState(0);
 
   const nextStep = () => {
     if (step < STEPS.length - 1) {
@@ -38,7 +37,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="h-[100dvh] bg-background flex flex-col items-center justify-between p-6 relative overflow-hidden">
+    <div className="h-[100dvh] bg-background flex flex-col items-center justify-between p-5 relative overflow-hidden">
       {/* Decorative background shapes */}
       <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
       <div className="absolute top-1/2 -left-20 w-48 h-48 bg-accent/10 rounded-full blur-3xl"></div>
@@ -77,7 +76,7 @@ export default function OnboardingPage() {
               />
             </div>
             
-            <h1 className="text-3xl font-serif font-bold text-foreground mb-4">
+            <h1 className="text-3xl font-bold text-foreground mb-4">
               {STEPS[step].title}
             </h1>
             <p className="text-lg text-muted-foreground font-medium px-4 max-w-xs leading-relaxed">
@@ -90,7 +89,7 @@ export default function OnboardingPage() {
       <div className="w-full pb-10 z-10">
         <button 
           onClick={nextStep}
-          className="w-full bg-primary text-primary-foreground py-4 rounded-2xl text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all"
+          className="w-full bg-primary text-primary-foreground py-4 rounded-2xl text-lg font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all"
         >
           {step === STEPS.length - 1 ? "Start My Daymark" : "Continue"}
           {step < STEPS.length - 1 && <ChevronRight className="w-5 h-5" />}

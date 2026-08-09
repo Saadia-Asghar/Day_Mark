@@ -4,11 +4,11 @@ import { useGetHomeSummary, useListPeople } from "@workspace/api-client-react";
 import markyWaving from "@assets/generated_images/marky_waving.png";
 import { Gift, Bell, Camera, Mic, MapPin, Plus, Edit3 } from "lucide-react";
 import { format } from "date-fns";
-import { DmPersonAvatar, DmDatePill } from "@/components/daymark";
+import { DmPersonAvatar, DmDatePill, DmErrorState } from "@/components/daymark";
 
 export default function HomePage() {
-  const { data: summary, isLoading: loadingSummary } = useGetHomeSummary();
-  const { data: people, isLoading: loadingPeople } = useListPeople();
+  const { data: summary, isLoading: loadingSummary, isError: isSummaryError, refetch: refetchSummary } = useGetHomeSummary();
+  const { data: people, isLoading: loadingPeople, isError: isPeopleError, refetch: refetchPeople } = useListPeople();
 
   const getPillStyle = (type: string) => {
     switch (type) {
@@ -31,7 +31,7 @@ export default function HomePage() {
           <span className="font-sans font-bold text-xl tracking-tight">Daymark</span>
         </div>
         <div className="flex items-center gap-3">
-          <button className="w-10 h-10 flex items-center justify-center rounded-full text-foreground hover:bg-muted transition-colors">
+          <button className="w-10 h-10 flex items-center justify-center rounded-full text-foreground hover:bg-muted transition-colors" aria-label="Notifications">
             <Bell className="w-5 h-5" />
           </button>
           <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-white font-bold text-sm shadow-sm border border-white">
@@ -61,11 +61,19 @@ export default function HomePage() {
         </section>
 
         {/* TODAY strip */}
-        {summary?.upcomingEvents && summary.upcomingEvents.length > 0 && (
-          <section className="mt-8 mb-8">
-            <div className="px-5 mb-3">
-              <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Today</h2>
+        <section className="mt-8 mb-8">
+          <div className="px-5 mb-3">
+            <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Today</h2>
+          </div>
+          {isSummaryError ? (
+             <DmErrorState message="Could not load today's events." onRetry={refetchSummary} />
+          ) : loadingSummary ? (
+            <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-5 px-5 snap-x">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-12 w-32 bg-muted rounded-full animate-pulse shrink-0 snap-start" />
+              ))}
             </div>
+          ) : summary?.upcomingEvents && summary.upcomingEvents.length > 0 ? (
             <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-5 px-5 snap-x">
               {summary.upcomingEvents.map((event, i) => {
                 const style = getPillStyle(event.type);
@@ -88,8 +96,12 @@ export default function HomePage() {
                 );
               })}
             </div>
-          </section>
-        )}
+          ) : (
+            <div className="px-5">
+              <p className="text-sm text-muted-foreground">No special dates coming up soon.</p>
+            </div>
+          )}
+        </section>
 
         {/* Hero Memory Card */}
         <section className="mt-8 px-5 mb-8">
@@ -97,7 +109,9 @@ export default function HomePage() {
             <SparkleIcon className="w-3.5 h-3.5" /> A Gift From Your Past
           </h2>
           
-          {summary?.giftFromPast ? (
+          {loadingSummary ? (
+            <div className="w-full max-w-[340px] mx-auto h-72 bg-muted rounded-[2rem] animate-pulse" />
+          ) : summary?.giftFromPast ? (
             <Link href={`/gifts/${summary.giftFromPast.id}`} className="block outline-none">
               <motion.div 
                 whileTap={{ scale: 0.98 }}
@@ -198,12 +212,23 @@ export default function HomePage() {
         </section>
 
         {/* Your People */}
-        {people && people.length > 0 && (
-          <section className="mt-8 mb-8">
-            <div className="px-5 mb-4 flex items-center justify-between">
-              <h2 className="text-base font-semibold">Your people ❤️</h2>
-              <Link href="/people" className="text-sm font-bold text-primary">See all</Link>
+        <section className="mt-8 mb-8">
+          <div className="px-5 mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold">Your people ❤️</h2>
+            <Link href="/people" className="text-sm font-bold text-primary">See all</Link>
+          </div>
+          {isPeopleError ? (
+             <DmErrorState message="Could not load your people." onRetry={refetchPeople} />
+          ) : loadingPeople ? (
+            <div className="flex gap-4 overflow-x-auto hide-scrollbar -mx-5 px-5 snap-x">
+               {[1, 2, 3, 4].map(i => (
+                 <div key={i} className="snap-start shrink-0 flex flex-col items-center gap-1.5 w-[72px]">
+                    <div className="w-[60px] h-[60px] rounded-full bg-muted animate-pulse border-2 border-white shadow-sm" />
+                    <div className="h-3 w-10 bg-muted animate-pulse rounded-full" />
+                 </div>
+               ))}
             </div>
+          ) : people && people.length > 0 ? (
             <div className="flex gap-4 overflow-x-auto hide-scrollbar -mx-5 px-5 snap-x">
               {people.map((person, i) => (
                 <div key={person.id} className="snap-start shrink-0">
@@ -227,8 +252,15 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
-          </section>
-        )}
+          ) : (
+            <div className="px-5 py-4 flex flex-col items-center justify-center bg-white border border-border rounded-2xl text-center shadow-sm">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Memories are better when they're shared.</p>
+              <Link href="/people" className="text-sm font-bold text-primary flex items-center gap-1">
+                 <Plus className="w-4 h-4" /> Add someone special
+              </Link>
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );

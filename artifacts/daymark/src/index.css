@@ -167,8 +167,23 @@
     overflow-x: hidden;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   h1, h2, h3, h4, h5, h6 {
-    @apply font-sans;
+    @apply font-sans font-bold;
+  }
+
+  input, textarea, select {
+    font-family: var(--app-font-sans);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 
   .font-display {

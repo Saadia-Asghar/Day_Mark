@@ -1,0 +1,580 @@
+Review the existing Daymark codebase before making changes.
+
+Do not rebuild the app from scratch.
+Do not add more major pages.
+Do not replace the existing routes, API hooks, or working flows.
+
+The current app already contains:
+
+- Landing page
+- Onboarding
+- Mobile Home
+- Wrap a Memory
+- My Gifts
+- Gift Detail
+- Calendar
+- People
+- Person Detail
+- Future Gifts
+- Create Future Gift
+
+The next task is to turn the existing build into a polished, competition-ready mobile product.
+
+MAIN GOAL
+
+Refine Daymark into one consistent mobile-first experience where:
+
+- real memories are the emotional focus
+- the gift metaphor creates the visual identity
+- Marky supports the experience without overpowering it
+- every screen feels part of the same product
+- all important demo interactions work smoothly
+
+Do not create twenty new features. Improve the existing core journey.
+
+CORE DEMO JOURNEY
+
+The primary demo path must be:
+
+1. Landing page
+2. Start Daymark
+3. Onboarding
+4. Mobile Home
+5. Wrap a Memory
+6. Customize the gift
+7. Save the memory
+8. View it in My Gifts
+9. Open the Gift Detail page
+10. Create or view a Future Gift
+
+Make this journey visually strong and fully clickable.
+
+1. AUDIT THE EXISTING UI
+
+Inspect all current pages and components before editing.
+
+Identify and fix:
+
+- inconsistent spacing
+- inconsistent corner radii
+- inconsistent shadows
+- mismatched typography
+- colors outside the Daymark palette
+- buttons with different heights or padding
+- cards that look too generic
+- repeated inline UI that should be a shared component
+- awkward mobile overflow
+- clipped content
+- hidden actions
+- poor image cropping
+- loading states that shift the layout
+- missing empty states
+- broken links or navigation
+- inconsistent Marky images
+- desktop styles leaking into mobile screens
+
+Preserve working functionality.
+
+2. ENFORCE ONE DESIGN SYSTEM
+
+Use these exact foundations across the mobile app.
+
+Background:
+#FFF9F5
+
+Secondary background:
+#F8F3FF
+
+Surface:
+#FFFFFF
+
+Primary purple:
+#6847F5
+
+Deep purple:
+#302060
+
+Lavender:
+#EAE3FF
+
+Memory pink:
+#FF719D
+
+Gift yellow:
+#FFC857
+
+Sky blue:
+#75C8FF
+
+Mint:
+#9CE2B1
+
+Peach:
+#FFB58A
+
+Primary text:
+#211936
+
+Secondary text:
+#716A80
+
+Muted text:
+#A19AAA
+
+Use a friendly rounded sans-serif as the main font.
+
+Use an 8px spacing system.
+
+Use:
+
+- 12px radius for small elements
+- 16px radius for inputs
+- 20px radius for cards
+- 24px radius for large memory cards
+- 999px radius for pills and primary CTA buttons
+
+Create or standardize reusable classes or components for:
+
+- PageHeader
+- PrimaryButton
+- SecondaryButton
+- IconButton
+- MemoryCard
+- PersonAvatar
+- DatePill
+- MoodChip
+- CategoryChip
+- GiftTag
+- SearchField
+- EmptyState
+- LoadingSkeleton
+- BottomNavigation
+- CharacterMessage
+
+Do not make slightly different versions of the same component on every screen.
+
+3. MOBILE-FIRST LAYOUT
+
+Optimize the app for:
+
+390 × 844 px
+
+Also test:
+
+375 × 812 px
+430 × 932 px
+
+Use 16–20px horizontal padding.
+
+Minimum tap target:
+44px
+
+Keep the app comfortable with one hand.
+
+The bottom navigation must:
+
+- remain fixed and visible
+- respect phone safe areas
+- not cover page content
+- clearly show the active route
+- use Home, Calendar, Add, Gifts, You
+
+The center Add button should open Wrap a Memory.
+
+Hide the bottom navigation on:
+
+- onboarding
+- Wrap a Memory steps
+- Gift Detail when immersive
+- Future Gift creation
+- full-screen success states
+
+4. REFINE THE HOME SCREEN
+
+Keep the existing structure, but improve the hierarchy.
+
+Top:
+
+- Daymark logo
+- notification button
+- profile avatar
+- “Good morning, Saadia”
+- “What will you remember about today?”
+
+Keep Marky small and subtle.
+
+Today strip:
+
+- horizontal swipe
+- compact colorful event pills
+- clear date or countdown
+- no text clipping
+
+A Gift From Your Past:
+
+This must be the strongest card in the app.
+
+Use:
+
+- a realistic memory photo
+- better image crop
+- soft dark gradient for readability
+- date stamp
+- memory title
+- two-line story
+- overlapping people avatars
+- one obvious “Open this memory” CTA
+
+Avoid making the card overly tall.
+
+Target a polished aspect ratio around 4:5 or slightly shorter.
+
+Quick capture:
+
+Use tactile sticker-like buttons for:
+
+- Photo
+- Story
+- Voice
+- Place
+- More
+
+Your People:
+
+Use realistic avatars and shared-memory counts.
+
+Add skeleton loading states for all API-driven sections.
+
+5. COMPLETE IMAGE UPLOAD IN WRAP A MEMORY
+
+The current memory flow should support actual image selection or upload.
+
+Add to the details step:
+
+- image upload area
+- drag and drop on desktop
+- tap to select on mobile
+- preview selected image
+- remove or replace image
+- support at least one image
+- validate file type
+- friendly error state
+
+When no backend image upload is available, use a local preview and clearly structure the code so a storage service can be connected later.
+
+Do not leave a photo memory without a way to attach a photo.
+
+6. IMPROVE THE WRAP FLOW
+
+Keep the existing six-step flow.
+
+Refine it as:
+
+Step 1:
+Choose type
+
+Step 2:
+Add title, story, date, and media
+
+Step 3:
+Select people
+
+Step 4:
+Add location
+
+Step 5:
+Select mood
+
+Step 6:
+Customize wrapping
+
+Improve the progress indicator.
+
+Show:
+
+“Step 2 of 6”
+
+alongside the dots.
+
+Allow users to go back without losing entered data.
+
+Persist draft state during the session.
+
+Do not auto-advance immediately when selecting mood. Let users select a mood, then tap Next so they can review their choice.
+
+7. REDESIGN THE WRAPPING PREVIEW
+
+The current gift preview is too abstract.
+
+Create a more polished gift preview with:
+
+- dimensional box
+- visible lid
+- ribbon
+- bow
+- attached category tag
+- subtle memory photo peeking from the box
+- selected mood sticker
+- selected category label
+
+When users change:
+
+- box color
+- ribbon
+- tag
+
+the preview should update immediately.
+
+Use Framer Motion for a soft transition.
+
+Add ribbon choices:
+
+- Classic
+- Heart
+- Stars
+- Minimal
+
+Add a selected state that is visually obvious.
+
+8. CREATE A SHORT WRAPPING ANIMATION
+
+After “Wrap My Memory”:
+
+1. memory card scales down
+2. ribbon crosses horizontally
+3. ribbon crosses vertically
+4. bow appears
+5. gift gently bounces
+6. Marky celebrates
+7. success copy appears
+
+Keep the animation between 0.8 and 1.5 seconds.
+
+Do not use excessive confetti.
+
+Use deterministic confetti positions rather than Math.random during render to avoid unstable hydration or visual flicker.
+
+9. IMPROVE MY GIFTS
+
+Use photos as the main visual content.
+
+Do not show every memory as a closed gift box.
+
+Each memory card should contain:
+
+- full-bleed photo or tasteful fallback
+- title
+- date
+- category
+- mood
+- people avatars
+- small ribbon edge or gift tag
+
+Add:
+
+- search
+- category filters
+- grid view
+- timeline view
+
+Ensure cards link correctly to Gift Detail.
+
+Add polished empty and loading states.
+
+10. IMPROVE GIFT DETAIL
+
+Make Gift Detail feel like opening a memory.
+
+Use:
+
+- immersive hero photo
+- back button
+- favorite button
+- share button
+- date
+- location
+- people
+- mood
+- story
+- photo gallery
+- related memories
+- voice player placeholder when relevant
+
+Add a short ribbon-opening transition when navigating from My Gifts or Home.
+
+Keep the page readable and not overly decorated.
+
+11. REFINE FUTURE GIFTS
+
+Make Future Gifts one of the most visually memorable features.
+
+A Future Gift card should show:
+
+- recipient
+- unlock date
+- countdown
+- gift preview
+- locked state
+- optional message preview
+- clear privacy label
+
+Create Future Gift should support:
+
+- recipient
+- message
+- photo
+- voice note placeholder
+- open date
+- gift color
+- ribbon
+- private/shared option
+
+Use a sealed gift animation.
+
+12. EMPTY, ERROR, AND LOADING STATES
+
+Add complete states for every API-driven screen.
+
+Home loading:
+skeleton cards
+
+No past memory:
+Marky beside an empty box
+
+No people:
+Hearty inviting the user to add someone
+
+No gifts:
+“Your first little gift is waiting.”
+
+API error:
+friendly retry message
+
+Save error:
+keep user input and allow retry
+
+Do not show technical error messages to users.
+
+13. CHARACTER CONSISTENCY
+
+Use only the existing approved Marky assets.
+
+Do not generate a different Marky style for each page.
+
+Marky usage:
+
+- small on normal pages
+- medium on empty states
+- large only on onboarding and success screens
+
+The user’s photographs must remain more visually important than the mascot.
+
+14. ACCESSIBILITY
+
+Ensure:
+
+- sufficient contrast
+- visible keyboard focus
+- descriptive image alt text
+- labels for icon-only buttons
+- reduced-motion support
+- readable 16px body text where practical
+- no information communicated by color alone
+- proper disabled states
+
+Respect prefers-reduced-motion.
+
+15. CODE QUALITY
+
+Keep the current React, TypeScript, Wouter, TanStack Query, Tailwind, and Framer Motion architecture.
+
+Do not replace the stack.
+
+Refactor large repeated sections into reusable components.
+
+Avoid:
+
+- unnecessary any types
+- unstable random values inside render
+- duplicated data arrays across pages
+- hard-coded layout widths repeated everywhere
+- direct API state assumptions
+- broken TypeScript builds
+
+Run:
+
+- type checking
+- build
+- lint if configured
+
+Fix all errors introduced by the refinement.
+
+16. DEMO DATA
+
+Ensure the app still looks complete when the API returns limited data.
+
+Add tasteful fallback demo data only where necessary for presentation.
+
+Use realistic sample memories such as:
+
+- Murree Trip
+- First Hackathon
+- Eid Dinner
+- Coffee with Sarah
+- Graduation Day
+- Beach Day
+
+Use realistic warm photography placeholders.
+
+Do not use the same image repeatedly.
+
+17. LANDING PAGE
+
+Do not redesign the whole landing page.
+
+Only refine it enough to direct users into the mobile experience.
+
+Keep:
+
+“Keep the little gifts life gives you.”
+
+Improve:
+
+- mobile hero layout
+- CTA visibility
+- spacing
+- image scale
+- transition into onboarding
+
+On mobile, stack the text and illustration cleanly.
+
+The Start Your Daymark button must lead to onboarding.
+
+18. FINAL QA
+
+Before finishing:
+
+- click every route
+- verify all back buttons
+- verify bottom navigation
+- verify Wrap a Memory flow
+- verify API loading states
+- verify successful memory creation
+- verify Gift Detail links
+- verify Future Gift flow
+- test at 375px, 390px, and 430px widths
+- confirm there is no horizontal scrolling
+- confirm content is not hidden beneath the bottom navigation
+- confirm build succeeds
+
+FINAL PRIORITY ORDER
+
+1. Fix mobile consistency
+2. Complete image upload and memory creation
+3. Polish the wrapping interaction
+4. Improve My Gifts and Gift Detail
+5. Refine Future Gifts
+6. Add loading, error, and empty states
+7. Run final responsive QA
+
+Do not add unrelated features until this core experience is polished.

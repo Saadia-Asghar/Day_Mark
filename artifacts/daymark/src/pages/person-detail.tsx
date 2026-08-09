@@ -3,37 +3,49 @@ import { motion } from "framer-motion";
 import { useGetPerson } from "@workspace/api-client-react";
 import { ArrowLeft, Calendar, Gift, Image as ImageIcon } from "lucide-react";
 import { format } from "date-fns";
+import { DmErrorState } from "@/components/daymark";
 
 export default function PersonDetailPage() {
   const [, params] = useRoute("/people/:id");
   const id = Number(params?.id);
   
-  const { data: person, isLoading } = useGetPerson(id, { 
+  const { data: person, isLoading, isError, refetch } = useGetPerson(id, { 
     query: { enabled: !!id } 
   });
 
+  if (isError) {
+    return (
+      <div className="min-h-[100dvh] bg-background p-5 pt-20 max-w-[500px] mx-auto flex flex-col">
+        <Link href="/people" className="fixed top-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center hover:bg-white transition-colors">
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+        </Link>
+        <DmErrorState message="Couldn't load this person." onRetry={refetch} />
+      </div>
+    );
+  }
+
   if (isLoading || !person) {
-    return <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+    return <div className="min-h-[100dvh] bg-background p-5 flex items-center justify-center max-w-[500px] mx-auto">
       <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
     </div>;
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans relative">
+    <div className="min-h-[100dvh] bg-background text-foreground font-sans relative max-w-[500px] mx-auto overflow-x-hidden">
       {/* Header Back Button */}
       <Link href="/people" className="absolute top-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center hover:bg-white transition-colors">
         <ArrowLeft className="w-5 h-5 text-foreground" />
       </Link>
 
       {/* Hero Profile */}
-      <div className="pt-24 px-6 pb-8 bg-white border-b border-border text-center flex flex-col items-center shadow-sm relative overflow-hidden">
+      <div className="pt-24 px-5 pb-8 bg-white border-b border-border text-center flex flex-col items-center shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-bl-full -mr-20 -mt-20 z-0"></div>
         <div className="absolute bottom-0 left-0 w-40 h-40 bg-primary/5 rounded-tr-full -ml-10 -mb-10 z-0"></div>
         
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="w-24 h-24 rounded-full border-4 border-white shadow-xl bg-lavender flex items-center justify-center overflow-hidden mb-4 relative z-10"
+          className="w-24 h-24 rounded-full border-4 border-white shadow-xl bg-[#EAE3FF] flex items-center justify-center overflow-hidden mb-4 relative z-10"
         >
           {person.avatarUrl ? (
             <img src={person.avatarUrl} alt={person.name} className="w-full h-full object-cover" />
@@ -46,7 +58,7 @@ export default function PersonDetailPage() {
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="text-3xl font-serif font-bold relative z-10"
+          className="text-3xl font-bold relative z-10"
         >
           {person.name}
         </motion.h1>
@@ -56,7 +68,7 @@ export default function PersonDetailPage() {
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="mt-2 bg-lavender text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider relative z-10"
+            className="mt-2 bg-[#EAE3FF] text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider relative z-10"
           >
             {person.relationship}
           </motion.div>
@@ -77,7 +89,7 @@ export default function PersonDetailPage() {
               <div className="w-px h-8 bg-border"></div>
               <div className="flex flex-col items-center">
                 <span className="text-sm font-bold flex items-center gap-1">
-                  <Calendar className="w-4 h-4 text-accent" /> Soon
+                  <Calendar className="w-4 h-4 text-accent" /> {format(new Date(person.nextImportantDate), "MMM d")}
                 </span>
                 <span className="text-xs text-muted-foreground font-bold uppercase">Next Event</span>
               </div>
@@ -87,8 +99,8 @@ export default function PersonDetailPage() {
       </div>
 
       {/* Timeline */}
-      <div className="p-6 pb-32">
-        <h2 className="text-xl font-bold mb-6 font-serif">Our Story</h2>
+      <div className="p-5 pb-32">
+        <h2 className="text-xl font-bold mb-6">Our Story</h2>
         
         {person.memories && person.memories.length > 0 ? (
           <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-border before:via-border/50 before:to-transparent">

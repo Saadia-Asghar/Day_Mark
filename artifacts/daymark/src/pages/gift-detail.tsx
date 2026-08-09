@@ -1,17 +1,22 @@
 import { useState, useEffect } from "react";
 import { useRoute, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGetMemory, useKeepMemoryClose } from "@workspace/api-client-react";
+import { useGetMemory, useKeepMemoryClose, useListMemories } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { ArrowLeft, Heart, MapPin, Calendar, Share, ExternalLink } from "lucide-react";
-import { DmCategoryTag, DmMoodChip } from "@/components/daymark";
+import { ArrowLeft, Heart, MapPin, Calendar, Share, Loader2 } from "lucide-react";
+import { DmCategoryTag, DmMoodChip, DmErrorState, DmMemoryCard } from "@/components/daymark";
 
 export default function GiftDetailPage() {
   const [, params] = useRoute("/gifts/:id");
   const id = Number(params?.id);
   
-  const { data: memory, isLoading } = useGetMemory(id, { 
+  const { data: memory, isLoading, isError, refetch } = useGetMemory(id, { 
     query: { enabled: !!id } 
+  });
+  
+  // Client-side approx related memories
+  const { data: allMemories } = useListMemories({ category: memory?.category }, {
+    query: { enabled: !!memory?.category }
   });
   
   const keepClose = useKeepMemoryClose();
@@ -27,16 +32,51 @@ export default function GiftDetailPage() {
     }
   }, [isOpened]);
 
+  // Handle timeout for slow loading
+  const [showTimeout, setShowTimeout] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setShowTimeout(true), 8000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isError || (isLoading && showTimeout)) {
+    return (
+      <div className="min-h-[100dvh] bg-background flex flex-col max-w-[500px] mx-auto pt-20">
+         <Link href="/gifts" className="fixed top-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center hover:bg-white transition-colors active:scale-95">
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+        </Link>
+        <DmErrorState message="Couldn't open this memory." onRetry={refetch} />
+      </div>
+    );
+  }
+
   if (isLoading || !memory) {
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center max-w-[500px] mx-auto">
-        <div className="w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   const handleKeepClose = () => {
     keepClose.mutate({ id });
+  };
+  
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: memory.title,
+          text: memory.story || `A memory from ${format(new Date(memory.date), "MMM d, yyyy")}`,
+          url: window.location.href,
+        });
+      } catch (e) {
+        // ignore cancellation
+      }
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert("Link copied to clipboard!");
+    }
   };
 
   const getMoodEmoji = (mood?: string | null) => {
@@ -48,18 +88,23 @@ export default function GiftDetailPage() {
     return mapping[mood] || "✨";
   };
 
+  const relatedMemories = (allMemories || [])
+    .filter(m => m.id !== id)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 2);
+
   return (
     <div className="min-h-[100dvh] max-w-[500px] mx-auto bg-background text-foreground font-sans relative overflow-x-hidden">
       
       {/* Back Button - always visible */}
-      <Link href="/gifts" className="fixed top-safe mt-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center hover:bg-white transition-colors active:scale-95">
+      <Link href="/gifts" className="fixed top-6 left-6 z-50 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-border shadow-sm flex items-center justify-center hover:bg-white transition-colors active:scale-95">
         <ArrowLeft className="w-5 h-5 text-foreground" />
       </Link>
 
       <AnimatePresence>
         {!showContent && (
           <motion.div 
-            className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-background"
+            className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-background"
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8 }}
           >
@@ -138,7 +183,7 @@ export default function GiftDetailPage() {
           </div>
           
           <div className="absolute top-safe mt-6 right-4 flex gap-2">
-            <button className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-foreground hover:bg-white transition-colors shadow-sm">
+            <button onClick={handleShare} className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-foreground hover:bg-white transition-colors shadow-sm">
               <Share className="w-4 h-4" />
             </button>
           </div>
@@ -170,7 +215,7 @@ export default function GiftDetailPage() {
               <div className="flex flex-wrap gap-4">
                 {memory.people.map(person => (
                   <div key={person.id} className="flex items-center gap-3 bg-white border border-border rounded-full py-1.5 pr-4 pl-1.5 shadow-sm">
-                    <div className="w-8 h-8 rounded-full bg-lavender border border-white overflow-hidden flex items-center justify-center shadow-sm shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-[#EAE3FF] border border-white overflow-hidden flex items-center justify-center shadow-sm shrink-0">
                       {person.avatarUrl ? (
                         <img src={person.avatarUrl} alt={person.name} className="w-full h-full object-cover" />
                       ) : (
@@ -195,15 +240,40 @@ export default function GiftDetailPage() {
 
           <button 
             onClick={handleKeepClose}
+            disabled={keepClose.isPending}
             className={`w-full py-4 rounded-full text-base font-bold transition-all flex items-center justify-center gap-2 active:scale-95 ${
               memory.isKeptClose 
                 ? "bg-accent text-white shadow-md shadow-accent/30 border-2 border-accent" 
                 : "bg-white text-foreground border-2 border-border hover:bg-muted"
-            }`}
+            } disabled:opacity-70`}
           >
-            <Heart className={`w-5 h-5 ${memory.isKeptClose ? "fill-white" : ""}`} />
+            {keepClose.isPending ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Heart className={`w-5 h-5 ${memory.isKeptClose ? "fill-white" : ""}`} />
+            )}
             {memory.isKeptClose ? "Kept Close ♡" : "Keep this close ♡"}
           </button>
+          
+          {/* Related Memories */}
+          {relatedMemories.length > 0 && (
+             <div className="mt-12">
+               <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">More memories like this</h3>
+               <div className="grid grid-cols-2 gap-4">
+                 {relatedMemories.map(m => (
+                    <Link key={m.id} href={`/gifts/${m.id}`} className="outline-none">
+                      <DmMemoryCard 
+                        title={m.title}
+                        date={format(new Date(m.date), "MMM d")}
+                        category={m.category}
+                        giftColor={m.giftColor}
+                        photoUrl={m.photoUrls?.[0]}
+                      />
+                    </Link>
+                 ))}
+               </div>
+             </div>
+          )}
         </div>
       </div>
     </div>

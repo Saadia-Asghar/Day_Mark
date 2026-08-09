@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCreateMemory, useListPeople } from "@workspace/api-client-react";
@@ -35,12 +35,62 @@ const COLORS = [
   { id: "mint", hex: "#9CE2B1", cat: "everyday" },
 ];
 
-const CATEGORIES = ["Friends", "Family", "Travel", "College", "Achievement", "Little Things"];
+const CATEGORIES = ["Friends", "Family", "Travel", "College", "Achievements", "Everyday"];
+
+const CONFETTI = [
+  { x: "10%", y: "20%", color: "#6847F5" },
+  { x: "25%", y: "45%", color: "#FF719D" },
+  { x: "50%", y: "15%", color: "#FFC857" },
+  { x: "75%", y: "35%", color: "#75C8FF" },
+  { x: "90%", y: "25%", color: "#9CE2B1" },
+  { x: "15%", y: "70%", color: "#FFB58A" },
+  { x: "60%", y: "60%", color: "#6847F5" },
+  { x: "80%", y: "75%", color: "#FF719D" },
+];
+
+function GiftPreview({ color, ribbon }: { color: string; ribbon: string }) {
+  const ribbonColors: Record<string, string> = {
+    Classic: "#FFFFFF",
+    Heart: "#FF719D", 
+    Stars: "#FFC857",
+    Minimal: "rgba(255,255,255,0.4)",
+  };
+  const rbColor = ribbonColors[ribbon] || "#FFFFFF";
+  
+  return (
+    <motion.div
+      animate={{ y: [0, -6, 0] }}
+      transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+      className="relative w-44 h-44 mx-auto"
+    >
+      <motion.div 
+        key={color+ribbon}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="absolute inset-0"
+      >
+        <div className="absolute bottom-0 left-0 right-0 h-36 rounded-2xl" style={{ backgroundColor: color, boxShadow: `0 8px 32px ${color}60` }}>
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-5" style={{ backgroundColor: rbColor, opacity: 0.7 }} />
+        </div>
+        <div className="absolute top-0 left-[-4px] right-[-4px] h-12 rounded-2xl" style={{ backgroundColor: color, filter: "brightness(0.85)", boxShadow: `0 4px 12px ${color}40` }}>
+          <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-5" style={{ backgroundColor: rbColor, opacity: 0.7 }} />
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex gap-1">
+            <div className="w-5 h-5 rounded-full" style={{ backgroundColor: rbColor, opacity: 0.9 }} />
+            <div className="w-5 h-5 rounded-full" style={{ backgroundColor: rbColor, opacity: 0.9 }} />
+          </div>
+        </div>
+        {ribbon === "Heart" && <div className="absolute top-9 left-1/2 -translate-x-1/2 text-xs">❤️</div>}
+        {ribbon === "Stars" && <div className="absolute top-9 left-1/2 -translate-x-1/2 text-xs">⭐</div>}
+      </motion.div>
+    </motion.div>
+  );
+}
 
 export default function WrapMemoryPage() {
   const [, setLocation] = useLocation();
   const createMemory = useCreateMemory();
   const { data: people } = useListPeople();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -54,6 +104,7 @@ export default function WrapMemoryPage() {
     giftColor: COLORS[0].hex,
     category: "everyday",
     ribbon: "Classic",
+    photoPreview: null as string | null,
   });
 
   const updateForm = (key: string, value: any) => {
@@ -91,13 +142,16 @@ export default function WrapMemoryPage() {
   // Header Dots
   const renderDots = () => {
     return (
-      <div className="flex gap-2 justify-center mt-2">
-        {[1, 2, 3, 4, 5, 6].map(i => (
-          <div 
-            key={i} 
-            className={`w-1.5 h-1.5 rounded-full transition-colors ${i === step ? 'bg-primary' : i < step ? 'bg-primary/40' : 'bg-border'}`}
-          />
-        ))}
+      <div className="flex flex-col items-center gap-1 mt-2">
+        <div className="flex gap-1.5">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div 
+              key={i} 
+              className={`h-1.5 rounded-full transition-all ${i <= step ? 'w-4 bg-primary' : 'w-1.5 bg-muted-foreground/30'}`}
+            />
+          ))}
+        </div>
+        <span className="text-xs text-muted-foreground font-medium">Step {step} of 6</span>
       </div>
     );
   };
@@ -162,8 +216,50 @@ export default function WrapMemoryPage() {
                 placeholder="Write a few lines..."
                 value={formData.story}
                 onChange={e => updateForm('story', e.target.value)}
-                className="w-full bg-white border border-border rounded-[16px] px-5 py-4 text-base shadow-sm outline-none focus:border-primary mb-4 min-h-[140px] resize-none"
+                className="w-full bg-white border border-border rounded-[16px] px-5 py-4 text-base shadow-sm outline-none focus:border-primary mb-4 min-h-[100px] resize-none"
               />
+              
+              {(formData.type === "photo" || formData.type === "video") && (
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-border rounded-[16px] p-6 flex flex-col items-center gap-2 cursor-pointer hover:border-primary/50 transition-colors bg-white active:scale-[0.98] mb-4"
+                >
+                  <input 
+                    ref={fileInputRef} 
+                    type="file" 
+                    accept="image/*,video/*" 
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+                        alert("Please select an image or video file.");
+                        return;
+                      }
+                      const url = URL.createObjectURL(file);
+                      updateForm("photoPreview", url);
+                    }}
+                  />
+                  {formData.photoPreview ? (
+                    <div className="w-full relative">
+                      <img src={formData.photoPreview} alt="Preview" className="w-full h-48 object-cover rounded-xl" />
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); updateForm("photoPreview", null); }}
+                        className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center text-xs font-bold"
+                      >✕</button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center">
+                        <Camera className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                      <p className="font-semibold text-sm text-foreground">Add a photo</p>
+                      <p className="text-xs text-muted-foreground">Tap to select from your device</p>
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="relative mb-6">
                 <CalendarIcon className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input 
@@ -176,7 +272,7 @@ export default function WrapMemoryPage() {
               <button 
                 onClick={() => setStep(3)}
                 disabled={!formData.title}
-                className="mt-auto w-full bg-primary text-white py-4 rounded-full text-lg font-bold shadow-glow disabled:opacity-50 disabled:shadow-none active:scale-95 transition-all mb-4"
+                className="mt-auto w-full bg-primary text-white py-4 rounded-full text-lg font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] disabled:opacity-50 disabled:shadow-none active:scale-95 transition-all mb-4"
               >
                 Next
               </button>
@@ -206,9 +302,11 @@ export default function WrapMemoryPage() {
                     </button>
                   );
                 })}
-                <button className="flex flex-col items-center gap-1.5 w-[72px]">
-                  <div className="w-[64px] h-[64px] rounded-full border-2 border-dashed border-border bg-white flex items-center justify-center text-muted-foreground">
-                    <Check className="w-6 h-6 hidden" />
+                <button 
+                  onClick={() => alert("Coming soon — add people when wrapping a memory!")}
+                  className="flex flex-col items-center gap-1.5 w-[72px]"
+                >
+                  <div className="w-[64px] h-[64px] rounded-full border-2 border-dashed border-border bg-white flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
                     <span className="text-2xl">+</span>
                   </div>
                   <span className="text-xs font-bold text-center text-muted-foreground">New</span>
@@ -216,7 +314,7 @@ export default function WrapMemoryPage() {
               </div>
               <div className="mt-auto flex gap-3 mb-4">
                 <button onClick={() => setStep(4)} className="flex-1 bg-white border border-border text-foreground py-4 rounded-full font-bold active:scale-95 transition-all">Skip</button>
-                <button onClick={() => setStep(4)} className="flex-1 bg-primary text-white py-4 rounded-full font-bold shadow-glow active:scale-95 transition-all">Next</button>
+                <button onClick={() => setStep(4)} className="flex-1 bg-primary text-white py-4 rounded-full font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] active:scale-95 transition-all">Next</button>
               </div>
             </motion.div>
           )}
@@ -238,7 +336,7 @@ export default function WrapMemoryPage() {
               </div>
               <div className="mt-auto flex gap-3 mb-4">
                 <button onClick={() => setStep(5)} className="flex-1 bg-white border border-border text-foreground py-4 rounded-full font-bold active:scale-95 transition-all">Skip</button>
-                <button onClick={() => setStep(5)} className="flex-1 bg-primary text-white py-4 rounded-full font-bold shadow-glow active:scale-95 transition-all">Next</button>
+                <button onClick={() => setStep(5)} className="flex-1 bg-primary text-white py-4 rounded-full font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] active:scale-95 transition-all">Next</button>
               </div>
             </motion.div>
           )}
@@ -253,7 +351,7 @@ export default function WrapMemoryPage() {
                   return (
                     <button
                       key={mood.id}
-                      onClick={() => { updateForm('mood', mood.label); setStep(6); }}
+                      onClick={() => updateForm('mood', mood.label)}
                       className={`flex flex-col items-center justify-center rounded-2xl px-5 py-4 min-w-[100px] border-2 transition-all active:scale-95 ${mood.color} ${isSelected ? 'border-foreground scale-105 shadow-md' : 'border-transparent shadow-sm'}`}
                     >
                       <span className="text-[32px] mb-2">{mood.emoji}</span>
@@ -262,8 +360,9 @@ export default function WrapMemoryPage() {
                   );
                 })}
               </div>
-              <div className="mt-auto mb-4">
-                <button onClick={() => setStep(6)} className="w-full bg-white border border-border text-foreground py-4 rounded-full font-bold active:scale-95 transition-all">Skip</button>
+              <div className="mt-auto flex gap-3 mb-4">
+                <button onClick={() => setStep(6)} className="flex-1 bg-white border border-border text-foreground py-4 rounded-full font-bold active:scale-95 transition-all">Skip</button>
+                <button onClick={() => setStep(6)} className="flex-1 bg-primary text-white py-4 rounded-full font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] active:scale-95 transition-all">Next</button>
               </div>
             </motion.div>
           )}
@@ -273,21 +372,8 @@ export default function WrapMemoryPage() {
             <motion.div key="step6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 flex flex-col mt-2 pb-6">
               <h2 className="text-2xl font-bold mb-4 text-center">How should we wrap this?</h2>
               
-              <div className="flex justify-center mb-8">
-                <motion.div 
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: 3, ease: "easeInOut", repeat: Infinity }}
-                  className="w-[160px] h-[160px] rounded-3xl shadow-xl relative overflow-hidden border-4 border-white transition-colors duration-300"
-                  style={{ backgroundColor: formData.giftColor }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent mix-blend-overlay" />
-                  <div className="absolute w-full h-8 bg-white/40 top-1/2 -translate-y-1/2 mix-blend-overlay" />
-                  <div className="absolute w-8 h-full bg-white/40 left-1/2 -translate-x-1/2 mix-blend-overlay" />
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 flex -space-x-1">
-                    <div className="w-6 h-6 rounded-full bg-white/60 shadow-sm" />
-                    <div className="w-6 h-6 rounded-full bg-white/60 shadow-sm" />
-                  </div>
-                </motion.div>
+              <div className="flex justify-center mb-8 h-48 items-center">
+                <GiftPreview color={formData.giftColor} ribbon={formData.ribbon} />
               </div>
 
               <div className="space-y-6">
@@ -300,6 +386,7 @@ export default function WrapMemoryPage() {
                         onClick={() => updateForm('giftColor', c.hex)}
                         className={`w-11 h-11 rounded-full shadow-sm border-2 transition-transform ${formData.giftColor === c.hex ? 'scale-110 border-foreground' : 'border-transparent'}`}
                         style={{ backgroundColor: c.hex }}
+                        aria-label={`Color ${c.id}`}
                       />
                     ))}
                   </div>
@@ -340,7 +427,7 @@ export default function WrapMemoryPage() {
                 <button 
                   onClick={handleWrap}
                   disabled={createMemory.isPending}
-                  className="w-full bg-primary text-white py-4 rounded-full text-lg font-bold shadow-glow active:scale-95 transition-all flex items-center justify-center gap-2"
+                  className="w-full bg-primary text-white py-4 rounded-full text-lg font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                   {createMemory.isPending ? "Wrapping..." : "🎁 Wrap My Memory"}
                 </button>
@@ -351,43 +438,63 @@ export default function WrapMemoryPage() {
           {/* STEP 7: Success */}
           {step === 7 && (
             <motion.div key="step7" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-background z-50 flex flex-col items-center justify-center text-center px-5">
+              
               {/* Confetti effect elements */}
-              {[...Array(20)].map((_, i) => (
+              {CONFETTI.map((c, i) => (
                 <motion.div
                   key={i}
-                  initial={{ y: -50, x: 0, opacity: 1, scale: Math.random() + 0.5 }}
+                  initial={{ y: "-10vh", x: c.x, opacity: 1, scale: 0.5 }}
                   animate={{ 
-                    y: "100vh", 
-                    x: (Math.random() - 0.5) * 200,
-                    rotate: 360 * Math.random() 
+                    y: "110vh", 
+                    rotate: 360,
                   }}
                   transition={{ 
-                    duration: 2 + Math.random() * 2, 
-                    delay: Math.random() * 0.5,
+                    duration: 3, 
+                    delay: i * 0.1,
                     ease: "easeOut" 
                   }}
-                  className="absolute top-0 w-2 h-2"
+                  className="absolute top-0 w-3 h-3 rounded-full"
                   style={{
-                    backgroundColor: COLORS[Math.floor(Math.random() * COLORS.length)].hex,
-                    left: `${Math.random() * 100}%`
+                    backgroundColor: c.color,
+                    left: c.x
                   }}
                 />
               ))}
 
-              <img src={markyCelebrating} alt="Celebrating" className="w-[200px] h-[200px] object-contain mb-6" />
-              <h2 className="text-3xl font-bold mb-2">It's safe with us. 💜</h2>
-              <p className="text-muted-foreground font-medium mb-10 px-4">
-                Another little piece of your life, beautifully kept.
-              </p>
-              
-              <div className="w-full space-y-3">
-                <Link href="/gifts" className="flex items-center justify-center w-full bg-primary text-white py-4 rounded-full text-lg font-bold shadow-glow active:scale-95 transition-all">
-                  View Gift
-                </Link>
-                <Link href="/home" className="flex items-center justify-center w-full bg-white border border-border text-foreground py-4 rounded-full text-lg font-bold active:scale-95 transition-all">
-                  Back Home
-                </Link>
-              </div>
+              {/* Animated Gift Reveal */}
+              <motion.div
+                initial={{ scale: 0.5, y: 50, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                transition={{ type: "spring", bounce: 0.5, duration: 0.8 }}
+                className="mb-8"
+              >
+                <motion.div
+                  animate={{ rotate: [-2, 2, -2] }}
+                  transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                >
+                  <GiftPreview color={formData.giftColor} ribbon={formData.ribbon} />
+                </motion.div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <h2 className="text-3xl font-bold mb-2">It's safe with us. 💜</h2>
+                <p className="text-muted-foreground font-medium mb-10 px-4">
+                  Another little piece of your life, beautifully kept.
+                </p>
+                
+                <div className="w-full space-y-3">
+                  <Link href="/gifts" className="flex items-center justify-center w-full bg-primary text-white py-4 rounded-full text-lg font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] active:scale-95 transition-all">
+                    View Gifts
+                  </Link>
+                  <Link href="/home" className="flex items-center justify-center w-full bg-white border border-border text-foreground py-4 rounded-full text-lg font-bold active:scale-95 transition-all">
+                    Back Home
+                  </Link>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>

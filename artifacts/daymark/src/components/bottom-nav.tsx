@@ -13,13 +13,19 @@ export function BottomNav() {
     { href: "/people", icon: User, label: "You" },
   ];
 
-  // Don't show nav on landing page or onboarding
-  if (location === "/" || location.startsWith("/onboarding")) {
+  if (
+    location === "/" || 
+    location.startsWith("/onboarding") || 
+    location.startsWith("/wrap") || 
+    location.startsWith("/future-gifts/new") || 
+    location.startsWith("/gifts/") ||
+    location.startsWith("/people/")
+  ) {
     return null;
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 mx-4 mb-safe md:mx-auto md:max-w-[468px] transform -translate-y-4">
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[500px] z-50 px-4 mb-safe transform -translate-y-4">
       <div className="bg-white/80 backdrop-blur-md border border-border/50 rounded-[2rem] shadow-lg shadow-primary/10 px-2 py-3 flex justify-between items-center relative">
         {navItems.map((item) => {
           const isActive = location === item.href || (location.startsWith(item.href) && item.href !== "/home");
@@ -39,7 +45,7 @@ export function BottomNav() {
             <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center w-16 gap-1 group outline-none">
               <div className={cn(
                 "p-2 rounded-xl transition-all duration-300",
-                isActive ? "bg-primary/10 text-primary" : "text-muted-foreground group-hover:bg-muted"
+                isActive ? "bg-primary/10 text-primary" : "text-muted-foreground group-hover:bg-[#EAE3FF]"
               )}>
                 <item.icon className={cn(
                   "w-5 h-5 transition-transform duration-300",
