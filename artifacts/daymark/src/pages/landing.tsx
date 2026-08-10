@@ -41,7 +41,7 @@ export default function LandingPage() {
 
           {/* CTAs */}
           <div className="flex flex-col gap-3 pt-2">
-            <Link href="/auth">
+            <Link href="/sign-in">
               <button className="w-full h-[52px] bg-primary text-white rounded-full text-base font-bold shadow-[0_0_24px_rgba(104,71,245,0.35)] flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.97] transition-all">
                 Start Your Daymark
                 <ArrowRight className="w-4 h-4" />
@@ -142,7 +142,7 @@ export default function LandingPage() {
           <p className="text-sm text-white/80 font-semibold mb-6 leading-relaxed">
             Join thousands of people treating their memories like the gifts they really are.
           </p>
-          <Link href="/auth">
+          <Link href="/sign-in">
             <button className="w-full h-[52px] bg-white text-primary rounded-full text-base font-bold shadow-lg hover:opacity-95 active:scale-[0.97] transition-all">
               Start Your Daymark
             </button>

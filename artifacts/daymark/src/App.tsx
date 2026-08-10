@@ -1,5 +1,3 @@
-import { type ReactNode } from 'react';
-import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -12,13 +10,10 @@ import {
   Router as WouterRouter,
   Redirect,
 } from 'wouter';
-import { useAuth, type AuthUser } from '@workspace/replit-auth-web';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Pages
 import LandingPage from '@/pages/landing';
-import AuthPage from '@/pages/auth';
 import OnboardingPage from '@/pages/onboarding';
 import HomePage from '@/pages/home';
 import WrapMemoryPage from '@/pages/wrap';
@@ -33,27 +28,31 @@ import ProfilePage from '@/pages/profile';
 import ConnectionsPage from '@/pages/connections';
 import MessagesPage from '@/pages/messages';
 import GlobePage from '@/pages/globe';
+import { type ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
+import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from '@clerk/react';
+import { publishableKeyFromHost } from '@clerk/react/internal';
+import { shadcn } from '@clerk/themes';
 
 const queryClient = new QueryClient();
 
 // Routes where BottomNav is visible
 const BOTTOM_NAV_ROUTES = ['/home', '/calendar', '/gifts', '/people'];
 
-// ── Auth context ──────────────────────────────────────────────────────────
+const clerkPubKey = publishableKeyFromHost(
+  window.location.hostname,
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+);
 interface AuthContextValue {
-  user: AuthUser | null;
+  user: AppUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: () => void;
-  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   isLoading: true,
   isAuthenticated: false,
-  login: () => {},
-  logout: () => {},
 });
 
 export function useAppAuth() {
@@ -61,8 +60,42 @@ export function useAppAuth() {
 }
 
 function AuthProvider({ children }: { children: ReactNode }) {
-  const auth = useAuth();
-  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user: clerkUser } = useUser();
+
+  // Fetch app-specific data (onboardingCompleted) from server, gated on Clerk being loaded
+  const { data: serverUser, isLoading: serverLoading } = useQuery({
+    queryKey: ['/api/auth/user'],
+    queryFn: async () => {
+      const res = await fetch(`${basePath}/api/auth/user`, { credentials: 'include' });
+      if (!res.ok) return null;
+      const data = await res.json() as { user: { onboardingCompleted: boolean } | null };
+      return data.user;
+    },
+    enabled: isLoaded && !!isSignedIn,
+    staleTime: 30_000,
+  });
+
+  const user: AppUser | null =
+    isLoaded && isSignedIn && clerkUser
+      ? {
+          id: clerkUser.externalId ?? clerkUser.id,
+          email: clerkUser.primaryEmailAddress?.emailAddress ?? null,
+          firstName: clerkUser.firstName ?? null,
+          lastName: clerkUser.lastName ?? null,
+          profileImageUrl: clerkUser.imageUrl ?? null,
+          onboardingCompleted: serverUser?.onboardingCompleted ?? false,
+        }
+      : null;
+
+  const isLoading = !isLoaded || (!!isSignedIn && serverLoading && !serverUser);
+  const isAuthenticated = isLoaded && !!isSignedIn && !!user;
+
+  return (
+    <AuthContext.Provider value={{ user, isLoading, isAuthenticated }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 // ── SSE reconnection states ───────────────────────────────────────────────
@@ -80,7 +113,6 @@ function useSSEUpdates(isAuthenticated: boolean) {
     const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
 
     function connect() {
-      // Prevent duplicate connections
       if (esRef.current) {
         esRef.current.close();
         esRef.current = null;
@@ -103,10 +135,8 @@ function useSSEUpdates(isAuthenticated: boolean) {
 
       es.addEventListener('open', () => {
         if (reconnectTimerRef.current) {
-          // We were reconnecting — show "restored" briefly
           setStatus('restored');
           setTimeout(() => setStatus('connected'), 2500);
-          // Invalidate all caches on reconnect
           qc.invalidateQueries();
         }
         if (reconnectTimerRef.current) {
@@ -116,13 +146,11 @@ function useSSEUpdates(isAuthenticated: boolean) {
       });
 
       es.addEventListener('error', () => {
-        // Set a timer — only show banner after 3 seconds of being offline
         if (!reconnectTimerRef.current) {
           reconnectTimerRef.current = setTimeout(() => {
             setStatus('reconnecting');
           }, 3000);
         }
-        // Browser auto-retries SSE; we just track the state
       });
     }
 
@@ -154,7 +182,7 @@ function SSEBanner({ status }: { status: SSEStatus }) {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -48, opacity: 0 }}
           transition={{ type: 'spring', bounce: 0.3 }}
-          className={`fixed top-0 left-0 right-0 z-[200] flex justify-center pointer-events-none`}
+          className="fixed top-0 left-0 right-0 z-[200] flex justify-center pointer-events-none"
         >
           <div className="max-w-[430px] w-full">
             <div
@@ -217,10 +245,9 @@ function ProtectedRoute({
   const { isAuthenticated, isLoading, user } = useAppAuth();
 
   if (isLoading) return <AppLoadingScreen />;
-  if (!isAuthenticated) return <Redirect to="/auth" />;
+  if (!isAuthenticated) return <Redirect to="/sign-in" />;
 
   // Authenticated user who hasn't completed onboarding → send to /onboarding
-  // (unless this route IS /onboarding itself, to avoid redirect loops)
   if (requireOnboarding && user?.onboardingCompleted === false) {
     return <Redirect to="/onboarding" />;
   }
@@ -228,7 +255,17 @@ function ProtectedRoute({
   return <Component />;
 }
 
-// ── Router ────────────────────────────────────────────────────────────────
+function SignInPage() {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#FFF9F5] px-4">
+      <SignIn
+        routing="path"
+        path={`${basePath}/sign-in`}
+        signUpUrl={`${basePath}/sign-up`}
+      />
+    </div>
+  );
+}
 function Router() {
   const { isAuthenticated, isLoading } = useAppAuth();
   const sseStatus = useSSEUpdates(isAuthenticated);
@@ -244,7 +281,9 @@ function Router() {
         <Switch>
           {/* Public */}
           <Route path="/" component={LandingPage} />
-          <Route path="/auth" component={AuthPage} />
+          {/* REQUIRED — copy "/sign-in/*?" and "/sign-up/*?" verbatim */}
+          <Route path="/sign-in/*?" component={SignInPage} />
+          <Route path="/sign-up/*?" component={SignUpPage} />
 
           {/* Protected */}
           <Route path="/onboarding">
@@ -302,19 +341,130 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
+function ClerkProviderWithRoutes() {
+  const [, setLocation] = useLocation();
+
+  return (
+    <ClerkProvider
+      publishableKey={clerkPubKey}
+      proxyUrl={clerkProxyUrl}
+      appearance={clerkAppearance}
+      signInUrl={`${basePath}/sign-in`}
+      signUpUrl={`${basePath}/sign-up`}
+      localization={{
+        signIn: {
+          start: {
+            title: 'Welcome back to Daymark',
+            subtitle: 'Sign in to your memory space',
+          },
+        },
+        signUp: {
+          start: {
+            title: 'Start your Daymark',
+            subtitle: 'Keep the little gifts life gives you',
+          },
+        },
+      }}
+      routerPush={(to) => setLocation(stripBase(to))}
+      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
+    >
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ClerkProvider>
+  );
+}
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <AuthProvider>
-            <Router />
-          </AuthProvider>
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <TooltipProvider>
+      <WouterRouter base={basePath}>
+        <ClerkProviderWithRoutes />
+      </WouterRouter>
+      <Toaster />
+    </TooltipProvider>
   );
 }
 
 export default App;
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+interface AppUser {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  onboardingCompleted: boolean;
+}
+
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+
+const clerkAppearance = {
+  theme: shadcn,
+  cssLayerName: 'clerk',
+  options: {
+    logoPlacement: 'inside' as const,
+    logoLinkUrl: basePath || '/',
+    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+  },
+  variables: {
+    colorPrimary: '#6847F5',
+    colorForeground: '#1a1523',
+    colorMutedForeground: '#7c6d8a',
+    colorDanger: '#e53e3e',
+    colorBackground: '#FFF9F5',
+    colorInput: '#ffffff',
+    colorInputForeground: '#1a1523',
+    colorNeutral: '#e5e0f0',
+    fontFamily: '"Plus Jakarta Sans", sans-serif',
+    borderRadius: '0.75rem',
+  },
+  elements: {
+    rootBox: 'w-full flex justify-center',
+    cardBox: 'bg-[#FFF9F5] rounded-2xl w-[440px] max-w-full overflow-hidden shadow-[0_0_40px_rgba(104,71,245,0.12)]',
+    card: '!shadow-none !border-0 !bg-transparent !rounded-none',
+    footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
+    headerTitle: 'text-[#1a1523] font-extrabold',
+    headerSubtitle: 'text-[#7c6d8a]',
+    socialButtonsBlockButtonText: 'text-[#1a1523] font-semibold',
+    formFieldLabel: 'text-[#1a1523] font-semibold',
+    footerActionLink: 'text-[#6847F5] font-bold hover:text-[#5a38e8]',
+    footerActionText: 'text-[#7c6d8a]',
+    dividerText: 'text-[#7c6d8a]',
+    identityPreviewEditButton: 'text-[#6847F5]',
+    formFieldSuccessText: 'text-emerald-600',
+    alertText: 'text-[#1a1523]',
+    logoBox: 'flex justify-center',
+    logoImage: 'w-10 h-10',
+    socialButtonsBlockButton: 'border border-[#e5e0f0] bg-white hover:bg-[#EAE3FF]/30 transition-colors',
+    formButtonPrimary: 'bg-[#6847F5] hover:bg-[#5a38e8] text-white font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)]',
+    formFieldInput: 'border-[#e5e0f0] bg-white text-[#1a1523] focus:ring-2 focus:ring-[#6847F5]/30 focus:border-[#6847F5]',
+    footerAction: 'bg-transparent',
+    dividerLine: 'bg-[#e5e0f0]',
+    alert: 'border border-red-200 bg-red-50',
+    otpCodeFieldInput: 'border-[#e5e0f0] bg-white',
+    formFieldRow: '',
+    main: '',
+  },
+};
+
+function stripBase(path: string): string {
+  return basePath && path.startsWith(basePath)
+    ? path.slice(basePath.length) || '/'
+    : path;
+}
+
+function SignUpPage() {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#FFF9F5] px-4">
+      <SignUp
+        routing="path"
+        path={`${basePath}/sign-up`}
+        signInUrl={`${basePath}/sign-in`}
+      />
+    </div>
+  );
+}

@@ -8,6 +8,7 @@ import {
   GetFutureGiftParams,
   GetFutureGiftResponse,
 } from "@workspace/api-zod";
+import { requireAuth } from "../middlewares/requireAuth";
 import { emitToUser } from "./events";
 
 const router: IRouter = Router();
@@ -20,16 +21,11 @@ function isLocked(unlockDate: string): boolean {
   return unlock > today;
 }
 
-router.get("/future-gifts", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.get("/future-gifts", requireAuth, async (req, res): Promise<void> => {
   const gifts = await db
     .select()
     .from(futureGiftsTable)
-    .where(eq(futureGiftsTable.userId, req.user.id));
+    .where(eq(futureGiftsTable.userId, req.dbUser.id));
 
   const result = gifts.map((g) => ({
     id: g.id,
@@ -45,28 +41,30 @@ router.get("/future-gifts", async (req, res): Promise<void> => {
   res.json(ListFutureGiftsResponse.parse(result));
 });
 
-router.post("/future-gifts", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.post("/future-gifts", requireAuth, async (req, res): Promise<void> => {
   const parsed = CreateFutureGiftBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
+  // Zod coerces `format: date` fields to Date objects; Drizzle date columns expect strings
+  const unlockDateStr =
+    parsed.data.unlockDate instanceof Date
+      ? parsed.data.unlockDate.toISOString().slice(0, 10)
+      : (parsed.data.unlockDate as string);
+
   const [gift] = await db
     .insert(futureGiftsTable)
     .values({
       ...parsed.data,
-      userId: req.user.id,
+      unlockDate: unlockDateStr,
+      userId: req.dbUser.id,
       photoUrls: parsed.data.photoUrls || [],
     })
     .returning();
 
-  emitToUser(req.user.id, "futureGift.created", { id: gift.id });
+  emitToUser(req.dbUser.id, "futureGift.created", { id: gift.id });
 
   res.status(201).json(
     CreateFutureGiftResponse.parse({
@@ -77,12 +75,7 @@ router.post("/future-gifts", async (req, res): Promise<void> => {
   );
 });
 
-router.get("/future-gifts/:id", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.get("/future-gifts/:id", requireAuth, async (req, res): Promise<void> => {
   const params = GetFutureGiftParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -90,7 +83,7 @@ router.get("/future-gifts/:id", async (req, res): Promise<void> => {
   }
 
   const gift = await db.query.futureGiftsTable.findFirst({
-    where: and(eq(futureGiftsTable.id, params.data.id), eq(futureGiftsTable.userId, req.user.id)),
+    where: and(eq(futureGiftsTable.id, params.data.id), eq(futureGiftsTable.userId, req.dbUser.id)),
   });
 
   if (!gift) {

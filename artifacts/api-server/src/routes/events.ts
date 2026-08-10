@@ -4,6 +4,7 @@
  * Falls back gracefully to REST polling if the connection is lost.
  */
 import { Router, type IRouter, type Request, type Response } from "express";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
@@ -45,13 +46,8 @@ export function emitToAll(event: SSEEventName, data: unknown) {
   }
 }
 
-router.get("/events", (req: Request, res: Response) => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  const userId = req.user.id;
+router.get("/events", requireAuth, (req: Request, res: Response) => {
+  const userId = req.dbUser.id;
 
   // SSE headers
   res.setHeader("Content-Type", "text/event-stream");

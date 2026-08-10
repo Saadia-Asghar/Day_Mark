@@ -12,7 +12,7 @@ A mobile-first memory app that turns everyday moments into beautifully wrapped d
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `DATABASE_URL` — Postgres connection string; `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — Clerk credentials (set by Replit)
 
 ## Stack
 
@@ -20,6 +20,7 @@ A mobile-first memory app that turns everyday moments into beautifully wrapped d
 - Frontend: React + Vite, wouter routing, framer-motion animations, Tailwind CSS
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
+- Auth: Replit-managed Clerk (`@clerk/react` on frontend, `@clerk/express` on server)
 - Validation: Zod (v3), drizzle-zod
 - API codegen: Orval (from OpenAPI spec in `lib/api-spec/openapi.yaml`)
 - Build: esbuild (CJS bundle)
@@ -40,6 +41,8 @@ A mobile-first memory app that turns everyday moments into beautifully wrapped d
 - `type: number` used instead of `type: integer` in the OpenAPI spec — Orval with Zod v3 generates `zod.int()` for `integer` which doesn't exist in v3; `number` generates `zod.number()` which is correct
 - Category colors hardcoded: travel=#75C8FF, friends=#FF6F9F, family=#FFC857, achievements=#6D4AFF, everyday=#9CE2B1
 - Future gifts: content hidden until unlockDate passes (server-side check on isLocked)
+- **Auth (Clerk)**: Clerk owns identity; local `usersTable` owns app state. JIT bridge in `requireAuth` upserts local user row on first request using `sessionClaims.userId` as the local `id`. `auth.userId` (Clerk native ID) is only for Clerk API calls — never for DB lookups.
+- Sign-in route: `/sign-in/*?`, sign-up route: `/sign-up/*?`. `ProtectedRoute` redirects to `/sign-in`.
 
 ## Product
 

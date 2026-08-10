@@ -360,7 +360,21 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  // In browser environments the frontend and API server are separate artifact
+  // origins (path-based Replit routing proxies each to a different port).
+  // Without `credentials: 'include'` the browser won't attach the Clerk
+  // session cookie to cross-origin API requests, causing every requireAuth
+  // guard to return 401.  This is a no-op in React Native where there is no
+  // cookie jar; the `_authTokenGetter` bearer-token path handles mobile auth.
+  const defaultCredentials: RequestCredentials =
+    typeof document !== "undefined" ? "include" : "same-origin";
+
+  const response = await fetch(input, {
+    credentials: defaultCredentials,
+    ...init,
+    method,
+    headers,
+  });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

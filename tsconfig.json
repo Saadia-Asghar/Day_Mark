@@ -15,8 +15,5 @@
     {
       "path": "./lib/object-storage-web"
     },
-    {
-      "path": "./lib/replit-auth-web"
-    }
   ]
 }

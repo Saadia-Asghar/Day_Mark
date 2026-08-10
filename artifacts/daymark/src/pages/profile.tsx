@@ -4,34 +4,33 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAppAuth } from "@/App";
 import {
   useListMemories, useListPeople, useListFutureGifts,
-  usePatchUserProfile,
 } from "@workspace/api-client-react";
-import { ChevronRight, LogOut, X, Check, Camera } from "lucide-react";
+import { ChevronRight, LogOut, X, Check } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useClerk, useUser } from "@clerk/react";
 
-// ── Edit Profile Sheet ──────────────────────────────────────────────────────
 function EditProfileSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { user } = useAppAuth();
+  const { user: clerkUser } = useUser();
   const qc = useQueryClient();
   const { toast } = useToast();
-  const patchProfile = usePatchUserProfile();
+  const [saving, setSaving] = useState(false);
+  const [firstName, setFirstName] = useState(clerkUser?.firstName ?? "");
+  const [lastName, setLastName] = useState(clerkUser?.lastName ?? "");
 
-  const [firstName, setFirstName] = useState(user?.firstName ?? "");
-  const [lastName, setLastName] = useState(user?.lastName ?? "");
-
-  const handleSave = () => {
-    patchProfile.mutate(
-      { data: { firstName: firstName || null, lastName: lastName || null } } as any,
-      {
-        onSuccess: () => {
-          qc.invalidateQueries({ queryKey: ["/api/auth/user"] });
-          toast({ title: "Profile updated ✨" });
-          onClose();
-        },
-        onError: () => toast({ title: "Couldn't save changes", variant: "destructive" }),
-      },
-    );
+  const handleSave = async () => {
+    if (!clerkUser) return;
+    setSaving(true);
+    try {
+      await clerkUser.update({ firstName: firstName || undefined, lastName: lastName || undefined });
+      qc.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      toast({ title: "Profile updated ✨" });
+      onClose();
+    } catch {
+      toast({ title: "Couldn't save changes", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -65,23 +64,20 @@ function EditProfileSheet({ open, onClose }: { open: boolean; onClose: () => voi
             </div>
 
             <div className="px-5 py-6 space-y-5">
-              {/* Avatar (display only — profile photo from Replit OIDC) */}
+              {/* Avatar */}
               <div className="flex flex-col items-center gap-3">
                 <div className="relative">
-                  {user?.profileImageUrl ? (
+                  {clerkUser?.imageUrl ? (
                     <img
-                      src={user.profileImageUrl}
+                      src={clerkUser.imageUrl}
                       alt="You"
                       className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
                     />
                   ) : (
                     <div className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center text-white font-bold text-2xl border-4 border-white shadow-lg">
-                      {((user?.firstName?.[0] ?? "") + (user?.lastName?.[0] ?? "")).toUpperCase() || "M"}
+                      {((clerkUser?.firstName?.[0] ?? "") + (clerkUser?.lastName?.[0] ?? "")).toUpperCase() || "M"}
                     </div>
                   )}
-                  <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-white shadow-md border border-border flex items-center justify-center">
-                    <Camera className="w-3.5 h-3.5 text-muted-foreground" />
-                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground">Profile photo is managed by your sign-in provider</p>
               </div>
@@ -109,21 +105,21 @@ function EditProfileSheet({ open, onClose }: { open: boolean; onClose: () => voi
               </div>
 
               {/* Email (read-only) */}
-              {user?.email && (
+              {clerkUser?.primaryEmailAddress?.emailAddress && (
                 <div>
                   <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest block mb-1.5">Email</label>
                   <div className="h-12 bg-muted/50 border border-border/50 rounded-xl px-4 flex items-center">
-                    <span className="text-sm text-muted-foreground">{user.email}</span>
+                    <span className="text-sm text-muted-foreground">{clerkUser.primaryEmailAddress.emailAddress}</span>
                   </div>
                 </div>
               )}
 
               <button
                 onClick={handleSave}
-                disabled={patchProfile.isPending}
+                disabled={saving}
                 className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_16px_rgba(104,71,245,0.25)] hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-60"
               >
-                {patchProfile.isPending ? "Saving…" : (
+                {saving ? "Saving…" : (
                   <><Check className="w-4 h-4" /> Save Changes</>
                 )}
               </button>
@@ -137,7 +133,8 @@ function EditProfileSheet({ open, onClose }: { open: boolean; onClose: () => voi
 
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
-  const { user, logout } = useAppAuth();
+  const { user } = useAppAuth();
+  const { signOut } = useClerk();
   const { data: memories } = useListMemories({});
   const { data: people } = useListPeople();
   const { data: futureGifts } = useListFutureGifts();
@@ -274,7 +271,7 @@ export default function ProfilePage() {
         {/* Sign out */}
         <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
           <button
-            onClick={logout}
+            onClick={() => signOut({ redirectUrl: basePath || "/" })}
             className="w-full flex items-center gap-3 px-5 py-4 text-red-500 active:bg-red-50 transition-colors"
           >
             <LogOut className="w-5 h-5" />
@@ -293,3 +290,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');

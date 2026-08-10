@@ -15,6 +15,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { eq, and, inArray } from "drizzle-orm";
 import { db, memoriesTable, memoryParticipantsTable, usersTable } from "@workspace/db";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
@@ -66,11 +67,6 @@ async function requireAccess(
   memoryId: number,
   requireOwner = false,
 ): Promise<{ memory: typeof memoriesTable.$inferSelect; participants: Awaited<ReturnType<typeof getParticipants>> } | null> {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return null;
-  }
-
   const memory = await db.query.memoriesTable.findFirst({
     where: eq(memoriesTable.id, memoryId),
   });
@@ -81,7 +77,7 @@ async function requireAccess(
   }
 
   const participants = await getParticipants(memoryId);
-  const userId = req.user.id;
+  const userId = req.dbUser.id;
 
   if (requireOwner) {
     if (!canDeleteMemory(userId, memory.userId)) {
@@ -100,7 +96,7 @@ async function requireAccess(
 
 // ── GET /memories/:id/participants ────────────────────────────────────────
 
-router.get("/memories/:id/participants", async (req, res): Promise<void> => {
+router.get("/memories/:id/participants", requireAuth, async (req, res): Promise<void> => {
   const memoryId = Number(req.params.id);
   if (isNaN(memoryId)) { res.status(400).json({ error: "Invalid memory ID" }); return; }
 
@@ -109,7 +105,6 @@ router.get("/memories/:id/participants", async (req, res): Promise<void> => {
 
   const { participants } = ctx;
 
-  // Fetch user details for each participant
   const userIds = participants.map((p) => p.userId);
   const userRows = userIds.length > 0
     ? await db.select().from(usersTable).where(inArray(usersTable.id, userIds))
@@ -138,7 +133,7 @@ router.get("/memories/:id/participants", async (req, res): Promise<void> => {
 
 // ── POST /memories/:id/participants — invite ──────────────────────────────
 
-router.post("/memories/:id/participants", async (req, res): Promise<void> => {
+router.post("/memories/:id/participants", requireAuth, async (req, res): Promise<void> => {
   const memoryId = Number(req.params.id);
   if (isNaN(memoryId)) { res.status(400).json({ error: "Invalid memory ID" }); return; }
 
@@ -152,19 +147,16 @@ router.post("/memories/:id/participants", async (req, res): Promise<void> => {
     return;
   }
 
-  const actorId = req.user!.id;
+  const actorId = req.dbUser.id;
 
-  // Don't invite yourself
   if (inviteeId === actorId) {
     res.status(400).json({ error: "Cannot invite yourself" });
     return;
   }
 
-  // Check invitee exists
   const invitee = await db.query.usersTable.findFirst({ where: eq(usersTable.id, inviteeId) });
   if (!invitee) { res.status(404).json({ error: "User not found" }); return; }
 
-  // Check not already a participant
   const existing = ctx.participants.find((p) => p.userId === inviteeId);
   if (existing) {
     res.status(409).json({ error: "User is already a participant" });
@@ -187,9 +179,7 @@ router.post("/memories/:id/participants", async (req, res): Promise<void> => {
 
 // ── PATCH /memories/:id/participants/:participantId/accept ────────────────
 
-router.patch("/memories/:id/participants/:participantId/accept", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
-
+router.patch("/memories/:id/participants/:participantId/accept", requireAuth, async (req, res): Promise<void> => {
   const memoryId = Number(req.params.id);
   const participantId = Number(req.params.participantId);
   if (isNaN(memoryId) || isNaN(participantId)) {
@@ -200,7 +190,7 @@ router.patch("/memories/:id/participants/:participantId/accept", async (req, res
     where: and(
       eq(memoryParticipantsTable.id, participantId),
       eq(memoryParticipantsTable.memoryId, memoryId),
-      eq(memoryParticipantsTable.userId, req.user.id),
+      eq(memoryParticipantsTable.userId, req.dbUser.id),
     ),
   });
 
@@ -218,9 +208,7 @@ router.patch("/memories/:id/participants/:participantId/accept", async (req, res
 
 // ── PATCH /memories/:id/participants/:participantId/decline ───────────────
 
-router.patch("/memories/:id/participants/:participantId/decline", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
-
+router.patch("/memories/:id/participants/:participantId/decline", requireAuth, async (req, res): Promise<void> => {
   const memoryId = Number(req.params.id);
   const participantId = Number(req.params.participantId);
   if (isNaN(memoryId) || isNaN(participantId)) {
@@ -231,7 +219,7 @@ router.patch("/memories/:id/participants/:participantId/decline", async (req, re
     where: and(
       eq(memoryParticipantsTable.id, participantId),
       eq(memoryParticipantsTable.memoryId, memoryId),
-      eq(memoryParticipantsTable.userId, req.user.id),
+      eq(memoryParticipantsTable.userId, req.dbUser.id),
     ),
   });
 
@@ -248,9 +236,7 @@ router.patch("/memories/:id/participants/:participantId/decline", async (req, re
 
 // ── DELETE /memories/:id/participants/:participantId ──────────────────────
 
-router.delete("/memories/:id/participants/:participantId", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
-
+router.delete("/memories/:id/participants/:participantId", requireAuth, async (req, res): Promise<void> => {
   const memoryId = Number(req.params.id);
   const participantId = Number(req.params.participantId);
   if (isNaN(memoryId) || isNaN(participantId)) {
@@ -266,13 +252,12 @@ router.delete("/memories/:id/participants/:participantId", async (req, res): Pro
 
   if (!row) { res.status(404).json({ error: "Participant not found" }); return; }
 
-  // Only the memory owner can remove others; participants can remove themselves
   const memory = await db.query.memoriesTable.findFirst({
     where: eq(memoriesTable.id, memoryId),
   });
 
-  const isOwner = memory?.userId === req.user.id;
-  const isSelf = row.userId === req.user.id;
+  const isOwner = memory?.userId === req.dbUser.id;
+  const isSelf = row.userId === req.dbUser.id;
 
   if (!isOwner && !isSelf) {
     res.status(403).json({ error: "Not authorized to remove this participant" });
@@ -285,20 +270,17 @@ router.delete("/memories/:id/participants/:participantId", async (req, res): Pro
 
 // ── GET /invitations — list pending invitations for the current user ──────
 
-router.get("/invitations", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
-
+router.get("/invitations", requireAuth, async (req, res): Promise<void> => {
   const pending = await db
     .select()
     .from(memoryParticipantsTable)
     .where(
       and(
-        eq(memoryParticipantsTable.userId, req.user.id),
+        eq(memoryParticipantsTable.userId, req.dbUser.id),
         eq(memoryParticipantsTable.status, "pending"),
       ),
     );
 
-  // Enrich with memory titles
   const memoryIds = pending.map((p) => p.memoryId);
   const memories = memoryIds.length > 0
     ? await db.select({ id: memoriesTable.id, title: memoriesTable.title })

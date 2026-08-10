@@ -159,7 +159,7 @@ export default function OnboardingPage() {
   const finish = () => {
     completeOnboarding.mutate(undefined, {
       onSuccess: () => {
-        qc.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        qc.invalidateQueries({ queryKey: ['/api/auth/user'] });
         setLocation("/home");
       },
       onError: () => setLocation("/home"),

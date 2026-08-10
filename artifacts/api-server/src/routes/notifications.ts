@@ -1,15 +1,12 @@
 import { Router, type IRouter } from "express";
 import { db, notificationsTable } from "@workspace/db";
 import { eq, and, desc, isNull } from "drizzle-orm";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
-router.get("/notifications", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  const userId = req.user.id;
+router.get("/notifications", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
   const rows = await db
     .select()
     .from(notificationsTable)
@@ -33,47 +30,38 @@ router.get("/notifications", async (req, res): Promise<void> => {
   });
 });
 
-router.patch("/notifications/:id/read", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+router.patch("/notifications/:id/read", requireAuth, async (req, res): Promise<void> => {
   const id = Number(req.params.id);
-  if (!id) {
-    res.status(400).json({ error: "Invalid id" });
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid notification ID" });
     return;
   }
-  const [updated] = await db
-    .update(notificationsTable)
-    .set({ readAt: new Date() })
-    .where(
-      and(
-        eq(notificationsTable.id, id),
-        eq(notificationsTable.userId, req.user.id)
-      )
-    )
-    .returning();
-  if (!updated) {
-    res.status(404).json({ error: "Not found" });
-    return;
-  }
-  res.json({ success: true });
-});
 
-router.post("/notifications/read-all", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
   await db
     .update(notificationsTable)
     .set({ readAt: new Date() })
     .where(
       and(
-        eq(notificationsTable.userId, req.user.id),
-        isNull(notificationsTable.readAt)
+        eq(notificationsTable.id, id),
+        eq(notificationsTable.userId, req.dbUser.id),
+        isNull(notificationsTable.readAt),
       )
     );
+
+  res.json({ success: true });
+});
+
+router.post("/notifications/read-all", requireAuth, async (req, res): Promise<void> => {
+  await db
+    .update(notificationsTable)
+    .set({ readAt: new Date() })
+    .where(
+      and(
+        eq(notificationsTable.userId, req.dbUser.id),
+        isNull(notificationsTable.readAt),
+      )
+    );
+
   res.json({ success: true });
 });
 

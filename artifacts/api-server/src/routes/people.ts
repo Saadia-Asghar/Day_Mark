@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, count, and } from "drizzle-orm";
+import { eq, count, and, inArray } from "drizzle-orm";
 import { db, peopleTable, memoryPeopleTable, memoriesTable } from "@workspace/db";
 import {
   ListPeopleResponse,
@@ -8,6 +8,7 @@ import {
   GetPersonParams,
   GetPersonResponse,
 } from "@workspace/api-zod";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
@@ -19,16 +20,11 @@ async function getPersonMemoryCount(personId: number): Promise<number> {
   return row?.count ?? 0;
 }
 
-router.get("/people", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.get("/people", requireAuth, async (req, res): Promise<void> => {
   const people = await db
     .select()
     .from(peopleTable)
-    .where(eq(peopleTable.userId, req.user.id));
+    .where(eq(peopleTable.userId, req.dbUser.id));
 
   const withCounts = await Promise.all(
     people.map(async (p) => ({
@@ -44,21 +40,32 @@ router.get("/people", async (req, res): Promise<void> => {
   res.json(ListPeopleResponse.parse(withCounts));
 });
 
-router.post("/people", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  const parsed = CreatePersonBody.safeParse(req.body);
+router.post("/people", requireAuth, async (req, res): Promise<void> => {
+  const parsed = GetPersonResponse.parse({
+    id: person.id,
+    name: person.name,
+    relationship: person.relationship ?? null,
+    avatarUrl: person.avatarUrl ?? null,
+    birthday: person.birthday ?? null,
+    memoriesCount,
+    nextImportantDate,
+    memories: memories.map((m) => ({ ...m, people: [] })),
+  });
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
+  // Zod coerces `format: date` fields to Date objects; Drizzle date columns expect strings
+  const birthday = parsed.data.birthday
+    ? parsed.data.birthday instanceof Date
+      ? parsed.data.birthday.toISOString().slice(0, 10)
+      : (parsed.data.birthday as string)
+    : undefined;
+
   const [person] = await db
     .insert(peopleTable)
-    .values({ ...parsed.data, userId: req.user.id })
+    .values({ ...parsed.data, birthday, userId: req.dbUser.id })
     .returning();
 
   res.status(201).json(
@@ -72,12 +79,7 @@ router.post("/people", async (req, res): Promise<void> => {
   );
 });
 
-router.get("/people/:id", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.get("/people/:id", requireAuth, async (req, res): Promise<void> => {
   const params = GetPersonParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -85,7 +87,7 @@ router.get("/people/:id", async (req, res): Promise<void> => {
   }
 
   const person = await db.query.peopleTable.findFirst({
-    where: and(eq(peopleTable.id, params.data.id), eq(peopleTable.userId, req.user.id)),
+    where: and(eq(peopleTable.id, params.data.id), eq(peopleTable.userId, req.dbUser.id)),
   });
 
   if (!person) {
@@ -95,22 +97,24 @@ router.get("/people/:id", async (req, res): Promise<void> => {
 
   const memoriesCount = await getPersonMemoryCount(params.data.id);
 
-  // Get memories shared with this person (scoped to user)
   const links = await db
     .select({ memoryId: memoryPeopleTable.memoryId })
     .from(memoryPeopleTable)
     .where(eq(memoryPeopleTable.personId, params.data.id));
 
-  const memories = links.length > 0
-    ? await db
-        .select()
-        .from(memoriesTable)
-        .where(and(
-          eq(memoriesTable.userId, req.user.id),
-          // Filter to only memoryIds in the links list
-        ))
-        .then((all) => all.filter((m) => links.some((l) => l.memoryId === m.id)))
-    : [];
+  const memoryIds = links.map((l) => l.memoryId);
+  const memories =
+    memoryIds.length > 0
+      ? await db
+          .select()
+          .from(memoriesTable)
+          .where(
+            and(
+              inArray(memoriesTable.id, memoryIds),
+              eq(memoriesTable.userId, req.dbUser.id),
+            ),
+          )
+      : [];
 
   let nextImportantDate: string | null = null;
   if (person.birthday) {
