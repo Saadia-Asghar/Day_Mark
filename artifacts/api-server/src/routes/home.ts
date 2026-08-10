@@ -41,7 +41,15 @@ router.get("/home/summary", requireAuth, async (req, res): Promise<void> => {
     .where(eq(memoriesTable.userId, userId))
     .orderBy(desc(memoriesTable.date));
 
-  const giftFromPast = userMemories[0] ?? null;
+  // "This Day" — prefer a memory whose month+day matches today in a prior year
+  const todayMD = todayStr.slice(5); // "MM-DD"
+  const thisYear = today.getFullYear();
+  const onThisDay = userMemories.find((m) => {
+    if (!m.date) return false;
+    const yr = parseInt(m.date.slice(0, 4), 10);
+    return yr < thisYear && m.date.slice(5) === todayMD;
+  }) ?? userMemories[0] ?? null;
+  const giftFromPast = onThisDay;
 
   // Recent people the user has memories with
   const recentMemoryIds = userMemories.slice(0, 10).map((m) => m.id);

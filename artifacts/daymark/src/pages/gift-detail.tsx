@@ -3,7 +3,7 @@ import { useRoute, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGetMemory, useKeepMemoryClose, useListMemories } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { ArrowLeft, Heart, MapPin, Calendar, Share, Loader2, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Heart, MapPin, Calendar, Share, Loader2, Image as ImageIcon, Globe2, X, Check, Copy } from "lucide-react";
 import { DmCategoryTag, DmErrorState } from "@/components/daymark";
 import { TapeStrip, DateStamp, LocationStamp, GiftTag, MoodSticker, StoryLetter, RibbonDivider, OnThisDayCard } from "@/components/scrapbook";
 import { useToast } from "@/hooks/use-toast";
@@ -79,7 +79,16 @@ export default function GiftDetailPage() {
 
   const handleKeepClose = () => keepClose.mutate({ id });
 
-  const handleShare = async () => {
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  const [showGlobeSheet, setShowGlobeSheet] = useState(false);
+  const [globeCaption, setGlobeCaption] = useState(memory.story?.slice(0, 120) ?? "");
+  const [globeAnonymous, setGlobeAnonymous] = useState(false);
+  const [globeLocationLevel, setGlobeLocationLevel] = useState<"city" | "region" | "country" | "hidden">("city");
+  const [globePublishing, setGlobePublishing] = useState(false);
+  const [globePublished, setGlobePublished] = useState(!!(memory as any).globePublishedAt);
+
+  const handleNativeShare = async () => {
+    setShowShareSheet(false);
     if (navigator.share) {
       try {
         await navigator.share({
@@ -96,6 +105,47 @@ export default function GiftDetailPage() {
         toast({ title: "Couldn't copy link", variant: "destructive" });
       }
     }
+  };
+
+  const handleCopyLink = async () => {
+    setShowShareSheet(false);
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast({ title: "Link copied ✓", description: "Share it with someone special." });
+    } catch {
+      toast({ title: "Couldn't copy link", variant: "destructive" });
+    }
+  };
+
+  const handleWhatsApp = () => {
+    setShowShareSheet(false);
+    const text = encodeURIComponent(
+      `Found this little gift from the past 💜\n${memory.title} · ${format(new Date(memory.date), "MMM d, yyyy")}\nShared from Daymark`
+    );
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  };
+
+  const handlePublishGlobe = async () => {
+    setGlobePublishing(true);
+    try {
+      await fetch(`/api/memories/${id}/publish-globe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          caption: globeCaption,
+          anonymous: globeAnonymous,
+          locationLevel: globeLocationLevel,
+          includePhoto: !!(memory as any).photoUrls?.length,
+        }),
+      });
+      setGlobePublished(true);
+      setShowGlobeSheet(false);
+      toast({ title: "Added to Memory Globe 🌍", description: "Your little moment is out there." });
+    } catch {
+      toast({ title: "Couldn't publish", variant: "destructive" });
+    }
+    setGlobePublishing(false);
   };
 
   // Deterministic related-memory order seeded by memory id
@@ -230,8 +280,13 @@ export default function GiftDetailPage() {
                 </div>
                 {/* Action buttons */}
                 <div className="flex gap-2">
+                  {globePublished && (
+                    <div className="w-9 h-9 rounded-full bg-[#EAE3FF] flex items-center justify-center" title="On Memory Globe">
+                      <Globe2 className="w-4 h-4 text-primary" />
+                    </div>
+                  )}
                   <button
-                    onClick={handleShare}
+                    onClick={() => setShowShareSheet(true)}
                     className="w-9 h-9 rounded-full bg-muted flex items-center justify-center hover:bg-white transition-colors active:scale-95"
                     aria-label="Share"
                   >
@@ -350,6 +405,183 @@ export default function GiftDetailPage() {
           )}
         </div>
       </div>
+
+      {/* ── Share Sheet ──────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showShareSheet && (
+          <>
+            <motion.div
+              key="share-backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/30 z-50 backdrop-blur-sm"
+              onClick={() => setShowShareSheet(false)}
+            />
+            <motion.div
+              key="share-sheet"
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-[#FFF9F5] rounded-t-[28px] shadow-2xl z-50 flex flex-col"
+            >
+              <div className="flex items-center justify-center pt-3 pb-1">
+                <div className="w-10 h-1 bg-border rounded-full" />
+              </div>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+                <h2 className="font-extrabold text-base">Share this memory</h2>
+                <button onClick={() => setShowShareSheet(false)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="px-5 py-5 space-y-2">
+                <button
+                  onClick={handleNativeShare}
+                  className="w-full flex items-center gap-4 px-4 py-4 bg-white rounded-2xl border border-border shadow-sm active:scale-[0.98] transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-[#EAE3FF] flex items-center justify-center">
+                    <Share className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-sm">Share…</p>
+                    <p className="text-xs text-muted-foreground">Instagram, Messages, more</p>
+                  </div>
+                </button>
+                <button
+                  onClick={handleWhatsApp}
+                  className="w-full flex items-center gap-4 px-4 py-4 bg-white rounded-2xl border border-border shadow-sm active:scale-[0.98] transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-[#dcfce7] flex items-center justify-center">
+                    <span className="text-xl">💬</span>
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-sm">WhatsApp</p>
+                    <p className="text-xs text-muted-foreground">Send a little note to someone</p>
+                  </div>
+                </button>
+                <button
+                  onClick={handleCopyLink}
+                  className="w-full flex items-center gap-4 px-4 py-4 bg-white rounded-2xl border border-border shadow-sm active:scale-[0.98] transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                    <Copy className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-sm">Copy Link</p>
+                    <p className="text-xs text-muted-foreground">Share anywhere</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => { setShowShareSheet(false); setShowGlobeSheet(true); }}
+                  className="w-full flex items-center gap-4 px-4 py-4 bg-white rounded-2xl border border-border shadow-sm active:scale-[0.98] transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-[#0D0A1E] flex items-center justify-center">
+                    <Globe2 className="w-5 h-5 text-[#6847F5]" />
+                  </div>
+                  <div className="text-left flex-1">
+                    <p className="font-bold text-sm">Memory Globe 🌍</p>
+                    <p className="text-xs text-muted-foreground">Let this moment travel the world</p>
+                  </div>
+                  {globePublished && <span className="text-[10px] font-bold text-primary bg-[#EAE3FF] px-2 py-0.5 rounded-full">Live</span>}
+                </button>
+              </div>
+              <div className="h-6" />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Globe Publish Sheet ─────────────────────────────────── */}
+      <AnimatePresence>
+        {showGlobeSheet && (
+          <>
+            <motion.div
+              key="globe-backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm"
+              onClick={() => setShowGlobeSheet(false)}
+            />
+            <motion.div
+              key="globe-sheet"
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-[#FFF9F5] rounded-t-[28px] shadow-2xl z-50 flex flex-col max-h-[92dvh]"
+            >
+              <div className="flex items-center justify-center pt-3 pb-1 shrink-0">
+                <div className="w-10 h-1 bg-border rounded-full" />
+              </div>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border/40 shrink-0">
+                <div>
+                  <h2 className="font-extrabold text-base">Add to Memory Globe 🌍</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Let this little moment travel.</p>
+                </div>
+                <button onClick={() => setShowGlobeSheet(false)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="overflow-y-auto flex-1 px-5 py-5 space-y-5">
+                {/* Caption */}
+                <div>
+                  <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest block mb-1.5">Caption</label>
+                  <textarea
+                    value={globeCaption}
+                    onChange={(e) => setGlobeCaption(e.target.value)}
+                    placeholder="A little description of this moment…"
+                    rows={3}
+                    maxLength={300}
+                    className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm font-medium resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  />
+                </div>
+
+                {/* Identity */}
+                <div>
+                  <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest block mb-2">Identity</label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setGlobeAnonymous(false)}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${!globeAnonymous ? "bg-primary text-white border-primary" : "bg-white border-border text-foreground"}`}
+                    >
+                      @username
+                    </button>
+                    <button
+                      onClick={() => setGlobeAnonymous(true)}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${globeAnonymous ? "bg-primary text-white border-primary" : "bg-white border-border text-foreground"}`}
+                    >
+                      Anonymous
+                    </button>
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div>
+                  <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest block mb-2">Location</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["city", "region", "country", "hidden"] as const).map((level) => (
+                      <button
+                        key={level}
+                        onClick={() => setGlobeLocationLevel(level)}
+                        className={`py-2.5 rounded-xl text-sm font-bold border capitalize transition-all ${globeLocationLevel === level ? "bg-primary text-white border-primary" : "bg-white border-border text-foreground"}`}
+                      >
+                        {level}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">Your exact location stays private.</p>
+                </div>
+
+                <div className="bg-[#EAE3FF]/60 rounded-2xl p-4 text-xs text-primary font-medium leading-relaxed">
+                  ✨ This memory stays on the Globe until you remove it from your profile.
+                </div>
+
+                <button
+                  onClick={handlePublishGlobe}
+                  disabled={globePublishing || !globeCaption.trim()}
+                  className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_16px_rgba(104,71,245,0.25)] disabled:opacity-50 transition-all"
+                >
+                  {globePublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Globe2 className="w-4 h-4" /> Let it travel</>}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

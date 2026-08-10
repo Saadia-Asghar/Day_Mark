@@ -7,8 +7,8 @@ import {
 } from "@workspace/api-client-react";
 import type { CalendarEvent, Notification } from "@workspace/api-client-react";
 import markyWaving from "@assets/generated_images/marky_waving.png";
-import { Gift, Bell, Camera, Mic, MapPin, Edit3, Plus, X, CheckCheck, Globe2, Ribbon } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { Gift, Bell, Camera, Mic, MapPin, Edit3, Plus, X, CheckCheck, Globe2, Sparkles } from "lucide-react";
+import { format, formatDistanceToNow, differenceInYears } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
 import { TapeStrip, GiftFromPastSkeleton, EmptyPastGiftState } from "@/components/scrapbook";
 import { useAppAuth } from "@/App";
@@ -21,30 +21,23 @@ const BackgroundDoodles = () => (
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
   >
-    {/* Top-right sparkle */}
     <path
       d="M348 48 L349.8 54 L356 54 L351 57.8 L353 64 L348 60.5 L343 64 L345 57.8 L340 54 L346.2 54Z"
       fill="#6847F5" opacity="0.07"
     />
-    {/* Top-left dots */}
     <circle cx="28" cy="130" r="3.5" fill="#FF719D" opacity="0.1" />
     <circle cx="44" cy="118" r="2.5" fill="#FFC857" opacity="0.12" />
     <circle cx="20" cy="115" r="2" fill="#6847F5" opacity="0.09" />
-    {/* Mid-right tiny star */}
     <path
       d="M370 290 L371.2 294 L375 294 L372.2 296.5 L373.2 300 L370 298 L366.8 300 L367.8 296.5 L365 294 L368.8 294Z"
       fill="#FFC857" opacity="0.1"
     />
-    {/* Bottom-left flower petals */}
     <circle cx="22" cy="510" r="5" fill="#FFB58A" opacity="0.09" />
     <circle cx="30" cy="504" r="4" fill="#FF719D" opacity="0.07" />
     <circle cx="14" cy="505" r="3.5" fill="#FFB58A" opacity="0.07" />
-    {/* Small heart */}
     <text x="362" y="195" fontSize="11" fill="#FF719D" opacity="0.11">♡</text>
-    {/* Tiny cross sparkles */}
     <text x="10" y="390" fontSize="9" fill="#6847F5" opacity="0.1">✦</text>
     <text x="368" y="440" fontSize="8" fill="#FFC857" opacity="0.1">✦</text>
-    {/* Dot row mid */}
     <circle cx="200" cy="12" r="2" fill="#6847F5" opacity="0.07" />
     <circle cx="214" cy="12" r="1.5" fill="#6847F5" opacity="0.05" />
     <circle cx="186" cy="12" r="1.5" fill="#6847F5" opacity="0.05" />
@@ -81,9 +74,7 @@ const EventTag = ({ event, index }: { event: CalendarEvent; index: number }) => 
       transition={{ delay: 0.06 * index }}
       className={`relative snap-start shrink-0 pt-4 ${s.rotate}`}
     >
-      {/* Hang hole */}
       <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 ${s.circle} bg-[#FFF9F5] z-10`} />
-      {/* Tag body */}
       <div className={`${s.bg} border ${s.border} rounded-2xl px-4 py-3.5 min-w-[88px] flex flex-col items-center shadow-sm`}>
         <span className="text-2xl mb-1.5">{s.emoji}</span>
         <span className={`text-xs font-bold text-center leading-tight ${s.text}`}>{event.title}</span>
@@ -93,70 +84,48 @@ const EventTag = ({ event, index }: { event: CalendarEvent; index: number }) => 
   );
 };
 
-// ── Physical quick-capture buttons ────────────────────────────────────────
+// ── Quick-capture buttons ─────────────────────────────────────────────────
 const CaptureButtons = () => {
   const items = [
     {
-      id: "photo",
-      label: "PHOTO",
-      href: "/wrap?type=photo",
+      id: "photo", label: "PHOTO", href: "/wrap?type=photo",
       node: (
         <div className="bg-white border-2 border-sky-100 rounded-lg p-1.5 shadow-sm flex items-center justify-center w-11 h-11">
           <Camera className="w-5 h-5 text-sky-500" />
         </div>
       ),
-      bg: "bg-white",
-      border: "border-sky-100",
-      text: "text-sky-600",
+      border: "border-sky-100", text: "text-sky-600",
     },
     {
-      id: "story",
-      label: "STORY",
-      href: "/wrap?type=story",
+      id: "story", label: "STORY", href: "/wrap?type=story",
       node: (
         <div className="relative w-11 h-11 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-center">
-          {/* Folded corner */}
           <div className="absolute top-0 right-0 w-3.5 h-3.5 bg-amber-200 rounded-bl-md" />
           <Edit3 className="w-5 h-5 text-amber-600" />
         </div>
       ),
-      bg: "bg-amber-50",
-      border: "border-amber-100",
-      text: "text-amber-700",
+      border: "border-amber-100", text: "text-amber-700",
     },
     {
-      id: "voice",
-      label: "VOICE",
-      href: "/wrap?type=voice",
+      id: "voice", label: "VOICE", href: "/wrap?type=voice",
       node: (
         <div className="w-11 h-11 bg-emerald-50 border border-emerald-200 rounded-full flex items-center justify-center gap-px overflow-hidden">
           {[2, 4, 6, 4, 7, 4, 5, 3, 6, 3].map((h, i) => (
-            <div
-              key={i}
-              className="w-0.5 rounded-full bg-emerald-500 opacity-80"
-              style={{ height: `${h * 3}px` }}
-            />
+            <div key={i} className="w-0.5 rounded-full bg-emerald-500 opacity-80" style={{ height: `${h * 3}px` }} />
           ))}
         </div>
       ),
-      bg: "bg-emerald-50",
-      border: "border-emerald-100",
-      text: "text-emerald-700",
+      border: "border-emerald-100", text: "text-emerald-700",
     },
     {
-      id: "place",
-      label: "PLACE",
-      href: "/wrap?type=place",
+      id: "place", label: "PLACE", href: "/wrap?type=place",
       node: (
         <div className="relative w-11 h-11 bg-rose-50 border border-rose-200 rounded-lg flex items-center justify-center">
-          {/* Postcard stamp corner */}
           <div className="absolute top-1 right-1 w-3 h-4 border border-rose-300 rounded-[2px]" />
           <MapPin className="w-5 h-5 text-rose-500" />
         </div>
       ),
-      bg: "bg-rose-50",
-      border: "border-rose-100",
-      text: "text-rose-700",
+      border: "border-rose-100", text: "text-rose-700",
     },
   ];
 
@@ -177,14 +146,8 @@ const CaptureButtons = () => {
   );
 };
 
-// ── Notifications Drawer ────────────────────────────────────────────────────
-function NotificationsDrawer({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
+// ── Notifications drawer ──────────────────────────────────────────────────
+function NotificationsDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const qc = useQueryClient();
   const { data, isLoading } = useListNotifications();
   const markRead = useMarkNotificationRead();
@@ -197,7 +160,6 @@ function NotificationsDrawer({
       onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/notifications"] }),
     });
   };
-
   const handleMarkAll = () => {
     markAll.mutate(undefined, {
       onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/notifications"] }),
@@ -211,45 +173,42 @@ function NotificationsDrawer({
     shared_memory_updated: "📸",
     collaborator_invitation: "💌",
     memory_anniversary: "⭐",
+    // Social feature notification types
+    connection_request: "💜",
+    connection_accepted: "✨",
+    memory_drop: "🎁",
+    daylink_updated: "🔗",
+    daylink_milestone: "🌟",
+    scheduled_message_received: "💌",
+    prompt_shared: "💭",
+    globe_reaction: "🌍",
   };
 
   return (
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
           <motion.div
             key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm"
             onClick={onClose}
           />
-          {/* Sheet */}
           <motion.div
             key="sheet"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
+            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
             className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-[#FFF9F5] rounded-t-[28px] shadow-2xl z-50 max-h-[80vh] flex flex-col"
           >
-            {/* Handle */}
             <div className="flex items-center justify-center pt-3 pb-1">
               <div className="w-10 h-1 bg-border rounded-full" />
             </div>
-            {/* Header */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-border/40">
               <h2 className="font-extrabold text-base">Notifications</h2>
               <div className="flex items-center gap-3">
                 {notifications.some((n) => !n.readAt) && (
-                  <button
-                    onClick={handleMarkAll}
-                    className="flex items-center gap-1 text-xs font-bold text-primary"
-                  >
-                    <CheckCheck className="w-3.5 h-3.5" />
-                    Mark all read
+                  <button onClick={handleMarkAll} className="flex items-center gap-1 text-xs font-bold text-primary">
+                    <CheckCheck className="w-3.5 h-3.5" /> Mark all read
                   </button>
                 )}
                 <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
@@ -257,24 +216,20 @@ function NotificationsDrawer({
                 </button>
               </div>
             </div>
-            {/* List */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
               {isLoading ? (
-                [...Array(3)].map((_, i) => (
-                  <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />
-                ))
+                [...Array(3)].map((_, i) => <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />)
               ) : notifications.length === 0 ? (
                 <div className="py-12 flex flex-col items-center text-center gap-2">
                   <span className="text-3xl">🔔</span>
-                  <p className="font-bold text-sm text-foreground">Everything is quiet for now.</p>
+                  <p className="font-bold text-sm">Everything is quiet for now.</p>
                   <p className="text-xs text-muted-foreground">Daymark will let you know when something special happens.</p>
                 </div>
               ) : (
                 notifications.map((n) => (
                   <motion.div
                     key={n.id}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
                     className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${
                       n.readAt ? "bg-white/60 border-border/30 opacity-70" : "bg-white border-border shadow-sm"
                     }`}
@@ -317,7 +272,7 @@ interface DaylinkStreak {
   otherUser: { id: string; firstName: string | null; displayName: string | null; profileImageUrl: string | null } | null;
 }
 
-// ── DayLinks card ─────────────────────────────────────────────────────────
+// ── DayLink card ─────────────────────────────────────────────────────────
 function DaylinkCard({ streak }: { streak: DaylinkStreak }) {
   const name = streak.otherUser?.displayName ?? streak.otherUser?.firstName ?? "Someone";
   const avatar = streak.otherUser?.profileImageUrl;
@@ -335,7 +290,6 @@ function DaylinkCard({ streak }: { streak: DaylinkStreak }) {
       <div className="min-w-0">
         <p className="font-bold text-xs truncate">{name}</p>
         <div className="flex items-center gap-1 mt-0.5">
-          {/* Linked ribbon icon */}
           <svg viewBox="0 0 20 12" className="w-4 h-4" fill="none">
             <path d="M2 6 C2 3 5 1 8 3 L10 6 L12 9 C15 11 18 9 18 6" stroke="#6847F5" strokeWidth="2.2" strokeLinecap="round"/>
             <path d="M18 6 C18 3 15 1 12 3 L10 6 L8 9 C5 11 2 9 2 6" stroke="#FF719D" strokeWidth="2.2" strokeLinecap="round"/>
@@ -343,6 +297,9 @@ function DaylinkCard({ streak }: { streak: DaylinkStreak }) {
           <span className="text-sm font-extrabold text-primary">{streak.currentStreak}</span>
           <span className="text-[10px] text-muted-foreground font-medium">day{streak.currentStreak !== 1 ? "s" : ""}</span>
         </div>
+        <p className="text-[10px] text-muted-foreground/70 mt-0.5 leading-tight">
+          {streak.currentStreak} little {streak.currentStreak === 1 ? "day" : "days"} together
+        </p>
       </div>
     </div>
   );
@@ -351,15 +308,20 @@ function DaylinkCard({ streak }: { streak: DaylinkStreak }) {
 // ── Globe preview card ────────────────────────────────────────────────────
 function GlobePreviewCard({ memory }: { memory: { caption?: string | null; locationLabel?: string | null; displayName?: string } }) {
   return (
-    <Link href="/globe" className="block outline-none">
-      <div className="mx-5 rounded-3xl overflow-hidden bg-[#0D0A1E] border border-white/10 shadow-lg p-4">
+    <Link href="/globe" className="block outline-none mx-5">
+      <motion.div
+        whileTap={{ scale: 0.98 }}
+        className="rounded-3xl overflow-hidden bg-[#0D0A1E] border border-white/10 shadow-lg p-4"
+      >
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#6847F5]/20 flex items-center justify-center flex-shrink-0">
             <Globe2 className="w-5 h-5 text-[#6847F5]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-extrabold tracking-[0.12em] text-white/40 uppercase">Moment From Somewhere</p>
-            <p className="text-sm font-bold text-white mt-1 leading-snug line-clamp-2">{memory.caption ?? "A little moment from somewhere in the world."}</p>
+            <p className="text-[11px] font-extrabold tracking-[0.12em] text-white/40 uppercase">Moment From Somewhere 🌍</p>
+            <p className="text-sm font-bold text-white mt-1 leading-snug line-clamp-2">
+              {memory.caption ?? "A little moment from somewhere in the world."}
+            </p>
             {memory.locationLabel && (
               <p className="text-xs text-white/40 mt-1 flex items-center gap-1">
                 <MapPin className="w-3 h-3" />
@@ -370,10 +332,125 @@ function GlobePreviewCard({ memory }: { memory: { caption?: string | null; locat
         </div>
         <div className="mt-3 flex items-center justify-between">
           <span className="text-xs text-white/30">{memory.displayName ?? "Anonymous"}</span>
-          <span className="text-xs text-[#6847F5] font-bold">Open Memory Globe →</span>
+          <span className="text-xs text-[#6847F5] font-bold">Explore Globe →</span>
         </div>
-      </div>
+      </motion.div>
     </Link>
+  );
+}
+
+// ── Daily prompt card ─────────────────────────────────────────────────────
+interface DailyPrompt { id: number; text: string; category: string; activeDate: string }
+
+function DailyQuestionCard({ prompt, onAnswered }: { prompt: DailyPrompt; onAnswered?: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const handleSave = async (mode: "private" | "memory") => {
+    if (!text.trim()) return;
+    setSaving(true);
+    try {
+      await fetch(`/api/prompts/${prompt.id}/respond`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ responseText: text.trim(), mode }),
+      });
+      setDone(true);
+      setOpen(false);
+      onAnswered?.();
+    } catch (_) {}
+    setSaving(false);
+  };
+
+  if (done) {
+    return (
+      <div className="mx-5 bg-white border border-border rounded-2xl p-4 text-center shadow-sm">
+        <p className="text-sm font-bold text-primary">✨ Saved for today</p>
+        <p className="text-xs text-muted-foreground mt-1">Your little answer is safe.</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <motion.div
+        whileTap={{ scale: 0.98 }}
+        onClick={() => setOpen(true)}
+        className="mx-5 bg-white border border-border rounded-2xl p-4 shadow-sm cursor-pointer relative overflow-hidden"
+      >
+        {/* Tape corner */}
+        <div className="absolute -top-1 left-6 w-10 h-3 bg-amber-100/80 border border-amber-200/60 rounded-sm rotate-[-1deg]" />
+        <p className="text-[11px] font-extrabold tracking-[0.1em] text-muted-foreground uppercase mb-2 mt-1">Today's Little Question 💭</p>
+        <p className="text-base font-bold text-foreground leading-snug">{prompt.text}</p>
+        <p className="text-xs text-primary font-semibold mt-3">Tap to answer →</p>
+      </motion.div>
+
+      {/* Answer sheet */}
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm"
+              onClick={() => setOpen(false)}
+            />
+            <motion.div
+              key="sheet"
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-[#FFF9F5] rounded-t-[28px] shadow-2xl z-50 flex flex-col"
+            >
+              <div className="flex items-center justify-center pt-3 pb-1">
+                <div className="w-10 h-1 bg-border rounded-full" />
+              </div>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+                <h2 className="font-extrabold text-base">Today's Little Question</h2>
+                <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="px-5 py-6 space-y-4">
+                <p className="font-bold text-base text-foreground">{prompt.text}</p>
+                <textarea
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder="Write your little answer here…"
+                  rows={4}
+                  className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm font-medium resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  autoFocus
+                />
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleSave("private")}
+                    disabled={!text.trim() || saving}
+                    className="flex-1 h-12 bg-[#EAE3FF] text-primary rounded-xl font-bold text-sm disabled:opacity-50"
+                  >
+                    Keep for myself
+                  </button>
+                  <button
+                    onClick={() => handleSave("memory")}
+                    disabled={!text.trim() || saving}
+                    className="flex-1 h-12 bg-primary text-white rounded-xl font-bold text-sm shadow-[0_0_16px_rgba(104,71,245,0.25)] disabled:opacity-50"
+                  >
+                    Save as memory ✨
+                  </button>
+                </div>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="w-full text-xs text-muted-foreground font-medium py-1"
+                >
+                  Skip for now
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -386,18 +463,28 @@ export default function HomePage() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [daylinks, setDaylinks] = useState<DaylinkStreak[]>([]);
   const [globePreview, setGlobePreview] = useState<{ caption?: string | null; locationLabel?: string | null; displayName?: string } | null>(null);
+  const [todayPrompt, setTodayPrompt] = useState<{ prompt: DailyPrompt | null; response: { id: number } | null } | null>(null);
+  const [promptAnswered, setPromptAnswered] = useState(false);
 
   useEffect(() => {
-    // Load top daylinks for home card
     fetch("/api/daylinks", { credentials: "include" })
       .then((r) => r.ok ? r.json() : null)
       .then((d) => { if (d?.daylinks?.length > 0) setDaylinks(d.daylinks.slice(0, 3)); })
       .catch(() => {});
 
-    // Load one public globe memory as preview
     fetch("/api/globe/memories?limit=1", { credentials: "include" })
       .then((r) => r.ok ? r.json() : null)
       .then((d) => { if (d?.memories?.[0]) setGlobePreview(d.memories[0]); })
+      .catch(() => {});
+
+    fetch("/api/prompts/today", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (d) {
+          setTodayPrompt(d);
+          setPromptAnswered(!!d.response);
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -409,7 +496,24 @@ export default function HomePage() {
   })();
   const firstName = user?.firstName ?? null;
 
-  // Scrapbook rotations for people
+  // "This Day" — compute how many years ago
+  const thisDay = summary?.giftFromPast ?? null;
+  const yearsAgo = thisDay?.date
+    ? differenceInYears(new Date(), new Date(thisDay.date))
+    : 0;
+  const isOnThisDay = thisDay && yearsAgo > 0 && (() => {
+    const todayMD = new Date().toISOString().slice(5, 10);
+    const memMD = thisDay.date?.slice(5, 10);
+    return todayMD === memMD;
+  })();
+
+  const sectionLabel = (label: string) => (
+    <div className="px-5 mb-4 flex items-center gap-2">
+      <span className="text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground uppercase">{label}</span>
+      <div className="flex-1 h-px bg-border/50" />
+    </div>
+  );
+
   const rotations = [-2, 1.5, -1, 2, -1.5, 1];
 
   return (
@@ -420,7 +524,7 @@ export default function HomePage() {
       <header className="px-5 pt-12 pb-1 flex items-center justify-between relative z-10 shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-[10px] bg-primary flex items-center justify-center shadow-sm">
-            <Gift className="w-4.5 h-4.5 text-white" strokeWidth={2.5} />
+            <Gift className="w-[18px] h-[18px] text-white" strokeWidth={2.5} />
           </div>
           <span className="font-bold text-xl tracking-tight">Daymark</span>
         </div>
@@ -439,11 +543,7 @@ export default function HomePage() {
           </button>
           <Link href="/profile" aria-label="Profile">
             {user?.profileImageUrl ? (
-              <img
-                src={user.profileImageUrl}
-                alt={firstName ?? "You"}
-                className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
-              />
+              <img src={user.profileImageUrl} alt={firstName ?? "You"} className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm" />
             ) : (
               <div className="w-9 h-9 rounded-full bg-primary/90 flex items-center justify-center text-white font-bold text-sm shadow-sm border-2 border-white">
                 {firstName ? firstName[0].toUpperCase() : "M"}
@@ -456,7 +556,7 @@ export default function HomePage() {
       {/* ── Scrollable body ─────────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar pb-32 relative z-10">
 
-        {/* Hero greeting + Marky */}
+        {/* ── 1. Greeting ─────────────────────────────────────────── */}
         <section className="px-5 pt-5 pb-2 relative">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <p className="text-sm font-semibold text-muted-foreground">
@@ -466,7 +566,6 @@ export default function HomePage() {
               What will you remember about today?
             </h1>
           </motion.div>
-          {/* Marky integrated into heading scene */}
           <motion.img
             src={markyWaving}
             alt="Marky"
@@ -477,15 +576,173 @@ export default function HomePage() {
           />
         </section>
 
-        {/* Thin decorative divider */}
         <div className="mx-5 mt-8 mb-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-        {/* ── Today's moments ────────────────────────────────────── */}
-        <section className="mt-6">
-          <div className="px-5 mb-4 flex items-center gap-2">
-            <span className="text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground uppercase">Coming Up</span>
-            <div className="flex-1 h-px bg-border/50" />
+        {/* ── 2. This Day ✨ ────────────────────────────────────────── */}
+        <section className="mt-8 px-4">
+          <div className="px-1 mb-5 flex items-center gap-2">
+            <SparkleIcon className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[11px] font-extrabold tracking-[0.12em] text-primary uppercase">
+              {isOnThisDay ? "This Day ✨" : "A Gift From Your Past"}
+            </span>
           </div>
+
+          {loadingSummary ? (
+            <GiftFromPastSkeleton />
+          ) : isSummaryError ? (
+            <DmErrorState message="We couldn't open your past gift right now." onRetry={refetchSummary} />
+          ) : thisDay ? (
+            <Link href={`/gifts/${thisDay.id}`} className="block outline-none">
+              <div className="relative">
+                <TapeStrip rotate={-3} className="-top-2.5 left-6" />
+                <motion.div
+                  whileTap={{ scale: 0.98, rotate: 0 }}
+                  className="bg-white shadow-[0_8px_40px_rgba(0,0,0,0.13)] relative z-10"
+                  style={{ transform: "rotate(-1.3deg)", borderRadius: 4 }}
+                >
+                  <div className="p-2.5 pb-0">
+                    <div className="relative overflow-hidden" style={{ aspectRatio: "4/3" }}>
+                      {thisDay.photoUrls?.length ? (
+                        <img
+                          src={thisDay.photoUrls[0]}
+                          alt={thisDay.title}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div
+                          className="w-full h-full flex items-end p-4"
+                          style={{ background: `linear-gradient(135deg, ${thisDay.giftColor} 0%, ${thisDay.giftColor}99 100%)` }}
+                        >
+                          <span className="text-white font-bold text-xl drop-shadow">{thisDay.title}</span>
+                        </div>
+                      )}
+                      {thisDay.location && (
+                        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-sm">
+                          <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                          <span className="text-[11px] font-bold text-foreground truncate max-w-[120px]">{thisDay.location}</span>
+                        </div>
+                      )}
+                      {/* Year-ago badge */}
+                      <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1">
+                        <span className="text-[10px] font-mono text-white">
+                          {isOnThisDay && yearsAgo > 0
+                            ? `${yearsAgo} year${yearsAgo > 1 ? "s" : ""} ago today`
+                            : format(new Date(thisDay.date), "MMM d, yyyy")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="px-3 pt-3 pb-5">
+                    {isOnThisDay && yearsAgo > 0 && (
+                      <p className="text-[11px] font-bold text-primary mb-1">
+                        {yearsAgo === 1 ? "One year ago today" : `${yearsAgo} years ago today`}
+                      </p>
+                    )}
+                    <h3 className="font-bold text-foreground text-base leading-snug">{thisDay.title}</h3>
+                    {thisDay.story && (
+                      <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2 italic" style={{ fontFamily: "cursive" }}>
+                        "{thisDay.story}"
+                      </p>
+                    )}
+
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="flex -space-x-2">
+                        {thisDay.people?.slice(0, 4).map((p, i) => (
+                          <div key={i} className="w-7 h-7 rounded-full border-2 border-white bg-[#EAE3FF] flex items-center justify-center overflow-hidden shadow-sm">
+                            {p.avatarUrl ? (
+                              <img src={p.avatarUrl} alt={p.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[9px] font-bold text-primary">{p.name.charAt(0)}</span>
+                            )}
+                          </div>
+                        ))}
+                        {thisDay.people && thisDay.people.length > 4 && (
+                          <div className="w-7 h-7 rounded-full border-2 border-white bg-muted flex items-center justify-center">
+                            <span className="text-[9px] font-bold text-muted-foreground">+{thisDay.people.length - 4}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="bg-primary text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-sm shadow-primary/20 flex items-center gap-1">
+                        🎁 Open this gift
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.img
+                  src={markyWaving}
+                  alt="Marky"
+                  className="absolute -bottom-5 -right-1 w-14 h-14 drop-shadow-md z-20 pointer-events-none"
+                  animate={{ rotate: [-3, 3, -3] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                />
+              </div>
+            </Link>
+          ) : (
+            <div className="mx-1">
+              <EmptyPastGiftState />
+              <p className="text-center text-xs text-muted-foreground mt-3">Today is still being written.</p>
+              <Link href="/wrap" className="block mx-auto w-fit mt-2">
+                <div className="bg-primary text-white text-sm font-bold px-5 py-2.5 rounded-full shadow-[0_0_16px_rgba(104,71,245,0.2)]">
+                  Keep today
+                </div>
+              </Link>
+            </div>
+          )}
+        </section>
+
+        {/* ── 3. Daylinks ✨ ────────────────────────────────────────── */}
+        {daylinks.length > 0 && (
+          <section className="mt-10">
+            <div className="px-5 mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <svg viewBox="0 0 20 12" className="w-4 h-4" fill="none">
+                  <path d="M2 6 C2 3 5 1 8 3 L10 6 L12 9 C15 11 18 9 18 6" stroke="#6847F5" strokeWidth="2.2" strokeLinecap="round"/>
+                  <path d="M18 6 C18 3 15 1 12 3 L10 6 L8 9 C5 11 2 9 2 6" stroke="#FF719D" strokeWidth="2.2" strokeLinecap="round"/>
+                </svg>
+                <span className="text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground uppercase">Your Daylinks ✨</span>
+              </div>
+              <Link href="/connections" className="text-xs font-bold text-primary">See all</Link>
+            </div>
+            <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-5 px-5 snap-x pb-2">
+              {daylinks.map((d) => (
+                <motion.div key={d.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                  <Link href="/connections"><DaylinkCard streak={d} /></Link>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── 4. Today's Little Question ───────────────────────────── */}
+        {todayPrompt?.prompt && !promptAnswered && (
+          <section className="mt-10">
+            <DailyQuestionCard
+              prompt={todayPrompt.prompt}
+              onAnswered={() => setPromptAnswered(true)}
+            />
+          </section>
+        )}
+
+        {/* ── 5. Capture Today ─────────────────────────────────────── */}
+        <section className="mt-10 px-5">
+          {sectionLabel("Capture Today")}
+          <CaptureButtons />
+        </section>
+
+        {/* ── 6. Moment From Somewhere ─────────────────────────────── */}
+        {globePreview && (
+          <section className="mt-10">
+            {sectionLabel("Moment From Somewhere")}
+            <GlobePreviewCard memory={globePreview} />
+          </section>
+        )}
+
+        {/* ── 7. Coming Up ─────────────────────────────────────────── */}
+        <section className="mt-10">
+          {sectionLabel("Coming Up")}
 
           {isSummaryError ? (
             <DmErrorState message="Could not load today's events." onRetry={refetchSummary} />
@@ -505,145 +762,16 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="px-5">
-              <p className="text-sm text-muted-foreground font-medium">No special dates coming up soon. 🗓</p>
+              <p className="text-sm text-muted-foreground font-medium italic">Nothing special on the horizon yet. 🗓</p>
             </div>
           )}
         </section>
 
-        {/* ── A Gift From Your Past ──────────────────────────────── */}
-        <section className="mt-10 px-4">
-          <div className="px-1 mb-5 flex items-center gap-2">
-            <SparkleIcon className="w-3.5 h-3.5 text-primary" />
-            <span className="text-[11px] font-extrabold tracking-[0.12em] text-primary uppercase">A Gift From Your Past</span>
-          </div>
-
-          {loadingSummary ? (
-            <GiftFromPastSkeleton />
-          ) : isSummaryError ? (
-            <DmErrorState
-              message="We couldn't open your past gift right now."
-              onRetry={refetchSummary}
-            />
-          ) : summary?.giftFromPast ? (
-            <Link href={`/gifts/${summary.giftFromPast.id}`} className="block outline-none">
-              <div className="relative">
-                {/* Tape strip at top-left */}
-                <TapeStrip rotate={-3} className="-top-2.5 left-6" />
-                {/* Polaroid card */}
-                <motion.div
-                  whileTap={{ scale: 0.98, rotate: 0 }}
-                  className="bg-white shadow-[0_8px_40px_rgba(0,0,0,0.13)] relative z-10"
-                  style={{ transform: "rotate(-1.3deg)", borderRadius: 4 }}
-                >
-                  {/* Photo area */}
-                  <div className="p-2.5 pb-0">
-                    <div className="relative overflow-hidden" style={{ aspectRatio: "4/3" }}>
-                      {summary.giftFromPast.photoUrls?.length ? (
-                        <img
-                          src={summary.giftFromPast.photoUrls[0]}
-                          alt={summary.giftFromPast.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div
-                          className="w-full h-full flex items-end p-4"
-                          style={{
-                            background: `linear-gradient(135deg, ${summary.giftFromPast.giftColor} 0%, ${summary.giftFromPast.giftColor}99 100%)`,
-                          }}
-                        >
-                          <span className="text-white font-bold text-xl drop-shadow">{summary.giftFromPast.title}</span>
-                        </div>
-                      )}
-                      {/* Location stamp overlay */}
-                      {summary.giftFromPast.location && (
-                        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-sm">
-                          <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
-                          <span className="text-[11px] font-bold text-foreground truncate max-w-[120px]">
-                            {summary.giftFromPast.location}
-                          </span>
-                        </div>
-                      )}
-                      {/* Date stamp */}
-                      <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1">
-                        <span className="text-[10px] font-mono text-white">
-                          {format(new Date(summary.giftFromPast.date), "MMM d, yyyy")}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Polaroid white bottom */}
-                  <div className="px-3 pt-3 pb-5">
-                    <h3 className="font-bold text-foreground text-base leading-snug">
-                      {summary.giftFromPast.title}
-                    </h3>
-                    {summary.giftFromPast.story && (
-                      <p
-                        className="text-[12px] text-muted-foreground mt-1 line-clamp-2 italic"
-                        style={{ fontFamily: "cursive" }}
-                      >
-                        "{summary.giftFromPast.story}"
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between mt-4">
-                      {/* People avatars */}
-                      <div className="flex -space-x-2">
-                        {summary.giftFromPast.people?.slice(0, 4).map((p, i) => (
-                          <div
-                            key={i}
-                            className="w-7 h-7 rounded-full border-2 border-white bg-[#EAE3FF] flex items-center justify-center overflow-hidden shadow-sm"
-                          >
-                            {p.avatarUrl ? (
-                              <img src={p.avatarUrl} alt={p.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-[9px] font-bold text-primary">{p.name.charAt(0)}</span>
-                            )}
-                          </div>
-                        ))}
-                        {summary.giftFromPast.people && summary.giftFromPast.people.length > 4 && (
-                          <div className="w-7 h-7 rounded-full border-2 border-white bg-muted flex items-center justify-center">
-                            <span className="text-[9px] font-bold text-muted-foreground">+{summary.giftFromPast.people.length - 4}</span>
-                          </div>
-                        )}
-                      </div>
-                      {/* Open button */}
-                      <div className="bg-primary text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-sm shadow-primary/20 flex items-center gap-1">
-                        🎁 Open this memory
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Marky peeking from behind the photo */}
-                <motion.img
-                  src={markyWaving}
-                  alt="Marky"
-                  className="absolute -bottom-5 -right-1 w-14 h-14 drop-shadow-md z-20 pointer-events-none"
-                  animate={{ rotate: [-3, 3, -3] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                />
-              </div>
-            </Link>
-          ) : (
-            <EmptyPastGiftState />
-          )}
-        </section>
-
-        {/* ── Quick Capture ──────────────────────────────────────── */}
-        <section className="mt-12 px-5">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground uppercase">Capture Now</span>
-            <div className="flex-1 h-px bg-border/50" />
-          </div>
-          <CaptureButtons />
-        </section>
-
-        {/* ── Your People ────────────────────────────────────────── */}
-        <section className="mt-12 mb-6">
+        {/* ── 8. Your People ───────────────────────────────────────── */}
+        <section className="mt-10 mb-6">
           <div className="px-5 mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground uppercase">The people in your story</span>
+              <span className="text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground uppercase">Your People</span>
               <span className="text-sm">❤️</span>
             </div>
             <Link href="/people" className="text-xs font-bold text-primary">See all</Link>
@@ -673,7 +801,6 @@ export default function HomePage() {
                 >
                   <Link href={`/people/${person.id}`}>
                     <div className="flex flex-col items-center gap-1.5 w-[68px]">
-                      {/* Scrapbook portrait: white mat + photo */}
                       <div className="bg-white p-1.5 shadow-md rounded-full border border-white/50">
                         <div className="w-[54px] h-[54px] rounded-full bg-[#EAE3FF] flex items-center justify-center overflow-hidden">
                           {person.avatarUrl ? (
@@ -686,14 +813,13 @@ export default function HomePage() {
                       <span className="text-[11px] font-bold text-center w-full truncate">{person.name}</span>
                       {person.memoriesCount != null && (
                         <span className="text-[10px] text-muted-foreground font-semibold -mt-1">
-                          {person.memoriesCount} moments
+                          {person.memoriesCount} moment{person.memoriesCount !== 1 ? "s" : ""}
                         </span>
                       )}
                     </div>
                   </Link>
                 </motion.div>
               ))}
-              {/* Add person */}
               <div className="snap-start shrink-0">
                 <Link href="/people">
                   <div className="flex flex-col items-center gap-1.5 w-[68px]">
@@ -709,49 +835,16 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="mx-5 py-6 flex flex-col items-center justify-center bg-white border border-border rounded-2xl text-center shadow-sm">
-              <p className="text-sm font-medium text-muted-foreground mb-3">Memories are better shared.</p>
+              <p className="text-sm font-bold text-foreground mb-1">Every shared story starts with one little moment.</p>
+              <p className="text-xs text-muted-foreground mb-3">Find someone you want to remember life with.</p>
               <Link href="/people" className="text-sm font-bold text-primary flex items-center gap-1">
                 <Plus className="w-4 h-4" /> Add someone special
               </Link>
             </div>
           )}
         </section>
-
-        {/* ── Your Daylinks ✨ ────────────────────────────────────── */}
-        {daylinks.length > 0 && (
-          <section className="mt-10">
-            <div className="px-5 mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {/* Linked ribbon icon */}
-                <svg viewBox="0 0 20 12" className="w-4 h-4" fill="none">
-                  <path d="M2 6 C2 3 5 1 8 3 L10 6 L12 9 C15 11 18 9 18 6" stroke="#6847F5" strokeWidth="2.2" strokeLinecap="round"/>
-                  <path d="M18 6 C18 3 15 1 12 3 L10 6 L8 9 C5 11 2 9 2 6" stroke="#FF719D" strokeWidth="2.2" strokeLinecap="round"/>
-                </svg>
-                <span className="text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground uppercase">Your Daylinks ✨</span>
-              </div>
-              <Link href="/connections" className="text-xs font-bold text-primary">See all</Link>
-            </div>
-            <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-5 px-5 snap-x pb-2">
-              {daylinks.map((d) => (
-                <motion.div key={d.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                  <Link href="/connections">
-                    <DaylinkCard streak={d} />
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── Moment From Somewhere ────────────────────────────────── */}
-        {globePreview && (
-          <section className="mt-10">
-            <GlobePreviewCard memory={globePreview} />
-          </section>
-        )}
       </main>
 
-      {/* Notifications drawer */}
       <NotificationsDrawer open={showNotifications} onClose={() => setShowNotifications(false)} />
     </div>
   );
