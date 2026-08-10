@@ -204,11 +204,24 @@ function Shell({ children }: { children: ReactNode }) {
 }
 
 // ── Route guard ───────────────────────────────────────────────────────────
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
-  const { isAuthenticated, isLoading } = useAppAuth();
+function ProtectedRoute({
+  component: Component,
+  requireOnboarding = true,
+}: {
+  component: React.ComponentType;
+  requireOnboarding?: boolean;
+}) {
+  const { isAuthenticated, isLoading, user } = useAppAuth();
 
   if (isLoading) return <AppLoadingScreen />;
   if (!isAuthenticated) return <Redirect to="/auth" />;
+
+  // Authenticated user who hasn't completed onboarding → send to /onboarding
+  // (unless this route IS /onboarding itself, to avoid redirect loops)
+  if (requireOnboarding && user?.onboardingCompleted === false) {
+    return <Redirect to="/onboarding" />;
+  }
+
   return <Component />;
 }
 
@@ -232,7 +245,7 @@ function Router() {
 
           {/* Protected */}
           <Route path="/onboarding">
-            <ProtectedRoute component={OnboardingPage} />
+            <ProtectedRoute component={OnboardingPage} requireOnboarding={false} />
           </Route>
           <Route path="/home">
             <ProtectedRoute component={HomePage} />

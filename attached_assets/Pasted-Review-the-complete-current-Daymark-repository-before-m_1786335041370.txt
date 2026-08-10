@@ -1,0 +1,853 @@
+Review the complete current Daymark repository before making changes.
+
+This is a continuation and completion pass.
+
+Do not rebuild the app.
+Do not change the technology stack.
+Do not remove working authentication, storage, SSE, routes, generated API hooks, database tables, or current designs.
+
+CURRENTLY IMPLEMENTED
+
+The repository already includes:
+
+- React + TypeScript frontend
+- Express API server
+- Wouter routing
+- TanStack Query
+- Framer Motion
+- Replit Auth
+- persistent authenticated sessions
+- protected frontend routes
+- user-scoped data
+- persistent Replit Object Storage uploads
+- memory creation with images
+- My Gifts
+- Gift Detail
+- Calendar
+- People
+- Person Detail
+- Future Gifts
+- Create Future Gift
+- Server-Sent Events for real-time query updates
+- mobile-first app shell capped at 430px
+- Memory Shelf design on Home, Gifts, and parts of Wrap a Memory
+- nullable giftFromPast support
+- upload progress, retry, remove, and image fallback states
+
+Do not recreate these systems.
+
+MAIN OBJECTIVE
+
+Complete all three current design tasks, then immediately finish the essential product gaps required for a polished, secure, submission-ready Daymark experience.
+
+IMPLEMENT IN THIS ORDER:
+
+1. Finish the three requested design tasks
+2. Complete onboarding and user-profile flow
+3. Add notifications and real-time connection states
+4. Harden authorization and ownership checks
+5. Improve demo readiness and submission quality
+6. Run final QA, type checking, and production build
+
+==================================================
+PART 1: IMPLEMENT ALL THREE CURRENT TASKS
+==================================================
+
+TASK A
+
+Ensure “A Gift From Your Past” works correctly when the user has no old memories.
+
+The API schema already allows giftFromPast to be null.
+
+Confirm and polish these states:
+
+LOADING
+
+Show a stable skeleton with the same dimensions as the final card.
+
+EMPTY
+
+Heading:
+
+Your first gift from the past is still being made.
+
+Text:
+
+Save a few moments today and Daymark will bring one back to you later.
+
+Button:
+
+Wrap a Memory
+
+Use Marky beside an empty gift box.
+
+READY
+
+Show:
+
+- photo
+- date
+- title
+- location
+- short quote
+- people avatars
+- Open this memory button
+
+ERROR
+
+Show:
+
+We could not open this part of your Daymark.
+
+Button:
+
+Try Again
+
+BROKEN IMAGE
+
+Show a gift-color-based fallback rather than a broken image.
+
+Do not allow layout shift among these states.
+
+TASK B
+
+Apply the Memory Shelf design system to:
+
+- Gift Detail
+- Calendar
+- People
+- Person Detail
+- Future Gifts
+- Create Future Gift
+
+Preserve every working interaction.
+
+Use:
+
+- realistic photographs
+- Polaroid frames
+- tape strips
+- handwritten micro-notes
+- date stamps
+- location stamps
+- ribbons
+- gift tags
+- postcards
+- stickers
+- subtle doodles
+- scrapbook depth
+- restrained mascot use
+
+Maintain:
+
+60% clean functional UI
+25% memory content
+15% decoration
+
+Do not create visual clutter.
+
+TASK C
+
+Create a reusable physical gift-closing animation.
+
+Component name:
+
+PhysicalGiftAnimation
+
+Use it in:
+
+- Wrap a Memory success
+- Create Future Gift success
+- Gift Detail opening where appropriate
+
+Closing sequence:
+
+1. Memory photo enters the open box
+2. Box lid lowers
+3. Horizontal ribbon wraps
+4. Vertical ribbon wraps
+5. Bow forms
+6. Gift tag attaches
+7. Marky presents the finished gift
+8. Success message appears
+
+Duration:
+
+0.9–1.4 seconds
+
+Use Framer Motion.
+
+Do not call Math.random() during render.
+
+Use deterministic particles.
+
+Respect prefers-reduced-motion.
+
+==================================================
+PART 2: COMPLETE ONBOARDING STATE
+==================================================
+
+The app has an onboarding route, but authentication alone is not enough.
+
+Add a persistent onboarding-completion state to the authenticated user profile.
+
+Recommended field:
+
+onboardingCompleted boolean
+
+Default:
+
+false
+
+After the user completes onboarding:
+
+- update the user record
+- set onboardingCompleted to true
+- redirect to /home
+
+Routing rules:
+
+Unauthenticated user:
+redirect protected routes to /auth
+
+Authenticated user with onboardingCompleted false:
+redirect to /onboarding
+
+Authenticated user with onboardingCompleted true:
+allow access to /home and protected routes
+
+Do not send an existing user through onboarding on every login.
+
+Do not rely only on localStorage.
+
+Store completion in the database.
+
+FIRST-TIME PROFILE SETUP
+
+During onboarding, collect only useful fields:
+
+- display name
+- profile image if available
+- preferred first name
+- optional birthday
+- optional city
+- memory interests
+
+Interests:
+
+- Friends
+- Family
+- Travel
+- College
+- Achievements
+- Celebrations
+- Little Things
+
+Do not make optional fields block onboarding.
+
+==================================================
+PART 3: BUILD A REAL PROFILE SCREEN
+==================================================
+
+The bottom navigation currently uses “You,” but ensure it opens a proper authenticated profile screen.
+
+Create or refine:
+
+/profile
+
+If keeping /people as the existing fourth tab, add a clear Profile entry from Home avatar and settings.
+
+Profile must show:
+
+- authenticated user avatar
+- name
+- email
+- account creation date
+- memories count
+- people count
+- Future Gifts count
+- places count if available
+
+Sections:
+
+- My Story
+- My People
+- My Gifts
+- Future Gifts
+- Privacy
+- Notifications
+- Edit Profile
+- Sign Out
+
+Use the Memory Shelf visual language lightly.
+
+Do not make Profile look like a settings dashboard.
+
+EDIT PROFILE
+
+Allow:
+
+- name update
+- profile picture update
+- optional birthday
+- optional city
+
+Use persistent image storage for profile photos.
+
+SIGN OUT
+
+On logout:
+
+- close the SSE connection
+- clear user-specific TanStack Query caches
+- redirect to /
+- ensure the next account does not see cached data from the previous account
+
+==================================================
+PART 4: NOTIFICATIONS
+==================================================
+
+The SSE event type includes notification events, but build a complete notification experience.
+
+Create a notifications table if not already implemented.
+
+Suggested fields:
+
+- id
+- userId
+- type
+- title
+- message
+- relatedMemoryId
+- relatedFutureGiftId
+- readAt
+- createdAt
+
+Notification types:
+
+- memory_from_past
+- birthday_upcoming
+- future_gift_ready
+- shared_memory_updated
+- collaborator_invitation
+- memory_anniversary
+
+Create:
+
+GET /api/notifications
+PATCH /api/notifications/:id/read
+POST /api/notifications/read-all
+
+All routes must be user-scoped.
+
+FRONTEND
+
+Notification bell should show:
+
+- unread badge
+- notification list
+- mark as read
+- mark all as read
+- empty state
+
+Examples:
+
+A gift from your past is ready to open.
+
+Sarah’s birthday is in three days.
+
+Your Future Gift for Areeba is ready.
+
+A photo was added to Graduation Day.
+
+Use small Daymark icons.
+
+Do not use large interruptive modals.
+
+Use subtle real-time toasts for new notifications.
+
+==================================================
+PART 5: REAL-TIME CONNECTION EXPERIENCE
+==================================================
+
+The app already uses SSE.
+
+Keep SSE as the real-time transport.
+
+Add visible but subtle connection states:
+
+- connected
+- reconnecting
+- offline
+- restored
+
+Do not show a permanent status indicator when everything is working.
+
+When the connection drops:
+
+- allow native EventSource reconnection
+- show a small “Reconnecting…” banner after a short delay
+- do not block normal REST functionality
+
+When connection returns:
+
+- invalidate Home summary
+- memories
+- people
+- Future Gifts
+- notifications
+- calendar events
+
+Show:
+
+Back in sync ✨
+
+for a brief moment.
+
+Ensure there is only one EventSource connection per authenticated browser tab.
+
+Close it immediately on logout.
+
+==================================================
+PART 6: AUTHORIZATION HARDENING
+==================================================
+
+Authentication has been implemented, but audit authorization deeply.
+
+STRICT OWNERSHIP
+
+Every user-owned record must require an exact ownership match.
+
+Do not allow records with userId null to be opened by authenticated users.
+
+Handle legacy null-owner records safely:
+
+- assign them to a dedicated demo account
+- migrate them to an intended owner
+- or hide them from regular user queries
+
+Do not expose legacy rows through guessed IDs.
+
+PERSON ID VALIDATION
+
+When creating or updating a memory:
+
+- verify every personId belongs to req.user.id
+- reject foreign or invalid IDs
+- use a database transaction
+- do not partially create links
+
+Apply the same rule to Future Gift recipient links.
+
+RELATED DATA
+
+Do not fetch people or media belonging to another user through relationship tables.
+
+Verify ownership before assembling the response.
+
+RESOURCE ACCESS
+
+For unauthorized resource IDs, prefer 404 where revealing existence would be unsafe.
+
+STORAGE
+
+Confirm:
+
+- uploaded objects belong to the authenticated user
+- private photos cannot be accessed by another user
+- object paths cannot be guessed to retrieve another user’s media
+- explicitly shared memories are the only exception
+
+SSE
+
+Personal events must be sent only to their owner.
+
+Shared-memory events may go only to accepted participants.
+
+Never send private memory contents inside SSE payloads.
+
+Send only identifiers.
+
+==================================================
+PART 7: COMPLETE SHARED MEMORY FOUNDATIONS
+==================================================
+
+A memoryParticipants table already exists.
+
+Finish the minimum working shared-memory flow.
+
+Roles:
+
+- owner
+- contributor
+- viewer
+
+Statuses:
+
+- pending
+- accepted
+- declined
+
+Implement:
+
+- invite participant
+- list invitations
+- accept invitation
+- decline invitation
+- remove participant
+- view participant list
+
+Rules:
+
+Owner:
+view, edit, delete, invite, remove
+
+Contributor:
+view and add permitted content
+
+Viewer:
+view only
+
+Pending or declined:
+no access
+
+Add reusable permission helpers:
+
+canViewMemory
+canEditMemory
+canDeleteMemory
+canInviteToMemory
+
+Do not duplicate authorization logic in each route.
+
+Keep the initial UI simple.
+
+A shared-memory section on Gift Detail may show:
+
+Shared with
+
+and accepted participant avatars.
+
+Do not expand into chat or social feeds.
+
+==================================================
+PART 8: CALENDAR AND FUTURE GIFT LOGIC
+==================================================
+
+CALENDAR
+
+Make sure the Calendar is connected to actual user data.
+
+Show:
+
+- memory dates
+- birthdays
+- Future Gift unlock dates
+- anniversaries
+- upcoming events
+
+Do not use only hard-coded demo content.
+
+When a memory or Future Gift is created, the Calendar should update through query invalidation.
+
+FUTURE GIFT UNLOCKING
+
+Implement or verify server-side unlock logic.
+
+Do not rely only on frontend time comparison.
+
+A Future Gift should become available when:
+
+current server time >= unlockDate
+
+Ensure timezone-safe storage using UTC.
+
+Display in the user’s local timezone.
+
+When a gift becomes ready:
+
+- notify the user
+- emit futureGift.unlocked
+- update UI without refresh
+
+Do not expose locked message contents before the unlock date.
+
+==================================================
+PART 9: EMPTY, LOADING, AND ERROR STATES
+==================================================
+
+Audit all screens.
+
+Every API-backed screen must have:
+
+- loading state
+- empty state
+- error state
+- retry action
+- broken-image fallback
+
+Required screens:
+
+- Home
+- Gifts
+- Gift Detail
+- Calendar
+- People
+- Person Detail
+- Future Gifts
+- Create Future Gift
+- Notifications
+- Profile
+
+Use Daymark language.
+
+Avoid raw errors.
+
+Examples:
+
+No gifts:
+Your first little gift is waiting.
+
+No people:
+Every story begins with someone.
+
+No Future Gifts:
+Some moments are meant to arrive later.
+
+No notifications:
+Everything is quiet for now.
+
+==================================================
+PART 10: DEMO MODE AND FIRST-RUN EXPERIENCE
+==================================================
+
+A new authenticated user may have no data.
+
+The product must still look intentional.
+
+Create a safe first-run setup that offers:
+
+- create first memory
+- add first person
+- create Future Gift
+- explore a sample preview
+
+Do not automatically insert private demo records into real user accounts without consent.
+
+A sample preview can be static UI content clearly labeled:
+
+Example memory
+
+Do not mix sample data with real data.
+
+Provide one obvious primary action on every empty screen.
+
+==================================================
+PART 11: SUBMISSION LANDING PAGE
+==================================================
+
+Keep the landing page mobile-first.
+
+Add a concise product story beneath the hero:
+
+1. Capture a moment
+2. Wrap it as a gift
+3. Open it again later
+
+Include three polished product previews:
+
+- A Gift From Your Past
+- Wrap a Memory
+- Future Gift
+
+Add a short privacy message:
+
+Your memories are private unless you choose to share them.
+
+Primary CTA:
+
+Start Your Daymark
+
+Do not turn the landing page into a long corporate site.
+
+==================================================
+PART 12: ANALYTICS-FREE PRODUCT METRICS
+==================================================
+
+Do not add invasive third-party analytics.
+
+For the demo, calculate basic product counts from the database:
+
+- memories saved
+- people connected
+- Future Gifts created
+- memories kept close
+
+Show only the current user’s counts on Profile.
+
+Do not expose platform-wide private metrics.
+
+==================================================
+PART 13: ACCESSIBILITY
+==================================================
+
+Audit:
+
+- contrast
+- keyboard focus
+- button labels
+- icon-only buttons
+- image alt text
+- form labels
+- touch targets
+- screen-reader status messages
+- reduced motion
+- error announcements
+
+Minimum tap target:
+
+44px
+
+Do not use color as the only state indicator.
+
+Gift animations must have an accessible skip/reduced-motion path.
+
+==================================================
+PART 14: PERFORMANCE
+==================================================
+
+Optimize without changing the product.
+
+Check:
+
+- large generated character images
+- memory photos
+- unnecessary rerenders
+- duplicate API requests
+- route-level loading
+- image dimensions
+- lazy loading below the fold
+
+Use:
+
+- loading="lazy" where appropriate
+- responsive image sizing
+- object-fit
+- compressed WebP where possible
+
+Do not lazy-load the first hero image if it hurts perceived loading.
+
+Avoid loading all memories at once if the list becomes large.
+
+Prepare My Gifts for pagination or infinite loading, but do not overengineer it.
+
+==================================================
+PART 15: FINAL TWO-USER TEST
+==================================================
+
+Test using two authenticated accounts.
+
+USER A
+
+- creates person
+- uploads photo
+- creates memory
+- creates Future Gift
+- receives notification
+
+USER B must not be able to:
+
+- list User A’s data
+- open memory by ID
+- edit memory
+- delete memory
+- access image path
+- use User A’s person ID
+- see Future Gift contents
+- receive User A’s SSE events
+- see User A’s cached content after switching accounts
+
+SHARING TEST
+
+- User A invites User B
+- User B cannot open while pending
+- User B accepts
+- User B can view according to role
+- real-time shared update appears
+- User B loses access after removal
+
+==================================================
+PART 16: FINAL DEMO FLOW
+==================================================
+
+Make this exact flow polished:
+
+1. Open landing page
+2. Start Daymark
+3. Sign in
+4. Complete first-time onboarding
+5. Arrive at Home
+6. Add a person
+7. Wrap a Memory
+8. Upload a real photo
+9. Select mood and people
+10. Customize the gift
+11. Watch gift-closing animation
+12. View it in My Gifts
+13. Tap to unwrap Gift Detail
+14. See it on Calendar
+15. Create a Future Gift
+16. See notification or live list update
+17. Open Profile
+18. Sign out safely
+
+No step should require manually refreshing.
+
+==================================================
+PART 17: FINAL TECHNICAL CHECK
+==================================================
+
+Run:
+
+- database migration
+- API code generation
+- TypeScript type checking
+- production build
+- lint if configured
+
+Check for:
+
+- unused imports
+- unsafe any usage
+- stale object URLs
+- duplicate width constraints
+- unstable random rendering
+- missing query invalidation
+- session leaks
+- duplicate SSE connections
+- unprotected API routes
+- inaccessible private objects
+
+FINAL REPORT
+
+Report:
+
+1. The three suggested tasks completed
+2. Onboarding persistence implementation
+3. Profile features completed
+4. Notifications implementation
+5. Real-time reconnect behavior
+6. Authorization fixes
+7. Shared-memory permissions completed
+8. Future Gift unlock logic
+9. Empty/loading/error states added
+10. Two-user isolation test result
+11. Reduced-motion behavior
+12. Type-check result
+13. Production build result
+14. Remaining manual configuration
+15. Remaining non-blocking features for after submission
+
+Do not add voice recording or native-app conversion in this pass.
+
+Focus on completing the current product into a secure, coherent, polished Designathon submission.

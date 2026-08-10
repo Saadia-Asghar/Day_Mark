@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRoute, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGetMemory, useKeepMemoryClose, useListMemories } from "@workspace/api-client-react";
@@ -7,6 +7,14 @@ import { ArrowLeft, Heart, MapPin, Calendar, Share, Loader2, Image as ImageIcon 
 import { DmCategoryTag, DmErrorState } from "@/components/daymark";
 import { TapeStrip, DateStamp, LocationStamp, GiftTag, MoodSticker, StoryLetter, RibbonDivider, OnThisDayCard } from "@/components/scrapbook";
 import { useToast } from "@/hooks/use-toast";
+
+interface Participant {
+  id: number;
+  userId: string;
+  role: string;
+  status: string;
+  user: { id: string; firstName: string | null; lastName: string | null; profileImageUrl: string | null } | null;
+}
 
 export default function GiftDetailPage() {
   const [, params] = useRoute("/gifts/:id");
@@ -20,6 +28,23 @@ export default function GiftDetailPage() {
   const [isOpened, setIsOpened] = useState(false);
   const [showContent, setShowContent] = useState(false);
   const [imgError, setImgError] = useState(false);
+
+  // Participants — fetched directly (no codegen for this endpoint yet)
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const fetchParticipants = useCallback(async () => {
+    if (!id) return;
+    try {
+      const res = await fetch(`/api/memories/${id}/participants`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setParticipants((data.participants ?? []).filter((p: Participant) => p.status === "accepted"));
+      }
+    } catch { /* non-critical */ }
+  }, [id]);
+
+  useEffect(() => {
+    if (showContent) fetchParticipants();
+  }, [showContent, fetchParticipants]);
 
   useEffect(() => {
     if (!isOpened) return;
@@ -256,6 +281,32 @@ export default function GiftDetailPage() {
             <div className="mb-6">
               <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest mb-3">The Story</p>
               <StoryLetter story={memory.story} />
+            </div>
+          )}
+
+          {/* Shared with */}
+          {participants.length > 0 && (
+            <div className="mb-6">
+              <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest mb-3">Shared with</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                {participants.map((p) => (
+                  <div key={p.id} className="flex items-center gap-2 bg-white border border-border rounded-full px-3 py-1.5 shadow-sm">
+                    <div className="w-6 h-6 rounded-full bg-[#EAE3FF] flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {p.user?.profileImageUrl ? (
+                        <img src={p.user.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-[10px] font-bold text-primary">
+                          {((p.user?.firstName?.[0] ?? "") + (p.user?.lastName?.[0] ?? "")).toUpperCase() || "?"}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs font-semibold">
+                      {p.user?.firstName ?? "Someone"}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground capitalize">{p.role}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

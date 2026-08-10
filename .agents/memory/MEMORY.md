@@ -3,3 +3,5 @@
 - [Asset paths](asset-paths.md) — Generated images are at `attached_assets/generated_images/` resolved via `@assets` alias in Vite config.
 - [DB schema additions](db-schema.md) — `onboardingCompleted: boolean` added to usersTable; `notificationsTable` added; always run `pnpm --filter @workspace/db run push` after schema changes.
 - [Calendar security fix](calendar-security.md) — `/calendar/events` and `/calendar/on-this-day` now auth-guarded and userId-scoped (was the critical security gap).
+- [Onboarding routing](onboarding-routing.md) — ProtectedRoute checks onboardingCompleted; onboarding page calls POST /auth/onboarding/complete; AuthUser interface in replit-auth-web must include onboardingCompleted (rebuild lib after changes).
+- [Shared memory permissions](shared-memory-permissions.md) — canViewMemory/canEditMemory/canDeleteMemory/canInviteToMemory helpers in artifacts/api-server/src/routes/memory-participants.ts; participants route handles invite/accept/decline/remove.

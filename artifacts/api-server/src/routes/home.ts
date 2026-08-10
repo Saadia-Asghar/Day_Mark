@@ -63,7 +63,7 @@ router.get("/home/summary", async (req, res): Promise<void> => {
       const personRows = await db
         .select()
         .from(peopleTable)
-        .where(inArray(peopleTable.id, links.map((l) => l.personId)));
+        .where(and(inArray(peopleTable.id, links.map((l) => l.personId)), eq(peopleTable.userId, userId)));
       people = personRows.map((p) => ({
         id: p.id,
         name: p.name,

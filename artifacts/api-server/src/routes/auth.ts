@@ -123,12 +123,16 @@ async function upsertUser(claims: Record<string, unknown>) {
   return user;
 }
 
-router.get('/auth/user', (req: Request, res: Response) => {
-  res.json(
-    GetCurrentAuthUserResponse.parse({
-      user: req.isAuthenticated() ? req.user : null,
-    }),
-  );
+router.get('/auth/user', async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) {
+    res.json(GetCurrentAuthUserResponse.parse({ user: null }));
+    return;
+  }
+  // Always return fresh data from the DB so profile edits are reflected immediately
+  const dbUser = await db.query.usersTable.findFirst({
+    where: eq(usersTable.id, req.user.id),
+  });
+  res.json(GetCurrentAuthUserResponse.parse({ user: dbUser ?? null }));
 });
 
 router.get('/login', async (req: Request, res: Response) => {

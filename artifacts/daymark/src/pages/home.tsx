@@ -1,13 +1,18 @@
+import { useState } from "react";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
-import { useGetHomeSummary, useListPeople, useListNotifications } from "@workspace/api-client-react";
-import type { CalendarEvent } from "@workspace/api-client-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  useGetHomeSummary, useListPeople, useListNotifications,
+  useMarkNotificationRead, useMarkAllNotificationsRead,
+} from "@workspace/api-client-react";
+import type { CalendarEvent, Notification } from "@workspace/api-client-react";
 import markyWaving from "@assets/generated_images/marky_waving.png";
-import { Gift, Bell, Camera, Mic, MapPin, Edit3, Plus } from "lucide-react";
-import { format } from "date-fns";
+import { Gift, Bell, Camera, Mic, MapPin, Edit3, Plus, X, CheckCheck } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
 import { TapeStrip, GiftFromPastSkeleton, EmptyPastGiftState } from "@/components/scrapbook";
 import { useAppAuth } from "@/App";
+import { useQueryClient } from "@tanstack/react-query";
 
 // ── Background doodles ────────────────────────────────────────────────────
 const BackgroundDoodles = () => (
@@ -172,12 +177,145 @@ const CaptureButtons = () => {
   );
 };
 
+// ── Notifications Drawer ────────────────────────────────────────────────────
+function NotificationsDrawer({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const { data, isLoading } = useListNotifications();
+  const markRead = useMarkNotificationRead();
+  const markAll = useMarkAllNotificationsRead();
+
+  const notifications: Notification[] = (data as any)?.notifications ?? [];
+
+  const handleMarkRead = (id: number) => {
+    markRead.mutate({ id } as any, {
+      onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/notifications"] }),
+    });
+  };
+
+  const handleMarkAll = () => {
+    markAll.mutate(undefined, {
+      onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/notifications"] }),
+    });
+  };
+
+  const typeIcon: Record<string, string> = {
+    memory_from_past: "🎁",
+    birthday_upcoming: "🎂",
+    future_gift_ready: "🔓",
+    shared_memory_updated: "📸",
+    collaborator_invitation: "💌",
+    memory_anniversary: "⭐",
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm"
+            onClick={onClose}
+          />
+          {/* Sheet */}
+          <motion.div
+            key="sheet"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-[#FFF9F5] rounded-t-[28px] shadow-2xl z-50 max-h-[80vh] flex flex-col"
+          >
+            {/* Handle */}
+            <div className="flex items-center justify-center pt-3 pb-1">
+              <div className="w-10 h-1 bg-border rounded-full" />
+            </div>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border/40">
+              <h2 className="font-extrabold text-base">Notifications</h2>
+              <div className="flex items-center gap-3">
+                {notifications.some((n) => !n.readAt) && (
+                  <button
+                    onClick={handleMarkAll}
+                    className="flex items-center gap-1 text-xs font-bold text-primary"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    Mark all read
+                  </button>
+                )}
+                <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+            </div>
+            {/* List */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+              {isLoading ? (
+                [...Array(3)].map((_, i) => (
+                  <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />
+                ))
+              ) : notifications.length === 0 ? (
+                <div className="py-12 flex flex-col items-center text-center gap-2">
+                  <span className="text-3xl">🔔</span>
+                  <p className="font-bold text-sm text-foreground">Everything is quiet for now.</p>
+                  <p className="text-xs text-muted-foreground">Daymark will let you know when something special happens.</p>
+                </div>
+              ) : (
+                notifications.map((n) => (
+                  <motion.div
+                    key={n.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${
+                      n.readAt ? "bg-white/60 border-border/30 opacity-70" : "bg-white border-border shadow-sm"
+                    }`}
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#EAE3FF] flex items-center justify-center text-lg flex-shrink-0">
+                      {typeIcon[n.type] ?? "🔔"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm leading-tight">{n.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{n.message}</p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-1 font-medium">
+                        {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                      </p>
+                    </div>
+                    {!n.readAt && (
+                      <button
+                        onClick={() => handleMarkRead(n.id)}
+                        className="w-7 h-7 rounded-full bg-[#EAE3FF] flex items-center justify-center flex-shrink-0 mt-0.5"
+                        aria-label="Mark as read"
+                      >
+                        <CheckCheck className="w-3.5 h-3.5 text-primary" />
+                      </button>
+                    )}
+                  </motion.div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function HomePage() {
   const { user } = useAppAuth();
   const { data: summary, isLoading: loadingSummary, isError: isSummaryError, refetch: refetchSummary } = useGetHomeSummary();
   const { data: people, isLoading: loadingPeople, isError: isPeopleError, refetch: refetchPeople } = useListPeople();
   const { data: notifications } = useListNotifications();
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -204,8 +342,9 @@ export default function HomePage() {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={() => setShowNotifications(true)}
             className="relative w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:bg-white hover:shadow-sm transition-all"
-            aria-label="Notifications"
+            aria-label={`Notifications${(notifications?.unreadCount ?? 0) > 0 ? `, ${notifications?.unreadCount} unread` : ""}`}
           >
             <Bell className="w-5 h-5" />
             {(notifications?.unreadCount ?? 0) > 0 && (
@@ -494,6 +633,9 @@ export default function HomePage() {
           )}
         </section>
       </main>
+
+      {/* Notifications drawer */}
+      <NotificationsDrawer open={showNotifications} onClose={() => setShowNotifications(false)} />
     </div>
   );
 }

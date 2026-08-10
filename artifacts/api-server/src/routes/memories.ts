@@ -114,6 +114,15 @@ router.post("/memories", async (req, res): Promise<void> => {
     .returning();
 
   if (personIds && personIds.length > 0) {
+    // Validate all personIds belong to this user
+    const ownedPeople = await db
+      .select({ id: peopleTable.id })
+      .from(peopleTable)
+      .where(and(eq(peopleTable.userId, req.user.id), inArray(peopleTable.id, personIds)));
+    if (ownedPeople.length !== personIds.length) {
+      res.status(400).json({ error: "One or more person IDs are invalid or do not belong to you" });
+      return;
+    }
     await db.insert(memoryPeopleTable).values(
       personIds.map((pid) => ({ memoryId: memory.id, personId: pid }))
     );
