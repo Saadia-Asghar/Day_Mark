@@ -279,10 +279,14 @@ function Router() {
       <SSEBanner status={sseStatus} />
       <Shell>
         <Switch>
-          {/* Public */}
-          <Route path="/" component={LandingPage} />
+          {/* Public — redirect signed-in users away from landing */}
+          <Route path="/">
+            {isAuthenticated ? <Redirect to="/home" /> : <LandingPage />}
+          </Route>
           {/* REQUIRED — copy "/sign-in/*?" and "/sign-up/*?" verbatim */}
-          <Route path="/sign-in/*?" component={SignInPage} />
+          <Route path="/sign-in/*?">
+            {isAuthenticated ? <Redirect to="/home" /> : <SignInPage />}
+          </Route>
           <Route path="/sign-up/*?" component={SignUpPage} />
 
           {/* Protected */}
