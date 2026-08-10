@@ -9,6 +9,7 @@ interface PrivacySettings {
   discoverableByEmail: boolean;
   allowConnectionRequests: boolean;
   birthdayVisibility: "nobody" | "connections" | "all";
+  birthdayWishPrivacy: "nobody" | "connections" | "all";
   defaultMemoryVisibility: "private" | "connections" | "public";
   defaultGlobeIdentity: "username" | "anonymous";
   defaultGlobeLocation: "city" | "region" | "country" | "hidden";
@@ -19,6 +20,7 @@ const DEFAULT_SETTINGS: PrivacySettings = {
   discoverableByEmail: false,
   allowConnectionRequests: true,
   birthdayVisibility: "connections",
+  birthdayWishPrivacy: "connections",
   defaultMemoryVisibility: "private",
   defaultGlobeIdentity: "anonymous",
   defaultGlobeLocation: "city",
@@ -136,16 +138,32 @@ export default function PrivacySettingsPage() {
 
           {/* Birthday */}
           <Section title="Birthday visibility">
-            <div className="px-1">
-              <SegmentedControl
-                options={[
-                  { value: "nobody", label: "Nobody" },
-                  { value: "connections", label: "Connections" },
-                  { value: "all", label: "Everyone" },
-                ]}
-                value={settings.birthdayVisibility}
-                onChange={(v) => update("birthdayVisibility", v)}
-              />
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold mb-2">Who can see my birthday</p>
+                <SegmentedControl
+                  options={[
+                    { value: "nobody", label: "Nobody" },
+                    { value: "connections", label: "Friends" },
+                    { value: "all", label: "Everyone" },
+                  ]}
+                  value={settings.birthdayVisibility}
+                  onChange={(v) => update("birthdayVisibility", v)}
+                />
+              </div>
+              <div>
+                <p className="text-sm font-semibold mb-1">Who can send me birthday wishes</p>
+                <p className="text-xs text-muted-foreground mb-2">Controls who sees your birthday wish wall</p>
+                <SegmentedControl
+                  options={[
+                    { value: "nobody", label: "Off" },
+                    { value: "connections", label: "Friends" },
+                    { value: "all", label: "Everyone" },
+                  ]}
+                  value={settings.birthdayWishPrivacy}
+                  onChange={(v) => update("birthdayWishPrivacy", v)}
+                />
+              </div>
             </div>
           </Section>
 

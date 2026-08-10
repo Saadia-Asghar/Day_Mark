@@ -1,0 +1,666 @@
+Audit every Daymark mascot/character asset currently used in the frontend.
+
+CURRENT PROBLEM
+
+Characters such as Marky are being displayed as rectangular image assets with
+visible beige/white backgrounds.
+
+This makes the characters look pasted into the interface rather than part of
+the Daymark world.
+
+I want ALL Daymark characters to:
+
+- have transparent backgrounds
+- appear as standalone mascot figures
+- blend naturally into the UI
+- have subtle animation
+- react differently depending on the screen/state
+- remain visually consistent throughout the app
+
+DO NOT redesign the characters themselves unless required.
+
+==================================================
+1. CHARACTER ASSET AUDIT
+==================================================
+
+Find every mascot image currently imported or referenced.
+
+Examples may include:
+
+Marky
+Hearty
+Stella
+Pix
+Cal
+or any other Daymark character currently in assets/generated_images.
+
+Report:
+
+- file path
+- character
+- current format
+- whether background is transparent
+- where it is used
+
+Do not leave duplicate or inconsistent versions of the same character.
+
+==================================================
+2. REMOVE CHARACTER BACKGROUNDS
+==================================================
+
+Every mascot used inside the UI must use a transparent-background asset.
+
+Preferred:
+
+transparent WebP
+
+Fallback:
+
+transparent PNG
+
+Do NOT use:
+
+JPEG
+images with cream rectangles
+images with white backgrounds
+square AI-generated scene images
+
+Final character asset should contain ONLY:
+
+character
+intentional shadows directly beneath character if needed
+small accessory belonging to character
+
+No scene background.
+
+No beige square.
+
+No border.
+
+No canvas visible around mascot.
+
+==================================================
+3. CREATE CONSISTENT CHARACTER ASSET SET
+==================================================
+
+For every important mascot, create/use transparent variants.
+
+MARKY
+
+Required poses:
+
+marky_idle
+marky_wave
+marky_holding_gift
+marky_peeking
+marky_celebrate
+marky_sleeping
+marky_catching_memory
+marky_thinking
+
+If other characters exist, create equivalent useful variants.
+
+Do not generate dozens of unnecessary poses.
+
+Aim for approximately 4–8 useful states per primary mascot.
+
+==================================================
+4. CHARACTER COMPONENT
+==================================================
+
+Create a reusable component:
+
+<DaymarkCharacter />
+
+Example API:
+
+<DaymarkCharacter
+  character="marky"
+  pose="wave"
+  size="medium"
+  animation="float"
+/>
+
+Supported sizes:
+
+xs
+sm
+md
+lg
+hero
+
+Supported animations:
+
+idle
+float
+wave
+bounce
+peek
+celebrate
+sleep
+catch
+none
+
+Do NOT manually import character images separately on every page.
+
+Centralize character mapping.
+
+==================================================
+5. TRANSPARENT ASSET DISPLAY
+==================================================
+
+Character images should use:
+
+object-contain
+
+Never:
+
+object-cover
+
+Do not place them inside white cards unless intentionally required.
+
+Do not wrap mascots in rectangular image containers.
+
+Characters should visually sit directly on top of the Daymark background.
+
+Example:
+
+BAD:
+
+<div class="bg-white">
+   <img src="marky.jpg">
+</div>
+
+GOOD:
+
+<motion.img
+   src={markyWave}
+   className="object-contain"
+/>
+
+==================================================
+6. REMOVE BACKGROUND FROM CURRENT HOME MARKY
+==================================================
+
+Fix the Home screen shown currently.
+
+HEADER CHARACTER
+
+The Marky beside:
+
+“What will you remember about today?”
+
+must have NO background rectangle.
+
+Make Marky approximately:
+
+72–90px tall
+
+Position it naturally beside the heading.
+
+Allow tiny overlap into nearby whitespace.
+
+Animation:
+
+very subtle floating
+
+y:
+0 → -4px → 0
+
+duration:
+3–4 seconds
+
+Do not make it bounce continuously.
+
+==================================================
+7. GIFT FROM YOUR PAST EMPTY STATE
+==================================================
+
+The current empty-state mascot also has a visible image background.
+
+Replace it with transparent Marky.
+
+Use:
+
+Marky holding or looking into an empty gift box.
+
+Animation sequence:
+
+Marky gently looks toward box
+
+box lid moves slightly
+
+small sparkle appears
+
+loop slowly
+
+Do not make the entire card constantly move.
+
+==================================================
+8. CHARACTER ANIMATION PRINCIPLES
+==================================================
+
+Animations must feel:
+
+soft
+alive
+subtle
+friendly
+physical
+
+Do NOT use:
+
+constant aggressive bouncing
+constant spinning
+fast shaking
+large scaling loops
+gaming-style animations
+
+Mascots should feel alive but never distract from memories.
+
+==================================================
+9. FRAMER MOTION
+==================================================
+
+Use Framer Motion for UI character animation.
+
+Create reusable animation presets.
+
+Example:
+
+idleFloat:
+
+animate:
+{
+  y: [0, -4, 0],
+  rotate: [0, 1, 0]
+}
+
+transition:
+{
+  duration: 3.5,
+  repeat: Infinity,
+  ease: "easeInOut"
+}
+
+Wave:
+
+rotate arm/avatar gently once when screen opens.
+
+Celebrate:
+
+scale:
+1 → 1.08 → 1
+
+y:
+0 → -8 → 0
+
+Then stop.
+
+Do not loop celebration forever.
+
+==================================================
+10. CONTEXTUAL CHARACTER BEHAVIOR
+==================================================
+
+Characters should react to what is happening.
+
+HOME
+
+Marky:
+wave / idle float
+
+EMPTY MEMORY
+
+Marky:
+looking into gift box
+
+WRAP MEMORY
+
+Marky:
+holding ribbon
+
+UPLOAD
+
+Pix or Marky:
+holding photo
+
+PEOPLE
+
+Hearty:
+holding heart / peeking
+
+CALENDAR
+
+Cal:
+holding tiny calendar
+
+GLOBE
+
+Marky:
+small explorer pose / holding globe
+
+FUTURE GIFTS
+
+Marky:
+protecting sealed gift
+
+MESSAGES FOR LATER
+
+Marky:
+holding envelope
+
+SUCCESS
+
+Marky:
+celebrate once
+
+ERROR
+
+Marky:
+slightly confused, no dramatic sad animation
+
+==================================================
+11. CHARACTER + MEMORY RELATIONSHIP
+==================================================
+
+IMPORTANT:
+
+Mascots support the experience.
+
+They do NOT replace real photographs.
+
+Priority hierarchy:
+
+1. user's memory/photo
+2. important UI action
+3. characters
+4. decoration
+
+Normal screen character usage:
+
+roughly 10–15% visual attention
+
+Empty states:
+
+20–30%
+
+Onboarding:
+
+30–40%
+
+Never let a mascot dominate Gift Detail.
+
+==================================================
+12. CHARACTER POSITIONING
+==================================================
+
+Allow characters to partially overlap:
+
+cards
+headings
+ribbons
+photo corners
+gift boxes
+
+This will make them feel integrated.
+
+Examples:
+
+Marky peeking from behind a photo
+
+Hearty sitting on a People card
+
+Cal leaning against a calendar
+
+Marky standing beside a gift
+
+Do not always center the mascot above text.
+
+==================================================
+13. DEPTH
+==================================================
+
+Because backgrounds are transparent, create depth using CSS rather than baked
+image backgrounds.
+
+Use subtle:
+
+filter: drop-shadow()
+
+Example:
+
+drop-shadow(0 8px 12px rgba(50, 32, 96, 0.15))
+
+Do not use strong rectangular box shadows.
+
+The shadow should follow the mascot silhouette.
+
+==================================================
+14. MICRO INTERACTIONS
+==================================================
+
+Allow some mascots to respond to taps.
+
+Example:
+
+tap Marky on Home:
+
+small wave
+tiny sparkle
+
+Do not make this affect navigation.
+
+Do not trigger sound automatically.
+
+Keep Easter eggs subtle.
+
+==================================================
+15. SCROLL REACTIONS
+==================================================
+
+For selected screens, characters may appear using:
+
+fade
+small translate
+peek
+
+Example:
+
+Marky peeks from behind the Memory Globe card when it enters viewport.
+
+Avoid animating every mascot whenever the user scrolls.
+
+==================================================
+16. SUCCESS STATES
+==================================================
+
+After wrapping memory:
+
+Marky catches finished gift.
+
+After Future Gift creation:
+
+Marky carries sealed gift away.
+
+After connection accepted:
+
+Hearty briefly appears between both avatars.
+
+After Daylink milestone:
+
+two ribbon ends connect with sparkle.
+
+After birthday wish:
+
+Marky releases tiny heart.
+
+These animations should play once.
+
+==================================================
+17. REDUCED MOTION
+==================================================
+
+Respect:
+
+prefers-reduced-motion
+
+When enabled:
+
+remove loops
+remove bouncing
+remove large transforms
+
+Characters remain visible as static transparent assets.
+
+==================================================
+18. PERFORMANCE
+==================================================
+
+Optimize mascot assets.
+
+Prefer:
+
+transparent WebP
+small dimensions appropriate to display
+
+Avoid loading 4K images for 80px characters.
+
+Lazy-load characters below the fold.
+
+Preload only:
+
+Home Marky
+current onboarding mascot
+
+==================================================
+19. MOBILE POSITIONING
+==================================================
+
+Test at:
+
+375 × 812
+390 × 844
+430 × 932
+
+Characters must not:
+
+overflow horizontally
+cover text
+cover buttons
+interfere with scrolling
+hide under BottomNav
+
+Use responsive size limits.
+
+==================================================
+20. REMOVE OLD BACKGROUND ASSETS
+==================================================
+
+After transparent versions are working:
+
+replace every usage of old rectangular mascot images.
+
+Do not leave:
+
+marky_wave_with_background
+marky_scene.jpg
+beige-square character assets
+
+in active components.
+
+Keep old files only if needed for rollback.
+
+==================================================
+21. HOME SPECIFIC FIX
+==================================================
+
+For the current Home screenshot:
+
+A. Header Marky
+
+Remove square beige background completely.
+
+Position transparent Marky:
+
+right side of heading
+
+width approximately 80px
+
+Add subtle idle float.
+
+B. Gift From Your Past empty state
+
+Remove square background.
+
+Make transparent Marky slightly larger.
+
+Add a small empty gift box as a separate UI/illustration object.
+
+Allow Marky to interact visually with the box.
+
+C. Never place mascot inside another rectangular screenshot-like image.
+
+==================================================
+22. ANIMATION QUALITY RULE
+==================================================
+
+Characters should feel similar to mascots in a high-quality consumer app.
+
+Think:
+
+alive
+soft
+responsive
+playful
+
+NOT:
+
+GIF sticker
+game NPC
+AI-generated rectangular image
+cartoon video loop
+
+==================================================
+FINAL QA
+==================================================
+
+Inspect every route containing mascot artwork:
+
+Home
+Onboarding
+Wrap
+Gifts
+Gift Detail
+Calendar
+People
+Person Detail
+Future Gifts
+Messages
+Connections
+Profile
+Globe
+
+Confirm:
+
+- transparent backgrounds
+- no visible rectangles
+- character style consistency
+- correct pose
+- correct scale
+- no text overlap
+- smooth motion
+- reduced motion support
+- optimized image sizes
+
+Finally report:
+
+1. character assets found
+2. backgrounds removed/replaced
+3. reusable DaymarkCharacter component
+4. poses added
+5. animations added
+6. pages updated
+7. reduced-motion behavior
+8. performance impact
+9. remaining character asset problems

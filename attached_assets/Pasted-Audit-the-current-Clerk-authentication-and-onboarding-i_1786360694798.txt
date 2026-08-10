@@ -1,0 +1,1008 @@
+Audit the current Clerk authentication and onboarding implementation before editing.
+
+CURRENT PROBLEM
+
+Daymark currently uses Clerk's generic SignIn and SignUp screens.
+
+The current experience feels ambiguous because a user enters an email first
+without clearly choosing whether they are:
+
+1. an existing Daymark user
+2. creating a new Daymark account
+
+Redesign authentication into TWO explicit flows.
+
+Do NOT replace Clerk.
+
+Do NOT add Supabase Auth.
+
+Keep:
+
+AUTH = Clerk
+DATABASE = Supabase/Postgres when migrated
+APP USER PROFILE = Daymark users table
+
+==================================================
+GOAL
+==================================================
+
+The first authentication screen should clearly ask:
+
+Welcome to Daymark 🎁
+
+Buttons:
+
+I already have an account
+
+Create my Daymark
+
+Also allow:
+
+Continue with Google
+
+The user should understand immediately whether they are signing in or signing up.
+
+==================================================
+1. AUTH LANDING SCREEN
+==================================================
+
+Create route:
+
+/auth
+
+Design it in full Daymark style.
+
+Use:
+
+transparent animated Marky
+cream background
+purple identity
+small gift/ribbon details
+mobile-first layout
+
+Content:
+
+Daymark logo
+
+Headline:
+
+Your memories have a home.
+
+Supporting text:
+
+Keep the moments, people and little things that make life yours.
+
+PRIMARY:
+
+Create my Daymark
+
+SECONDARY:
+
+I already have an account
+
+DIVIDER:
+
+or
+
+GOOGLE:
+
+Continue with Google
+
+Footer:
+
+By continuing, you agree to the Terms and Privacy Policy.
+
+==================================================
+2. NEW USER SIGN-UP FLOW
+==================================================
+
+Route:
+
+/sign-up
+
+This is ONLY for new users.
+
+Do not make users enter an email and then guess whether they have an account.
+
+STEP 1 — CREATE ACCOUNT
+
+Heading:
+
+Create your Daymark ✨
+
+Fields visible together:
+
+Email address
+
+Username
+
+Password
+
+Confirm password
+
+Username should become the user's Daymark username.
+
+Example:
+
+@saadia
+
+Username validation:
+
+3–24 characters
+
+letters
+numbers
+underscore
+
+case-insensitive uniqueness
+
+Show live state:
+
+✓ @saadia is available
+
+or
+
+That username is already taken.
+
+Do NOT wait until onboarding to ask for the username.
+
+==================================================
+3. PASSWORD REQUIREMENTS
+==================================================
+
+Show password requirements clearly while typing.
+
+Example:
+
+At least 8 characters
+One uppercase letter
+One lowercase letter
+One number
+
+Use Clerk's actual password policy/configuration.
+
+Do not invent frontend requirements that differ from Clerk's configuration.
+
+Show:
+
+Show password / Hide password
+
+for password and confirm password.
+
+Do not store password in Daymark's database.
+
+Clerk owns credentials.
+
+==================================================
+4. EMAIL VERIFICATION FOR NEW USER
+==================================================
+
+After Sign Up:
+
+send Clerk email verification.
+
+Route/state:
+
+Verify your email 💌
+
+Text:
+
+We sent a verification code to:
+
+saadia@example.com
+
+Fields:
+
+6-digit verification code
+
+Button:
+
+Verify Email
+
+Actions:
+
+Resend code
+
+Change email
+
+Show cooldown for resend.
+
+After successful verification:
+
+DO NOT send directly to Home.
+
+Send NEW users to:
+
+/onboarding
+
+==================================================
+5. NEW USER ACCOUNT CREATION
+==================================================
+
+After Clerk account creation and verification:
+
+ensure a corresponding Daymark user record exists.
+
+Store:
+
+clerkUserId
+email
+username
+displayName
+profileImageUrl
+onboardingCompleted = false
+createdAt
+
+Never store password.
+
+Use Clerk identity as authentication source.
+
+Use internal Daymark user ID for product relationships.
+
+==================================================
+6. NEW USER ONBOARDING
+==================================================
+
+Onboarding should happen ONLY after authentication and email verification.
+
+Onboarding is not account creation.
+
+It should introduce Daymark.
+
+Screen 1:
+
+Keep your moments 🎁
+
+Save photos, stories and little things that matter.
+
+Screen 2:
+
+Remember with your people 💜
+
+Build Daylinks, shared memories and Future Gifts.
+
+Screen 3:
+
+Send something into the future 💌
+
+Save messages for birthdays, anniversaries and meaningful days.
+
+Screen 4:
+
+See little moments from everywhere 🌍
+
+Explore memories people explicitly choose to share.
+
+==================================================
+7. ONBOARDING PERSONAL SETUP
+==================================================
+
+After introductory screens, ask optional profile information.
+
+The username has ALREADY been created during Sign Up.
+
+Do NOT ask for username again.
+
+Ask:
+
+Display name
+
+Birthday optional
+
+City optional
+
+Timezone
+
+Profile picture optional
+
+Memory interests optional
+
+Birthday visibility default:
+
+Nobody
+
+Globe visibility default:
+
+Private
+
+These settings can be changed later.
+
+Button:
+
+Start my Daymark
+
+Then:
+
+onboardingCompleted = true
+
+redirect:
+
+/home
+
+==================================================
+8. EXISTING USER SIGN-IN FLOW
+==================================================
+
+Route:
+
+/sign-in
+
+Heading:
+
+Welcome back 💜
+
+Fields:
+
+Email or username
+
+Password
+
+Button:
+
+Sign In
+
+Below password:
+
+Forgot password?
+
+Below form:
+
+New to Daymark?
+Create your Daymark
+
+Also:
+
+Continue with Google
+
+Do not put new users through the onboarding/signup decision after they have
+already entered an email.
+
+==================================================
+9. EMAIL OR USERNAME SIGN-IN
+==================================================
+
+Allow user to enter:
+
+email
+
+OR
+
+Daymark username
+
+If Clerk requires email as its identifier internally:
+
+resolve username server-side.
+
+Flow:
+
+user enters:
+
+@saadia
+
+server safely looks up associated account identifier
+
+then authentication proceeds through Clerk-supported mechanisms.
+
+Do not expose another user's private email in the frontend.
+
+If secure username-to-Clerk authentication is not supported cleanly by the
+current Clerk setup:
+
+use email for sign-in initially and keep username as social identity.
+
+Do not create insecure custom password authentication.
+
+==================================================
+10. FORGOT PASSWORD
+==================================================
+
+From /sign-in:
+
+Forgot password?
+
+Route/state:
+
+/forgot-password
+
+Heading:
+
+Reset your password
+
+Input:
+
+Email address
+
+Button:
+
+Send reset code
+
+Use Clerk's supported password reset flow.
+
+Do not implement password-reset tokens manually.
+
+==================================================
+11. PASSWORD RESET VERIFICATION
+==================================================
+
+After user submits email:
+
+show:
+
+Check your email 💌
+
+We sent a password reset code to:
+
+s•••••@gmail.com
+
+Fields:
+
+Verification code
+
+New password
+
+Confirm new password
+
+Button:
+
+Reset Password
+
+Actions:
+
+Resend code
+
+Back to Sign In
+
+After success:
+
+Your password has been changed ✨
+
+Button:
+
+Sign In
+
+==================================================
+12. EXISTING USER EMAIL VERIFICATION
+==================================================
+
+Handle cases where:
+
+account exists
+
+but email is not verified.
+
+Do not recreate account.
+
+Show:
+
+Verify your email to continue.
+
+Allow:
+
+Send verification code
+
+Enter code
+
+Resend
+
+After successful verification:
+
+if onboardingCompleted = true:
+redirect /home
+
+if onboardingCompleted = false:
+redirect /onboarding
+
+==================================================
+13. EXISTING USER SHOULD NEVER REPEAT ONBOARDING
+==================================================
+
+Routing rules:
+
+UNAUTHENTICATED:
+
+/home → /auth
+
+NEWLY SIGNED-UP + VERIFIED + onboardingCompleted=false:
+
+→ /onboarding
+
+RETURNING USER + onboardingCompleted=true:
+
+→ /home
+
+RETURNING USER SHOULD NOT SEE:
+
+intro slides
+username setup
+birthday setup
+
+again unless they manually edit Profile.
+
+==================================================
+14. GOOGLE SIGN-UP VS GOOGLE SIGN-IN
+==================================================
+
+Continue with Google should work for both.
+
+After Google authentication:
+
+check whether a Daymark user record already exists.
+
+IF EXISTING:
+
+onboardingCompleted=true
+→ /home
+
+IF NEW:
+
+create Daymark record
+
+If no username yet:
+
+show one small mandatory setup screen:
+
+Choose your Daymark username
+
+@________
+
+Then:
+
+→ /onboarding
+
+Do NOT ask Google users to create a password.
+
+==================================================
+15. GOOGLE NEW USER FLOW
+==================================================
+
+Google new user:
+
+Google Auth
+
+↓
+
+Choose unique username
+
+↓
+
+Daymark onboarding
+
+↓
+
+Home
+
+Google returning user:
+
+Google Auth
+
+↓
+
+Home
+
+==================================================
+16. EMAIL NEW USER FLOW
+==================================================
+
+Email new user:
+
+Create My Daymark
+
+↓
+
+Email
+Username
+Password
+Confirm Password
+
+↓
+
+Email verification
+
+↓
+
+Daymark onboarding
+
+↓
+
+Home
+
+==================================================
+17. EMAIL RETURNING USER FLOW
+==================================================
+
+Existing user:
+
+I already have an account
+
+↓
+
+Email
+Password
+
+↓
+
+Home
+
+If forgot password:
+
+Forgot Password
+
+↓
+
+Email
+
+↓
+
+Verification code
+
+↓
+
+New Password
+
+↓
+
+Sign In
+
+==================================================
+18. AUTH ERROR STATES
+==================================================
+
+Create friendly Daymark-specific errors.
+
+EMAIL ALREADY EXISTS:
+
+That email already has a Daymark.
+
+Button:
+
+Sign In Instead
+
+USERNAME TAKEN:
+
+That username is already part of someone's story.
+
+Suggestions:
+
+@saadiaa
+@saadia_asghar
+@saadiaa5
+
+WRONG PASSWORD:
+
+That password doesn't match.
+
+Action:
+
+Try Again
+Forgot Password
+
+ACCOUNT NOT FOUND:
+
+We couldn't find a Daymark with that email.
+
+Action:
+
+Create an account
+
+VERIFICATION CODE WRONG:
+
+That code didn't work. Check it and try again.
+
+Do not show raw Clerk/backend error objects.
+
+==================================================
+19. AUTH UI DESIGN
+==================================================
+
+Do not use generic Clerk-looking cards as the final user experience if custom
+Clerk flows can be implemented safely.
+
+Build Daymark-auth screens using Clerk's APIs/components underneath.
+
+Use:
+
+transparent Marky
+gift icon
+cream canvas
+purple CTA
+soft inputs
+large labels
+mobile-first spacing
+
+Keep screens visually simple.
+
+Authentication should feel trustworthy, not overly playful.
+
+==================================================
+20. AUTH CHARACTER USAGE
+==================================================
+
+Use transparent animated characters.
+
+Auth landing:
+
+Marky holding key/gift.
+
+Sign Up:
+
+Marky opening empty gift box.
+
+Verify Email:
+
+Marky holding envelope.
+
+Sign In:
+
+Marky waving.
+
+Forgot Password:
+
+Marky holding small key.
+
+Success:
+
+Marky subtle celebration.
+
+No mascot should have a rectangular background.
+
+==================================================
+21. SECURITY
+==================================================
+
+Passwords must remain entirely managed by Clerk.
+
+Do NOT:
+
+store passwords in PostgreSQL/Supabase
+
+hash passwords yourself
+
+create custom password tables
+
+send passwords to the Daymark API
+
+log credentials
+
+store passwords in localStorage
+
+Use Clerk's supported password authentication and verification flow.
+
+==================================================
+22. SESSION SECURITY
+==================================================
+
+After successful sign in:
+
+restore Clerk session
+
+fetch Daymark user profile
+
+initialize TanStack Query
+
+start realtime connection
+
+After sign out:
+
+close realtime connection
+
+clear all user-specific query cache
+
+clear temporary auth state
+
+redirect to /
+
+==================================================
+23. ACCOUNT SWITCHING TEST
+==================================================
+
+Test:
+
+USER A logs in.
+
+A sees A's memories.
+
+Sign out.
+
+USER B logs in.
+
+B must not briefly see:
+
+A's Home
+A's profile
+A's memories
+A's notifications
+A's Daylinks
+
+Clear cached authenticated data before rendering B.
+
+==================================================
+24. DUPLICATE ACCOUNT PROTECTION
+==================================================
+
+If user attempts Sign Up with an existing email:
+
+do not create duplicate account.
+
+Suggest:
+
+Looks like you already have a Daymark.
+
+Sign In
+
+If Google account matches an existing verified Daymark email:
+
+link safely according to Clerk's supported identity handling.
+
+Do not create duplicate Daymark users.
+
+==================================================
+25. USERNAME RACE CONDITION
+==================================================
+
+Username uniqueness must be enforced in DATABASE, not only frontend.
+
+Create/use unique case-insensitive constraint/index.
+
+When two users request same username simultaneously:
+
+only one succeeds.
+
+The other receives:
+
+That username was just taken. Try another.
+
+==================================================
+26. VERIFY ONBOARDING RECORD
+==================================================
+
+The repository already uses:
+
+onboardingCompleted
+
+Preserve that.
+
+After onboarding completion:
+
+persist it in the Daymark user table.
+
+Never use only localStorage.
+
+==================================================
+27. AUTH ROUTE STRUCTURE
+==================================================
+
+Final routes:
+
+/auth
+
+/sign-in
+
+/sign-up
+
+/forgot-password
+
+/onboarding
+
+Protected:
+
+/home
+/wrap
+/gifts
+/calendar
+/people
+/profile
+/connections
+/messages
+/globe
+future-gift routes
+
+==================================================
+28. MOBILE QA
+==================================================
+
+Test:
+
+375 × 812
+390 × 844
+430 × 932
+
+Ensure:
+
+keyboard does not hide input
+password fields remain visible
+verification code boxes fit
+CTA remains reachable
+no horizontal scrolling
+Google button fits
+Marky does not overlap form
+safe-area respected
+
+==================================================
+29. FINAL FLOW TESTS
+==================================================
+
+TEST 1 — BRAND NEW EMAIL USER
+
+Create account
+→ email + username + password
+→ verification
+→ onboarding
+→ Home
+
+TEST 2 — RETURNING EMAIL USER
+
+Sign In
+→ email + password
+→ Home
+
+No onboarding.
+
+TEST 3 — FORGOT PASSWORD
+
+Sign In
+→ forgot password
+→ email
+→ verification
+→ new password
+→ sign in
+→ Home
+
+TEST 4 — NEW GOOGLE USER
+
+Google
+→ username
+→ onboarding
+→ Home
+
+TEST 5 — RETURNING GOOGLE USER
+
+Google
+→ Home
+
+TEST 6 — DUPLICATE EMAIL
+
+Sign Up with existing email
+
+Expected:
+
+redirect/suggest Sign In.
+
+TEST 7 — WRONG PASSWORD
+
+Show friendly error.
+
+TEST 8 — UNVERIFIED ACCOUNT
+
+Sign In
+
+→ verification flow
+
+→ correct onboarding/home destination.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Report:
+
+1. Auth landing implemented
+2. Separate Sign In flow
+3. Separate Sign Up flow
+4. Username moved into Sign Up
+5. Password setup working
+6. Email verification working
+7. Forgot password working
+8. Password reset verification working
+9. Google new-user routing
+10. Google returning-user routing
+11. onboarding routing
+12. duplicate-account prevention
+13. username database constraint
+14. account-switching cache test
+15. mobile auth QA
+16. typecheck result
+17. production build result
+
+Do not replace Clerk.
+Do not use Supabase Auth.
+Do not store passwords in the Daymark database.

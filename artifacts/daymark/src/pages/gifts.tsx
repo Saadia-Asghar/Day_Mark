@@ -6,7 +6,7 @@ import type { Memory } from "@workspace/api-client-react";
 import { Search } from "lucide-react";
 import { format } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
-import markyEmpty from "@assets/generated_images/marky_empty.png";
+import { DaymarkCharacter } from "@/components/daymark-character";
 
 // ── Category visual config ─────────────────────────────────────────────
 const CATEGORY_CONFIG: Record<string, {
@@ -371,7 +371,7 @@ export default function GiftsPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center mt-16 px-4">
-            <img src={markyEmpty} alt="Empty" className="w-44 h-44 object-contain mb-4 opacity-70" />
+            <DaymarkCharacter character="marky" pose="holdingGift" size="lg" animation="float" className="mb-4" />
             <h2 className="text-xl font-bold mb-1.5">No gifts here yet</h2>
             <p className="text-sm text-muted-foreground font-medium mb-6">
               {search || filter !== "all"

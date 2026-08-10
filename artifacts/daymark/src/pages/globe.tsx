@@ -1,15 +1,31 @@
 /**
- * Memory Globe — cream/lavender magical presentation.
+ * Memory Globe — real geographic Leaflet map.
  *
- * 2.5D sphere with drag-to-rotate, glowing sparkle pins,
- * warm photographic cards, and soft atmospheric styling.
+ * Features:
+ * - Interactive world map (zoom, pan, touch)
+ * - Custom animated marker pins with photo previews
+ * - Filters: All / Today / This Week / Category
+ * - City / country exploration
+ * - Privacy: city-centroid locations only (no GPS)
+ * - Memory profile card on pin tap
+ * - Report abuse flow
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, MapPin, X, Flag, Sparkles, Globe2 } from "lucide-react";
-import { format } from "date-fns";
+import { ArrowLeft, MapPin, X, Flag, Filter, Loader2 } from "lucide-react";
+import { format, isToday, isThisWeek } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix Leaflet default icon paths
+delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -27,227 +43,193 @@ interface GlobeMemory {
   publishedAt: string | null;
 }
 
+type FilterId = "all" | "today" | "week" | "travel" | "people" | "food" | "everyday" | "celebration" | "nature";
+
 // ── Category config ────────────────────────────────────────────────────────
-const CAT: Record<string, { color: string; emoji: string }> = {
-  everyday: { color: "#6847F5", emoji: "✨" },
-  travel:   { color: "#0EA5E9", emoji: "✈️" },
-  food:     { color: "#F97316", emoji: "🍜" },
-  people:   { color: "#EC4899", emoji: "💜" },
-  nature:   { color: "#22C55E", emoji: "🌿" },
-  celebration: { color: "#EAB308", emoji: "🎉" },
-  default:  { color: "#6847F5", emoji: "✨" },
+const CAT: Record<string, { color: string; emoji: string; bg: string }> = {
+  everyday:    { color: "#6847F5", emoji: "✨", bg: "#EAE3FF" },
+  travel:      { color: "#0EA5E9", emoji: "✈️", bg: "#E0F2FE" },
+  food:        { color: "#F97316", emoji: "🍜", bg: "#FFF0E4" },
+  people:      { color: "#EC4899", emoji: "💜", bg: "#FCE7F3" },
+  nature:      { color: "#22C55E", emoji: "🌿", bg: "#DCFCE7" },
+  celebration: { color: "#EAB308", emoji: "🎉", bg: "#FEF9C3" },
 };
+function catOf(cat: string) { return CAT[cat] ?? CAT.everyday; }
 
-function catOf(cat: string) {
-  return CAT[cat] ?? CAT.default;
-}
+// ── Leaflet map component ──────────────────────────────────────────────────
 
-// ── 2.5D Sphere Globe ─────────────────────────────────────────────────────
+function LeafletMap({ memories, onSelect }: { memories: GlobeMemory[]; onSelect: (m: GlobeMemory) => void }) {
+  const mapRef = useRef<L.Map | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<L.LayerGroup | null>(null);
 
-const GLOBE_R = 140; // radius in px
+  // Init map once
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
 
-function project(lat: number, lon: number, lonOffset: number) {
-  const adjustedLon = ((lon + lonOffset + 540) % 360) - 180;
-  // Mercator-ish projection onto sphere surface
-  const x = (adjustedLon / 180) * GLOBE_R * 0.82;
-  const latRad = (lat * Math.PI) / 180;
-  const y = -(Math.log(Math.tan(Math.PI / 4 + latRad / 2)) / Math.PI) * GLOBE_R * 0.72;
-  // Depth: how "in front" of the sphere is this point
-  const normX = x / GLOBE_R;
-  const normY = y / GLOBE_R;
-  const depth = 1 - Math.min(1, normX * normX + normY * normY);
-  return { x, y, depth, visible: depth > 0 };
-}
+    const map = L.map(containerRef.current, {
+      center: [20, 0],
+      zoom: 2,
+      zoomControl: false,
+      attributionControl: false,
+      maxBounds: [[-85, -200], [85, 200]],
+      minZoom: 1.5,
+      maxZoom: 14,
+    });
 
-function GlobeComponent({
-  memories,
-  onSelect,
-}: {
-  memories: GlobeMemory[];
-  onSelect: (m: GlobeMemory) => void;
-}) {
-  const [lonOffset, setLonOffset] = useState(20);
-  const dragRef = useRef<{ startX: number; startLon: number } | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
+    // Warm cream-tinted tile layer (CartoDB Voyager)
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+      {
+        subdomains: "abcd",
+        attribution: '© <a href="https://carto.com/">CARTO</a>',
+        maxZoom: 19,
+      },
+    ).addTo(map);
 
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    dragRef.current = { startX: e.clientX, startLon: lonOffset };
-  }, [lonOffset]);
+    // Add zoom control at bottom-right
+    L.control.zoom({ position: "bottomright" }).addTo(map);
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    const delta = e.clientX - dragRef.current.startX;
-    setLonOffset(dragRef.current.startLon + delta * 0.35);
+    // Attribution
+    L.control.attribution({ position: "bottomleft", prefix: false })
+      .addAttribution('Map © <a href="https://carto.com/">CartoDB</a>')
+      .addTo(map);
+
+    markersRef.current = L.layerGroup().addTo(map);
+    mapRef.current = map;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
   }, []);
 
-  const onPointerUp = useCallback(() => {
-    dragRef.current = null;
-  }, []);
+  // Update markers when memories change
+  useEffect(() => {
+    if (!mapRef.current || !markersRef.current) return;
+    markersRef.current.clearLayers();
 
-  const pinned = memories.filter((m) => m.approximateLatitude != null && m.approximateLongitude != null);
+    const pinned = memories.filter((m) => m.approximateLatitude != null && m.approximateLongitude != null);
 
-  // Cluster nearby pins (within ~8deg)
-  const clusters: { memories: GlobeMemory[]; lat: number; lon: number }[] = [];
-  for (const m of pinned) {
-    const lat = m.approximateLatitude!;
-    const lon = m.approximateLongitude!;
-    const existing = clusters.find(
-      (c) => Math.abs(c.lat - lat) < 8 && Math.abs(c.lon - lon) < 8,
-    );
-    if (existing) existing.memories.push(m);
-    else clusters.push({ memories: [m], lat, lon });
-  }
+    // Simple proximity cluster (within ~2 degrees)
+    const clusters: { memories: GlobeMemory[]; lat: number; lon: number }[] = [];
+    for (const m of pinned) {
+      const lat = m.approximateLatitude!;
+      const lon = m.approximateLongitude!;
+      const existing = clusters.find(
+        (c) => Math.abs(c.lat - lat) < 2 && Math.abs(c.lon - lon) < 2
+      );
+      if (existing) existing.memories.push(m);
+      else clusters.push({ memories: [m], lat, lon });
+    }
 
-  const W = GLOBE_R * 2 + 40;
-  const H = GLOBE_R * 2 + 20;
+    for (const cluster of clusters) {
+      const primary = cluster.memories[0];
+      const { color, emoji } = catOf(primary.category);
+      const isCluster = cluster.memories.length > 1;
+
+      // Build custom HTML icon
+      const iconHtml = `
+        <div style="
+          position: relative;
+          width: ${isCluster ? 44 : 36}px;
+          height: ${isCluster ? 44 : 36}px;
+          display: flex; align-items: center; justify-content: center;
+        ">
+          <div style="
+            position: absolute; inset: 0; border-radius: 50%;
+            background: ${color}20;
+            animation: pulse 2s infinite;
+          "></div>
+          <div style="
+            width: ${isCluster ? 36 : 28}px;
+            height: ${isCluster ? 36 : 28}px;
+            border-radius: 50%;
+            background: ${color};
+            border: 3px solid white;
+            box-shadow: 0 2px 12px ${color}60;
+            display: flex; align-items: center; justify-content: center;
+            font-size: ${isCluster ? 14 : 12}px;
+            color: white;
+            font-weight: 900;
+            font-family: system-ui;
+            cursor: pointer;
+          ">
+            ${isCluster ? cluster.memories.length : emoji}
+          </div>
+          ${primary.photoUrl ? `
+            <div style="
+              position: absolute;
+              width: 48px; height: 48px;
+              border-radius: 50%;
+              border: 2px solid white;
+              overflow: hidden;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+              left: 50%; top: -52px;
+              transform: translateX(-50%);
+            ">
+              <img src="${primary.photoUrl}" style="width:100%;height:100%;object-fit:cover;" />
+            </div>
+          ` : ""}
+        </div>
+      `;
+
+      const icon = L.divIcon({
+        html: iconHtml,
+        className: "",
+        iconSize: [44, 44],
+        iconAnchor: [22, 22],
+      });
+
+      const marker = L.marker([cluster.lat, cluster.lon], { icon });
+      marker.on("click", () => onSelect(primary));
+      marker.addTo(markersRef.current!);
+    }
+  }, [memories, onSelect]);
 
   return (
     <div
-      className="relative select-none touch-none cursor-grab active:cursor-grabbing"
-      style={{ width: W, height: H }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-    >
-      <svg ref={svgRef} width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-        <defs>
-          {/* Sphere gradient */}
-          <radialGradient id="sphereGrad" cx="38%" cy="35%" r="65%">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
-            <stop offset="45%" stopColor="#EAE3FF" stopOpacity="0.7" />
-            <stop offset="80%" stopColor="#C4B5FD" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#6847F5" stopOpacity="0.25" />
-          </radialGradient>
-          {/* Sphere rim shadow */}
-          <radialGradient id="rimGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="82%" stopColor="transparent" />
-            <stop offset="100%" stopColor="#6847F5" stopOpacity="0.18" />
-          </radialGradient>
-          {/* Clip to sphere */}
-          <clipPath id="sphereClip">
-            <circle cx={W / 2} cy={H / 2} r={GLOBE_R} />
-          </clipPath>
-          {/* Glow filter */}
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-        </defs>
-
-        {/* Sphere body */}
-        <circle cx={W / 2} cy={H / 2} r={GLOBE_R} fill="url(#sphereGrad)" />
-
-        {/* Subtle latitude lines */}
-        <g clipPath="url(#sphereClip)" opacity="0.12">
-          {[-60, -30, 0, 30, 60].map((lat) => {
-            const p = project(lat, 0, lonOffset);
-            const yy = H / 2 + p.y;
-            const rx = Math.sqrt(Math.max(0, GLOBE_R * GLOBE_R - (yy - H / 2) * (yy - H / 2)));
-            return <ellipse key={lat} cx={W / 2} cy={yy} rx={rx} ry={rx * 0.08} stroke="#6847F5" strokeWidth="0.8" fill="none" />;
-          })}
-          {/* Longitude lines */}
-          {[-120, -60, 0, 60, 120].map((lon) => {
-            const pts: string[] = [];
-            for (let lat = -80; lat <= 80; lat += 10) {
-              const p = project(lat, lon, lonOffset);
-              if (p.visible) pts.push(`${W / 2 + p.x},${H / 2 + p.y}`);
-            }
-            return pts.length > 1 ? <polyline key={lon} points={pts.join(" ")} stroke="#6847F5" strokeWidth="0.6" fill="none" /> : null;
-          })}
-        </g>
-
-        {/* Memory pins */}
-        <g clipPath="url(#sphereClip)">
-          {clusters.map((cluster, i) => {
-            const p = project(cluster.lat, cluster.lon, lonOffset);
-            if (!p.visible || p.depth < 0.05) return null;
-            const cx = W / 2 + p.x;
-            const cy = H / 2 + p.y;
-            const primary = cluster.memories[0];
-            const { color } = catOf(primary.category);
-            const size = cluster.memories.length > 1 ? 8 : 6;
-            const opacity = 0.4 + p.depth * 0.6;
-
-            return (
-              <g
-                key={i}
-                transform={`translate(${cx}, ${cy})`}
-                style={{ cursor: "pointer", opacity }}
-                onClick={() => onSelect(cluster.memories[0])}
-                filter="url(#glow)"
-              >
-                {/* Pulse ring */}
-                <circle r={size + 4} fill={color} opacity="0.15">
-                  <animate attributeName="r" values={`${size + 3};${size + 8};${size + 3}`} dur="2.5s" repeatCount="indefinite" />
-                  <animate attributeName="opacity" values="0.2;0;0.2" dur="2.5s" repeatCount="indefinite" />
-                </circle>
-                {/* Core dot */}
-                <circle r={size} fill={color} />
-                <circle r={size * 0.4} fill="white" opacity="0.8" />
-                {/* Count badge */}
-                {cluster.memories.length > 1 && (
-                  <text fontSize="5" fill="white" textAnchor="middle" dy="2" fontWeight="bold">
-                    {cluster.memories.length}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </g>
-
-        {/* Rim glow */}
-        <circle cx={W / 2} cy={H / 2} r={GLOBE_R} fill="url(#rimGrad)" />
-        {/* Glass shine */}
-        <ellipse cx={W / 2 - 40} cy={H / 2 - 45} rx={38} ry={22} fill="white" opacity="0.18" transform="rotate(-20, 160, 115)" />
-      </svg>
-
-      {/* Drag hint */}
-      <p className="absolute bottom-1 w-full text-center text-[10px] text-muted-foreground font-medium pointer-events-none">
-        Drag to explore
-      </p>
-    </div>
+      ref={containerRef}
+      className="w-full flex-1"
+      style={{ minHeight: "calc(100dvh - 200px)" }}
+    />
   );
 }
 
-// ── Memory card ────────────────────────────────────────────────────────────
+// ── Memory card (bottom sheet) ─────────────────────────────────────────────
 
 function MemoryCard({ memory, onClose, onReport }: { memory: GlobeMemory; onClose: () => void; onReport: (id: number) => void }) {
   const { color, emoji } = catOf(memory.category);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 40, scale: 0.95 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="fixed inset-x-4 bottom-28 z-50 max-w-[380px] mx-auto"
+      initial={{ opacity: 0, y: 60 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 60 }}
+      transition={{ type: "spring", stiffness: 320, damping: 32 }}
+      className="fixed inset-x-4 bottom-24 z-[1000] max-w-[400px] mx-auto"
     >
-      {/* Scrapbook card */}
-      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-border/30" style={{ transform: "rotate(-0.5deg)" }}>
+      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-border/20" style={{ transform: "rotate(-0.5deg)" }}>
         {/* Tape strip */}
-        <div className="flex justify-center -mt-1">
-          <div className="w-12 h-5 rounded-sm" style={{ background: "rgba(234,227,255,0.8)" }} />
+        <div className="flex justify-center pt-1 pb-0">
+          <div className="w-12 h-4 rounded-sm" style={{ background: "rgba(234,227,255,0.9)" }} />
         </div>
         {memory.photoUrl && (
-          <img src={memory.photoUrl} alt={memory.caption ?? ""} className="w-full object-cover" style={{ maxHeight: 200 }} />
+          <img src={memory.photoUrl} alt={memory.caption ?? ""} className="w-full object-cover max-h-48" />
         )}
-        <div className="p-4 pt-3">
-          {/* Category pill */}
+        <div className="p-4">
           <div className="flex items-center gap-1.5 mb-2">
-            <span className="text-sm">{emoji}</span>
+            <span className="text-base">{emoji}</span>
             <span className="text-[11px] font-extrabold uppercase tracking-widest" style={{ color }}>{memory.category}</span>
           </div>
           {memory.caption && (
-            <p className="font-bold text-foreground text-sm leading-snug italic" style={{ fontFamily: "cursive" }}>
+            <p className="font-bold text-foreground text-sm leading-snug italic" style={{ fontFamily: "Georgia, serif" }}>
               "{memory.caption}"
             </p>
           )}
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
+          <div className="flex items-center gap-3 mt-3 flex-wrap">
             {memory.locationLabel && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
-                <MapPin className="w-3 h-3" />
-                {memory.locationLabel}
+                <MapPin className="w-3 h-3" />{memory.locationLabel}
               </span>
             )}
             {memory.date && (
@@ -257,11 +239,11 @@ function MemoryCard({ memory, onClose, onReport }: { memory: GlobeMemory; onClos
             )}
           </div>
           <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/40">
-            <span className="text-xs text-muted-foreground font-semibold">
+            <span className="text-xs font-bold text-muted-foreground">
               {memory.displayName === "Anonymous" ? "✨ Anonymous" : `@${memory.username ?? memory.displayName}`}
             </span>
             <div className="flex gap-2">
-              <button onClick={() => onReport(memory.publicId)} className="flex items-center gap-1 text-xs text-muted-foreground active:scale-95 px-2 py-1 rounded-lg hover:bg-muted transition-colors">
+              <button onClick={() => onReport(memory.publicId)} className="flex items-center gap-1 text-xs text-muted-foreground px-2 py-1 rounded-lg active:scale-95">
                 <Flag className="w-3 h-3" /> Report
               </button>
               <button onClick={onClose} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center active:scale-95">
@@ -288,12 +270,7 @@ function FeedCard({ memory, onSelect }: { memory: GlobeMemory; onSelect: () => v
     >
       <div className="flex gap-3 p-3">
         {memory.photoUrl ? (
-          <img
-            src={memory.photoUrl}
-            alt=""
-            className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border border-border/30"
-            loading="lazy"
-          />
+          <img src={memory.photoUrl} alt="" className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border border-border/30" loading="lazy" />
         ) : (
           <div className="w-16 h-16 rounded-xl flex-shrink-0 flex items-center justify-center text-2xl" style={{ background: `${color}20` }}>
             {emoji}
@@ -301,7 +278,7 @@ function FeedCard({ memory, onSelect }: { memory: GlobeMemory; onSelect: () => v
         )}
         <div className="flex-1 min-w-0">
           {memory.caption && (
-            <p className="text-sm font-semibold leading-snug line-clamp-2 italic" style={{ fontFamily: "cursive" }}>
+            <p className="text-sm font-semibold leading-snug line-clamp-2 italic" style={{ fontFamily: "Georgia, serif" }}>
               "{memory.caption}"
             </p>
           )}
@@ -311,11 +288,7 @@ function FeedCard({ memory, onSelect }: { memory: GlobeMemory; onSelect: () => v
                 <MapPin className="w-2.5 h-2.5" />{memory.locationLabel}
               </span>
             )}
-            {memory.date && (
-              <span className="text-[10px] text-muted-foreground">
-                {format(new Date(memory.date), "MMM d")}
-              </span>
-            )}
+            {memory.date && <span className="text-[10px] text-muted-foreground">{format(new Date(memory.date), "MMM d")}</span>}
           </div>
           <span className="text-[10px] font-bold mt-1 block" style={{ color }}>
             {emoji} {memory.displayName === "Anonymous" ? "Anonymous" : `@${memory.username ?? memory.displayName}`}
@@ -326,6 +299,41 @@ function FeedCard({ memory, onSelect }: { memory: GlobeMemory; onSelect: () => v
   );
 }
 
+// ── Filter pills ─────────────────────────────────────────────────────────
+
+const FILTERS: { id: FilterId; label: string; emoji: string }[] = [
+  { id: "all", label: "All", emoji: "🌍" },
+  { id: "today", label: "Today", emoji: "📅" },
+  { id: "week", label: "This Week", emoji: "📆" },
+  { id: "travel", label: "Travel", emoji: "✈️" },
+  { id: "food", label: "Food", emoji: "🍜" },
+  { id: "celebration", label: "Celebration", emoji: "🎉" },
+  { id: "nature", label: "Nature", emoji: "🌿" },
+  { id: "everyday", label: "Everyday", emoji: "✨" },
+];
+
+function applyFilter(memories: GlobeMemory[], filter: FilterId): GlobeMemory[] {
+  switch (filter) {
+    case "today":
+      return memories.filter((m) => m.date && isToday(new Date(m.date)));
+    case "week":
+      return memories.filter((m) => m.date && isThisWeek(new Date(m.date)));
+    case "travel":
+    case "food":
+    case "celebration":
+    case "nature":
+    case "everyday":
+    case "people":
+      return memories.filter((m) => m.category === filter);
+    default:
+      return memories;
+  }
+}
+
+// ── View mode toggle ─────────────────────────────────────────────────────
+
+type ViewMode = "map" | "feed";
+
 // ── Main ───────────────────────────────────────────────────────────────────
 
 export default function GlobePage() {
@@ -333,18 +341,18 @@ export default function GlobePage() {
   const [memories, setMemories] = useState<GlobeMemory[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<GlobeMemory | null>(null);
+  const [filter, setFilter] = useState<FilterId>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("map");
   const [reportId, setReportId] = useState<number | null>(null);
   const [reportReason, setReportReason] = useState("");
   const [submittingReport, setSubmittingReport] = useState(false);
 
-  useEffect(() => {
-    loadMemories();
-  }, []);
+  useEffect(() => { loadMemories(); }, []);
 
   async function loadMemories() {
     setLoading(true);
     try {
-      const res = await fetch("/api/globe/memories?limit=50", { credentials: "include" });
+      const res = await fetch("/api/globe/memories?limit=100", { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         setMemories(data.memories ?? []);
@@ -353,124 +361,132 @@ export default function GlobePage() {
     setLoading(false);
   }
 
-  async function submitReport(memoryId: number) {
+  async function submitReport(id: number) {
     if (!reportReason.trim()) return;
     setSubmittingReport(true);
     try {
-      await fetch(`/api/globe/memories/${memoryId}/report`, {
+      await fetch(`/api/globe/memories/${id}/report`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ reason: reportReason }),
       });
-      toast({ title: "Report submitted. Thank you." });
+      toast({ title: "Report submitted. Thank you 💜" });
     } catch { /* silent */ }
     setReportId(null);
     setReportReason("");
     setSubmittingReport(false);
   }
 
-  const feed = memories.slice(0, 20);
+  const handleSelect = useCallback((m: GlobeMemory) => setSelected(m), []);
+  const filtered = applyFilter(memories, filter);
+  const withCoords = filtered.filter((m) => m.approximateLatitude != null && m.approximateLongitude != null);
 
   return (
-    <div className="min-h-[100dvh] bg-[#FFF9F5] text-foreground font-sans overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-[#FFF9F5] text-foreground font-sans flex flex-col overflow-hidden">
+      {/* Leaflet CSS pulse animation */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.3); }
+        }
+        .leaflet-container { background: #EAE3FF; }
+        .leaflet-control-zoom a {
+          background: white !important;
+          border-color: rgba(0,0,0,0.1) !important;
+          color: #6847F5 !important;
+          font-weight: 900 !important;
+        }
+      `}</style>
 
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-40 bg-[#FFF9F5]/90 backdrop-blur-md border-b border-border/40 px-5 pt-14 pb-4">
+      {/* Header */}
+      <div className="flex-none bg-[#FFF9F5]/90 backdrop-blur-md border-b border-border/40 px-5 pt-14 pb-3 z-10">
         <Link href="/home" className="absolute top-5 left-5 w-10 h-10 rounded-full bg-white border border-border shadow-sm flex items-center justify-center active:scale-95">
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div className="text-center">
-          <h1 className="text-xl font-extrabold flex items-center justify-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            Memory Globe
-            <Sparkles className="w-5 h-5 text-primary" />
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Small moments from everywhere.</p>
+
+        {/* View toggle */}
+        <div className="flex justify-center mb-3">
+          <div className="flex bg-muted/60 rounded-full p-1 gap-1">
+            <button
+              onClick={() => setViewMode("map")}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === "map" ? "bg-white shadow text-primary" : "text-muted-foreground"}`}
+            >
+              🗺 Map
+            </button>
+            <button
+              onClick={() => setViewMode("feed")}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === "feed" ? "bg-white shadow text-primary" : "text-muted-foreground"}`}
+            >
+              📋 Feed
+            </button>
+          </div>
+        </div>
+
+        {/* Filter pills */}
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 -mx-5 px-5">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id)}
+              className={`flex-none flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                filter === f.id ? "bg-primary text-white shadow-sm" : "bg-white border border-border/60 text-foreground"
+              }`}
+            >
+              <span>{f.emoji}</span> {f.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* ── Globe sphere ───────────────────────────────────────────── */}
-      <div className="flex flex-col items-center pt-6 pb-4 relative">
-        {/* Atmospheric glow behind globe */}
-        <div className="absolute top-2 w-72 h-72 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(104,71,245,0.08) 0%, transparent 70%)" }} />
-
-        {/* Decorative sparkles */}
-        {[
-          { top: 20, left: 30, size: 10, delay: 0 },
-          { top: 60, left: 15, size: 8, delay: 0.4 },
-          { top: 20, right: 30, size: 12, delay: 0.8 },
-          { top: 80, right: 20, size: 7, delay: 1.2 },
-        ].map((s, i) => (
-          <motion.div
-            key={i}
-            className="absolute pointer-events-none text-primary/40"
-            style={{ top: s.top, left: (s as any).left, right: (s as any).right, fontSize: s.size }}
-            animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.2, 0.8] }}
-            transition={{ duration: 2.5, delay: s.delay, repeat: Infinity }}
-          >
-            ✨
-          </motion.div>
-        ))}
-
-        {loading ? (
-          <div className="w-[320px] h-[320px] flex items-center justify-center">
-            <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-          </div>
-        ) : (
-          <GlobeComponent memories={memories} onSelect={setSelected} />
-        )}
-
-        {/* Memory count pill */}
-        {!loading && memories.length > 0 && (
-          <div className="flex items-center gap-1.5 bg-white border border-border shadow-sm rounded-full px-3 py-1.5 mt-2">
-            <Globe2 className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-bold text-foreground">{memories.length} moment{memories.length !== 1 ? "s" : ""} worldwide</span>
-          </div>
-        )}
+      {/* Stats bar */}
+      <div className="flex-none px-5 py-2 flex items-center gap-2 text-xs text-muted-foreground border-b border-border/20">
+        <MapPin className="w-3 h-3" />
+        <span><strong className="text-foreground">{filtered.length}</strong> moments · <strong className="text-foreground">{withCoords.length}</strong> mapped</span>
       </div>
 
-      {/* ── Today Around the World ──────────────────────────────────── */}
-      <div className="px-5 pb-28">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="flex-1 h-px bg-border/60" />
-          <span className="text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground uppercase">Today Around the World</span>
-          <div className="flex-1 h-px bg-border/60" />
-        </div>
-
-        {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-2xl h-24 animate-pulse border border-border/40" />
-            ))}
+      {/* Map or Feed */}
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-3">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+            <p className="text-sm text-muted-foreground">Loading memories from around the world…</p>
           </div>
-        ) : feed.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-full bg-[#EAE3FF] flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-primary" />
+        </div>
+      ) : viewMode === "map" ? (
+        <div className="flex-1 relative z-0">
+          {filtered.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-16 px-8 text-center">
+              <div className="text-5xl mb-4">🌍</div>
+              <p className="font-bold text-foreground">No memories match this filter yet.</p>
+              <p className="text-xs text-muted-foreground mt-2">Be the first — publish a memory with a location to the globe.</p>
+              <Link href="/gifts" className="mt-4 inline-block bg-primary text-white text-sm font-bold px-6 py-2.5 rounded-full">
+                My Memories
+              </Link>
             </div>
-            <p className="font-bold text-base">No moments here yet.</p>
-            <p className="text-sm text-muted-foreground mt-1">Be the first to share a little moment with the world.</p>
-            <Link href="/gifts">
-              <button className="mt-4 bg-primary text-white text-sm font-bold px-5 py-2.5 rounded-full shadow-[0_0_16px_rgba(104,71,245,0.25)] active:scale-95 transition-all">
-                Share a memory →
-              </button>
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {feed.map((m) => (
+          ) : (
+            <LeafletMap memories={filtered} onSelect={handleSelect} />
+          )}
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 pb-24">
+          {filtered.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="font-bold text-foreground">No memories match this filter.</p>
+            </div>
+          ) : (
+            filtered.map((m) => (
               <FeedCard key={m.publicId} memory={m} onSelect={() => setSelected(m)} />
-            ))}
-          </div>
-        )}
-      </div>
+            ))
+          )}
+        </div>
+      )}
 
-      {/* ── Selected memory card ───────────────────────────────────── */}
+      {/* Selected memory card */}
       <AnimatePresence>
         {selected && (
           <MemoryCard
+            key={selected.publicId}
             memory={selected}
             onClose={() => setSelected(null)}
             onReport={(id) => { setSelected(null); setReportId(id); }}
@@ -478,46 +494,57 @@ export default function GlobePage() {
         )}
       </AnimatePresence>
 
-      {/* ── Report dialog ──────────────────────────────────────────── */}
+      {/* Report sheet */}
       <AnimatePresence>
         {reportId !== null && (
           <>
             <motion.div
-              key="report-backdrop"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50"
+              className="fixed inset-0 bg-black/40 z-[1001]"
               onClick={() => setReportId(null)}
             />
             <motion.div
-              key="report-dialog"
-              initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.92 }}
-              className="fixed inset-x-6 top-1/2 -translate-y-1/2 bg-white rounded-3xl shadow-2xl z-50 p-6"
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              className="fixed bottom-0 left-0 right-0 z-[1002] bg-[#FFF9F5] rounded-t-3xl shadow-2xl p-6"
             >
-              <h3 className="font-extrabold text-lg mb-1">Report this memory</h3>
-              <p className="text-sm text-muted-foreground mb-4">Tell us why this content shouldn't be on the Globe.</p>
-              <textarea
-                value={reportReason}
-                onChange={(e) => setReportReason(e.target.value)}
-                placeholder="Describe the issue…"
-                rows={3}
-                className="w-full bg-[#FFF9F5] border border-border rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-              <div className="flex gap-2 mt-4">
-                <button onClick={() => setReportId(null)} className="flex-1 py-3 rounded-xl border border-border text-sm font-bold text-muted-foreground active:scale-95 transition-all">
-                  Cancel
-                </button>
-                <button
-                  onClick={() => submitReport(reportId)}
-                  disabled={!reportReason.trim() || submittingReport}
-                  className="flex-1 py-3 rounded-xl bg-red-500 text-white text-sm font-bold disabled:opacity-50 active:scale-95 transition-all"
-                >
-                  {submittingReport ? "Sending…" : "Submit Report"}
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="font-extrabold text-lg">Report this memory</h2>
+                <button onClick={() => setReportId(null)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
+              <div className="space-y-2 mb-4">
+                {["Inappropriate content", "Spam", "Privacy violation", "Other"].map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setReportReason(r)}
+                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium border transition-all ${reportReason === r ? "bg-red-50 border-red-300 text-red-700" : "bg-white border-border"}`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => submitReport(reportId!)}
+                disabled={!reportReason || submittingReport}
+                className="w-full h-12 bg-red-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
+              >
+                {submittingReport ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Report"}
+              </button>
             </motion.div>
           </>
         )}
       </AnimatePresence>
+
+      {/* Privacy note */}
+      {viewMode === "map" && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[999] pointer-events-none">
+          <div className="bg-white/80 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] text-muted-foreground font-medium shadow-sm border border-border/40 whitespace-nowrap">
+            📍 City-level locations only · No exact GPS shared
+          </div>
+        </div>
+      )}
     </div>
   );
 }

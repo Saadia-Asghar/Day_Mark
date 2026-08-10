@@ -1,58 +1,80 @@
-import { useState } from "react";
+/**
+ * Onboarding — shown to new users after email verification.
+ * Screens: 4 intro slides → personal setup → /home
+ *
+ * Username is collected during sign-up for email users.
+ * If the DB user has no username yet (Google sign-up), the username step is shown.
+ */
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, AtSign, Check, X } from "lucide-react";
+import { ChevronRight, AtSign, Check, X, Camera } from "lucide-react";
 import { useCompleteOnboarding } from "@workspace/api-client-react";
-import markyWaving from "@assets/generated_images/marky_waving.png";
-import heroImg from "@assets/generated_images/hero.png";
-import markyCelebrating from "@assets/generated_images/marky_celebrating.png";
+import { DaymarkCharacter } from "@/components/daymark-character";
 
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+// ── Spec slides (Section 6) ────────────────────────────────────────────────
 const WELCOME_STEPS = [
   {
-    title: "Welcome to Daymark",
-    desc: "Life leaves you little gifts every day. We help you keep them.",
-    img: markyWaving,
+    emoji: "🎁",
+    title: "Keep your moments",
+    desc: "Save photos, stories and little things that matter.",
+    character: "marky" as const,
+    pose: "idle" as const,
+    animation: "float" as const,
   },
   {
-    title: "Wrap Your Memories",
-    desc: "Turn moments into beautiful memories you can open again.",
-    img: heroImg,
+    emoji: "💜",
+    title: "Remember with your people",
+    desc: "Build Daylinks, shared memories and Future Gifts.",
+    character: "hearty" as const,
+    pose: "idle" as const,
+    animation: "float" as const,
   },
   {
-    title: "Find Your People",
-    desc: "Connect with friends and build DayLink streaks by sharing moments together.",
-    img: markyCelebrating,
+    emoji: "💌",
+    title: "Send something into the future",
+    desc: "Save messages for birthdays, anniversaries and meaningful days.",
+    character: "marky" as const,
+    pose: "idle" as const,
+    animation: "float" as const,
+  },
+  {
+    emoji: "🌍",
+    title: "See little moments from everywhere",
+    desc: "Explore memories people explicitly choose to share.",
+    character: "marky" as const,
+    pose: "celebrate" as const,
+    animation: "float" as const,
   },
 ];
 
-// ── Username validation ────────────────────────────────────────────────────
+// ── Username validation (for Google users) ─────────────────────────────────
 function isValidUsername(u: string) {
   return /^[a-z0-9_]{3,24}$/.test(u);
 }
 
-// ── Username step ─────────────────────────────────────────────────────────
-function UsernameStep({ onDone }: { onDone: (username: string | null) => void }) {
+function UsernameStep({ onDone }: { onDone: () => void }) {
   const [value, setValue] = useState("");
   const [checking, setChecking] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
   const [debounce, setDebounce] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const handleChange = (raw: string) => {
     const v = raw.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 24);
     setValue(v);
     setAvailable(null);
-
     if (debounce) clearTimeout(debounce);
     if (!isValidUsername(v)) return;
-
     setChecking(true);
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/users/search?q=${encodeURIComponent(v)}`, { credentials: "include" });
+        const res = await fetch(`${basePath}/api/users/search?q=${encodeURIComponent(v)}`, { credentials: "include" });
         if (res.ok) {
           const data = await res.json();
-          // Available if no one has this exact username
           const taken = (data.users ?? []).some((u: { username?: string }) => u.username?.toLowerCase() === v);
           setAvailable(!taken);
         }
@@ -62,37 +84,34 @@ function UsernameStep({ onDone }: { onDone: (username: string | null) => void })
     setDebounce(t);
   };
 
-  const canContinue = isValidUsername(value) && available !== false;
+  const canContinue = !value || (isValidUsername(value) && available !== false);
 
   const handleSubmit = async () => {
     if (!canContinue) return;
+    setSaving(true);
     if (value && available) {
-      // Save username
       try {
-        await fetch("/api/auth/profile", {
+        await fetch(`${basePath}/api/auth/profile`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ username: value }),
         });
       } catch { /* best effort */ }
-      onDone(value);
-    } else {
-      onDone(null);
     }
+    setSaving(false);
+    onDone();
   };
 
   return (
     <div className="flex flex-col items-center text-center w-full px-4">
-      <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-        <AtSign className="w-10 h-10 text-primary" />
-      </div>
+      <DaymarkCharacter character="marky" pose="wave" size="lg" animation="wave" className="mb-6" />
       <h1 className="text-2xl font-extrabold text-foreground mb-2">Choose your @username</h1>
       <p className="text-sm text-muted-foreground max-w-[260px] mb-8 leading-relaxed">
-        Friends can find you on Daymark with your @username. You can always change this later.
+        Friends can find you on Daymark with your @username.
       </p>
 
-      <div className="w-full max-w-[300px] relative">
+      <div className="w-full max-w-[300px] relative mb-1">
         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold text-sm">@</div>
         <input
           type="text"
@@ -116,28 +135,116 @@ function UsernameStep({ onDone }: { onDone: (username: string | null) => void })
         )}
       </div>
 
-      {/* Validation hint */}
-      <div className="mt-2 h-5">
-        {value.length > 0 && !isValidUsername(value) && (
+      <div className="h-5 mb-4">
+        {value && !isValidUsername(value) && (
           <p className="text-xs text-muted-foreground">3–24 chars, letters, numbers and _ only</p>
         )}
         {isValidUsername(value) && available === false && (
-          <p className="text-xs text-red-500">That username is taken</p>
+          <p className="text-xs text-red-500">That username is already part of someone's story.</p>
         )}
         {isValidUsername(value) && available === true && (
-          <p className="text-xs text-green-600 font-semibold">@{value} is available!</p>
+          <p className="text-xs text-green-600 font-semibold">✓ @{value} is available</p>
         )}
       </div>
 
-      <div className="flex flex-col gap-3 w-full max-w-[300px] mt-6">
+      <div className="flex flex-col gap-3 w-full max-w-[300px]">
         <button
           onClick={handleSubmit}
-          disabled={!canContinue}
+          disabled={!canContinue || saving}
           className="w-full bg-primary text-white py-4 rounded-2xl text-base font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50"
         >
-          {value && available ? "Claim @" + value : "Continue"}
+          {saving
+            ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            : value && available ? `Claim @${value}` : "Continue"}
         </button>
-        <button onClick={() => onDone(null)} className="text-sm text-muted-foreground font-medium">
+        <button onClick={onDone} className="text-sm text-muted-foreground font-medium">
+          Skip for now
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Personal setup step (Section 7) ───────────────────────────────────────
+function PersonalSetupStep({ onDone }: { onDone: () => void }) {
+  const [displayName, setDisplayName] = useState("");
+  const [birthday, setBirthday] = useState("");
+  const [city, setCity] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const body: Record<string, string> = {};
+    if (displayName.trim()) body.displayName = displayName.trim();
+    if (birthday) body.birthday = birthday;
+    if (city.trim()) body.city = city.trim();
+    if (Object.keys(body).length > 0) {
+      try {
+        await fetch(`${basePath}/api/auth/profile`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(body),
+        });
+      } catch { /* best effort */ }
+    }
+    setSaving(false);
+    onDone();
+  };
+
+  return (
+    <div className="flex flex-col items-center w-full px-4">
+      <DaymarkCharacter character="marky" pose="celebrate" size="md" animation="float" className="mb-5" />
+      <h1 className="text-2xl font-extrabold text-center mb-1">Almost there ✨</h1>
+      <p className="text-sm text-muted-foreground text-center mb-6 max-w-[240px] leading-relaxed">
+        A few optional details to personalise your Daymark.
+      </p>
+
+      <div className="w-full max-w-[320px] flex flex-col gap-4">
+        <div>
+          <label className="text-sm font-bold block mb-1.5">Display name</label>
+          <input
+            type="text"
+            value={displayName}
+            onChange={e => setDisplayName(e.target.value)}
+            placeholder="Your name"
+            className="w-full px-4 py-3.5 bg-white border-2 border-border rounded-2xl text-sm outline-none focus:border-primary transition-colors"
+          />
+        </div>
+
+        <div>
+          <label className="text-sm font-bold block mb-1.5">Birthday <span className="text-muted-foreground font-normal">(optional)</span></label>
+          <input
+            type="date"
+            value={birthday}
+            onChange={e => setBirthday(e.target.value)}
+            className="w-full px-4 py-3.5 bg-white border-2 border-border rounded-2xl text-sm outline-none focus:border-primary transition-colors"
+          />
+        </div>
+
+        <div>
+          <label className="text-sm font-bold block mb-1.5">City <span className="text-muted-foreground font-normal">(optional)</span></label>
+          <input
+            type="text"
+            value={city}
+            onChange={e => setCity(e.target.value)}
+            placeholder="Where are you based?"
+            className="w-full px-4 py-3.5 bg-white border-2 border-border rounded-2xl text-sm outline-none focus:border-primary transition-colors"
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 w-full max-w-[320px] mt-6">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full bg-primary text-white py-4 rounded-2xl text-base font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50"
+        >
+          {saving
+            ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            : "Start my Daymark 🎁"}
+        </button>
+        <button onClick={onDone} className="text-sm text-muted-foreground font-medium">
           Skip for now
         </button>
       </div>
@@ -150,11 +257,30 @@ export default function OnboardingPage() {
   const [, setLocation] = useLocation();
   const [step, setStep] = useState(0);
   const [showUsernameStep, setShowUsernameStep] = useState(false);
+  const [showSetupStep, setShowSetupStep] = useState(false);
+  const [needsUsername, setNeedsUsername] = useState(false);
+  const [checked, setChecked] = useState(false);
   const completeOnboarding = useCompleteOnboarding();
   const qc = useQueryClient();
 
-  // Total steps: welcome slides + username step
-  const TOTAL_DOTS = WELCOME_STEPS.length + 1;
+  // Detect if user already has a username (email sign-up), or needs one (Google sign-up)
+  useEffect(() => {
+    fetch(`${basePath}/api/auth/user`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const hasUsername = !!(d?.user?.username);
+        setNeedsUsername(!hasUsername);
+        setChecked(true);
+      })
+      .catch(() => { setNeedsUsername(false); setChecked(true); });
+  }, []);
+
+  const totalDots = WELCOME_STEPS.length + (needsUsername ? 1 : 0) + 1; // +1 for setup
+  const currentDot = showSetupStep
+    ? totalDots - 1
+    : showUsernameStep
+      ? WELCOME_STEPS.length
+      : step;
 
   const finish = () => {
     completeOnboarding.mutate(undefined, {
@@ -169,34 +295,30 @@ export default function OnboardingPage() {
   const nextStep = () => {
     if (step < WELCOME_STEPS.length - 1) {
       setStep(step + 1);
-    } else if (!showUsernameStep) {
+    } else if (needsUsername && !showUsernameStep) {
       setShowUsernameStep(true);
     } else {
-      finish();
+      setShowSetupStep(true);
     }
   };
 
-  const handleUsernameDone = (_username: string | null) => {
-    finish();
-  };
+  if (!checked) return null;
 
-  const currentDot = showUsernameStep ? WELCOME_STEPS.length : step;
+  const current = WELCOME_STEPS[step];
 
   return (
     <div className="h-[100dvh] bg-background flex flex-col items-center justify-between p-5 relative overflow-hidden">
-      {/* Decorative background shapes */}
+      {/* Decorative blobs */}
       <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
       <div className="absolute top-1/2 -left-20 w-48 h-48 bg-accent/10 rounded-full blur-3xl" />
 
       {/* Progress dots */}
       <div className="w-full flex justify-between items-center pt-8 z-10">
         <div className="flex gap-2">
-          {Array.from({ length: TOTAL_DOTS }, (_, i) => (
+          {Array.from({ length: totalDots }, (_, i) => (
             <div
               key={i}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                i === currentDot ? "w-8 bg-primary" : "w-2 bg-muted-foreground/30"
-              }`}
+              className={`h-2 rounded-full transition-all duration-300 ${i === currentDot ? "w-8 bg-primary" : "w-2 bg-muted-foreground/30"}`}
             />
           ))}
         </div>
@@ -207,7 +329,29 @@ export default function OnboardingPage() {
 
       <div className="flex-1 w-full flex flex-col items-center justify-center relative z-10">
         <AnimatePresence mode="wait">
-          {!showUsernameStep ? (
+          {showSetupStep ? (
+            <motion.div
+              key="setup"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="w-full"
+            >
+              <PersonalSetupStep onDone={finish} />
+            </motion.div>
+          ) : showUsernameStep ? (
+            <motion.div
+              key="username"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="w-full"
+            >
+              <UsernameStep onDone={() => setShowSetupStep(true)} />
+            </motion.div>
+          ) : (
             <motion.div
               key={`slide-${step}`}
               initial={{ opacity: 0, x: 20 }}
@@ -216,47 +360,30 @@ export default function OnboardingPage() {
               transition={{ duration: 0.3 }}
               className="flex flex-col items-center text-center w-full"
             >
-              <div className="w-64 h-64 md:w-80 md:h-80 relative mb-10">
-                <img
-                  src={WELCOME_STEPS[step].img}
-                  alt={WELCOME_STEPS[step].title}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <h1 className="text-3xl font-bold text-foreground mb-4">
-                {WELCOME_STEPS[step].title}
-              </h1>
-              <p className="text-lg text-muted-foreground font-medium px-4 max-w-xs leading-relaxed">
-                {WELCOME_STEPS[step].desc}
-              </p>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="username-step"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="w-full"
-            >
-              <UsernameStep onDone={handleUsernameDone} />
+              <DaymarkCharacter
+                character={current.character}
+                pose={current.pose}
+                size="hero"
+                animation={current.animation}
+                className="mb-8"
+              />
+              <div className="text-5xl mb-4">{current.emoji}</div>
+              <h1 className="text-3xl font-bold text-foreground mb-4">{current.title}</h1>
+              <p className="text-lg text-muted-foreground font-medium px-4 max-w-xs leading-relaxed">{current.desc}</p>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* CTA button — only shown for welcome slides, not username step */}
-      {!showUsernameStep && (
+      {/* CTA — only on slide steps */}
+      {!showUsernameStep && !showSetupStep && (
         <div className="w-full pb-10 z-10">
           <button
             onClick={nextStep}
-            disabled={completeOnboarding.isPending}
-            className="w-full bg-primary text-primary-foreground py-4 rounded-2xl text-lg font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-70"
+            className="w-full bg-primary text-primary-foreground py-4 rounded-2xl text-lg font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all"
           >
             {step === WELCOME_STEPS.length - 1 ? "Let's go 🎁" : "Continue"}
-            {step < WELCOME_STEPS.length - 1 && !completeOnboarding.isPending && (
-              <ChevronRight className="w-5 h-5" />
-            )}
+            {step < WELCOME_STEPS.length - 1 && <ChevronRight className="w-5 h-5" />}
           </button>
         </div>
       )}

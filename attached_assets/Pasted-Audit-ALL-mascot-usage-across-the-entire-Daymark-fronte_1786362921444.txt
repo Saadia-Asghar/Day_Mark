@@ -1,0 +1,433 @@
+Audit ALL mascot usage across the entire Daymark frontend.
+
+CURRENT PROBLEM
+
+The mascot is washed out and blends into the background on EVERY screen, not
+just the auth page.
+
+This is a GLOBAL asset problem.
+
+Do NOT fix individual screens one by one.
+
+Fix the mascot system at the source.
+
+==================================================
+1. FIND EVERY CHARACTER ASSET
+==================================================
+
+Search the whole repository for mascot imports and references.
+
+Examples:
+
+marky
+hearty
+cal
+pix
+stella
+generated_images
+character
+mascot
+
+List every active asset and every screen using it.
+
+==================================================
+2. REPLACE THE GLOBAL MARKY ASSET FAMILY
+==================================================
+
+Marky should have a strong Daymark purple identity everywhere.
+
+Use this palette:
+
+MAIN BODY
+#7B5CFF
+
+SHADOW PURPLE
+#5B3FE0
+
+LIGHT LAVENDER
+#B9A8FF
+
+BOW
+#FFC857
+
+FACE DETAILS
+#211936
+
+BLUSH
+#FF8FB3
+
+HEART ACCENT
+#FF719D
+
+Marky must remain clearly purple even at 60–80px.
+
+Do not use pale cream or almost-white body shading.
+
+==================================================
+3. TRANSPARENT BACKGROUND EVERYWHERE
+==================================================
+
+Every active mascot asset must have a transparent background.
+
+Preferred:
+
+transparent WebP
+
+Fallback:
+
+transparent PNG
+
+Remove all active usage of:
+
+- beige-background mascot images
+- white-background mascot images
+- square AI generated image canvases
+- faded mascot screenshots
+- JPEG character assets
+
+There should be no visible rectangular canvas around any mascot.
+
+==================================================
+4. CREATE ONE GLOBAL CHARACTER COMPONENT
+==================================================
+
+Create:
+
+DaymarkCharacter.tsx
+
+All screens must use this component instead of directly importing image files.
+
+API example:
+
+<DaymarkCharacter
+  character="marky"
+  pose="wave"
+  size="md"
+  animation="float"
+/>
+
+Support:
+
+character:
+marky
+hearty
+cal
+pix
+stella
+
+pose:
+idle
+wave
+holdingGift
+peek
+celebrate
+sleep
+thinking
+envelope
+globe
+
+size:
+xs
+sm
+md
+lg
+hero
+
+animation:
+none
+float
+wave
+bounceOnce
+peek
+celebrate
+
+==================================================
+5. CENTRALIZE ASSET MAPPING
+==================================================
+
+Inside DaymarkCharacter:
+
+map each character + pose to ONE approved transparent asset.
+
+Example:
+
+marky.idle
+marky.wave
+marky.holdingGift
+marky.peek
+marky.celebrate
+
+Do not let pages choose arbitrary image files.
+
+This ensures visual consistency.
+
+==================================================
+6. REMOVE OLD DIRECT IMPORTS
+==================================================
+
+Replace all imports like:
+
+import markyWaving from ...
+import markyHoldingGift from ...
+import mascot from ...
+
+with:
+
+<DaymarkCharacter ... />
+
+Do this across:
+
+Auth
+Sign Up
+Sign In
+Forgot Password
+Onboarding
+Home
+Wrap
+Gifts
+Gift Detail
+Calendar
+People
+Person Detail
+Future Gifts
+Messages
+Connections
+Profile
+Globe
+Notifications
+Empty states
+Success states
+
+==================================================
+7. GLOBAL DROP SHADOW
+==================================================
+
+Apply one reusable silhouette shadow:
+
+filter:
+drop-shadow(0 8px 14px rgba(48, 32, 96, 0.18))
+
+For small assets:
+
+drop-shadow(0 4px 8px rgba(48, 32, 96, 0.14))
+
+Do not use rectangular box shadows.
+
+==================================================
+8. COLOR CONSISTENCY TEST
+==================================================
+
+Test every Marky asset against:
+
+#FFF9F5
+#F8F3FF
+#FFFFFF
+
+Marky must remain clearly visible on all three.
+
+At 70px height, these must still read clearly:
+
+- eyes
+- mouth
+- arms
+- legs
+- bow
+- body silhouette
+
+==================================================
+9. OTHER CHARACTER COLOR SYSTEM
+==================================================
+
+Keep characters visually related but not identical.
+
+MARKY
+purple + gold
+
+HEARTY
+pink + purple
+
+CAL
+sky blue + purple
+
+PIX
+mint + lavender
+
+STELLA
+yellow + purple
+
+Use the same:
+
+- eye style
+- 3D softness
+- material style
+- lighting
+- saturation
+- shadow language
+
+==================================================
+10. ANIMATION SYSTEM
+==================================================
+
+Use Framer Motion through DaymarkCharacter.
+
+Default idle:
+
+y:
+[0, -4, 0]
+
+duration:
+3.5
+
+repeat:
+Infinity
+
+ease:
+easeInOut
+
+Do not animate aggressively.
+
+Celebrate:
+
+play once.
+
+Wave:
+
+play once on appearance.
+
+Empty-state idle:
+
+slow float only.
+
+==================================================
+11. REDUCED MOTION
+==================================================
+
+Respect prefers-reduced-motion.
+
+If enabled:
+
+show static character.
+
+No loops.
+No bouncing.
+No repeated rotation.
+
+==================================================
+12. CHARACTER SIZE RULES
+==================================================
+
+Normal screens:
+
+60–90px
+
+Empty states:
+
+90–130px
+
+Onboarding/auth:
+
+110–150px
+
+Success states:
+
+100–140px
+
+Never let a mascot dominate memory photography.
+
+==================================================
+13. HOME SCREEN GLOBAL FIX
+==================================================
+
+On Home:
+
+Header Marky:
+transparent
+purple
+80px approx
+subtle float
+
+Gift From Your Past empty state:
+transparent
+purple
+100px approx
+interact visually with separate gift box element
+
+No image-background rectangle.
+
+==================================================
+14. AUTH SCREENS
+==================================================
+
+All auth mascot states should use the same purple Marky family.
+
+Auth landing:
+marky.wave
+
+Sign Up:
+marky.holdingGift
+
+Verify:
+marky.envelope
+
+Sign In:
+marky.wave
+
+Forgot Password:
+marky.thinking
+
+Success:
+marky.celebrate
+
+No faded white mascot variation.
+
+==================================================
+15. FINAL REPOSITORY CLEANUP
+==================================================
+
+After migrating every screen:
+
+find unused old mascot assets.
+
+Do not delete blindly.
+
+Move unused legacy assets into:
+
+/assets/legacy/characters
+
+or remove them only if definitely unused.
+
+==================================================
+16. VISUAL QA
+==================================================
+
+Inspect every route.
+
+Confirm:
+
+- same Marky purple
+- no washed-out character
+- no square background
+- no different eye style
+- no inconsistent bow color
+- no mismatched rendering quality
+- no overlap with text/buttons
+- no horizontal overflow
+
+==================================================
+17. FINAL REPORT
+==================================================
+
+Report:
+
+1. character assets found
+2. active assets replaced
+3. DaymarkCharacter component created
+4. screens migrated
+5. legacy assets removed/moved
+6. palette applied
+7. animation presets added
+8. reduced-motion support
+9. any remaining inconsistent mascot assets
+
+Do not mark complete until EVERY visible mascot in the app uses the unified
+transparent high-contrast character system.

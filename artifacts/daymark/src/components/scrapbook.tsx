@@ -4,8 +4,7 @@
  */
 import { useReducedMotion, motion, AnimatePresence } from "framer-motion";
 import { MapPin, Image as ImageIcon } from "lucide-react";
-import markyWaving from "@assets/generated_images/marky_waving.png";
-import markyCelebrating from "@assets/generated_images/marky_celebrating.png";
+import { DaymarkCharacter } from "@/components/daymark-character";
 import { Link } from "wouter";
 
 // ── TapeStrip ─────────────────────────────────────────────────────────────
@@ -352,7 +351,7 @@ export function EmptyPastGiftState() {
   return (
     <div className="bg-white rounded-3xl border border-border shadow-sm p-8 text-center flex flex-col items-center">
       <div className="relative mb-4">
-        <img src={markyWaving} alt="Marky" className="w-20 h-20" />
+        <DaymarkCharacter character="marky" pose="empty" size="sm" animation="sleep" />
         {/* Empty gift box beside Marky */}
         <div className="absolute -right-4 bottom-0 w-10 h-10">
           <div className="absolute bottom-0 left-0 right-0 h-6 rounded-md bg-[#EAE3FF] border border-primary/20" />
@@ -518,14 +517,14 @@ export function PhysicalGiftAnimation({
         </motion.div>
 
         {/* Step 9: Marky enters from right */}
-        <motion.img
-          src={markyCelebrating}
-          alt="Marky celebrating"
+        <motion.div
           initial={{ x: 60, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.4, delay: 1.1 }}
-          className="absolute -bottom-8 -right-10 w-16 h-16 drop-shadow-md pointer-events-none"
-        />
+          className="absolute -bottom-8 -right-10 pointer-events-none"
+        >
+          <DaymarkCharacter character="marky" pose="celebrate" size="sm" animation="none" />
+        </motion.div>
       </motion.div>
 
       {/* Step 10: Success message */}

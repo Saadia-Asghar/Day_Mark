@@ -6,7 +6,7 @@ import { Plus, Search } from "lucide-react";
 import { differenceInDays, format } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
 import { ScrapbookPortrait, TapeStrip } from "@/components/scrapbook";
-import heartyLooking from "@assets/generated_images/hearty_looking.png";
+import { DaymarkCharacter } from "@/components/daymark-character";
 
 const ROTATIONS = [-2.5, 1.8, -1.2, 2.1, -1.8, 1.4, -2, 1.5];
 
@@ -145,7 +145,7 @@ export default function PeoplePage() {
         </div>
       ) : people && people.length === 0 ? (
         <div className="px-5 mt-12 flex flex-col items-center text-center">
-          <img src={heartyLooking} alt="Hearty" className="w-40 h-40 object-contain mb-5" />
+          <DaymarkCharacter character="hearty" pose="idle" size="lg" animation="float" className="mb-5" />
           <h2 className="text-xl font-bold mb-1">Every story begins with someone.</h2>
           <p className="text-sm text-muted-foreground mb-7 max-w-xs">
             Add the people who make your memories worth keeping.

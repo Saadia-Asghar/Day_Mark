@@ -1,0 +1,1452 @@
+Audit the CURRENT Daymark repository before editing.
+
+This is a production-readiness and social-retention pass.
+
+DO NOT rebuild working features.
+
+The repository already contains:
+
+- Clerk authentication
+- persistent onboarding
+- user profiles
+- username discovery
+- Connections
+- People
+- Memories
+- My Gifts
+- Gift Detail
+- Future Gifts
+- Calendar
+- Daylinks
+- Daily Prompts
+- Memory Drops
+- Messages for Later
+- server-side scheduled message delivery
+- notifications
+- shared-memory participants
+- Memory Globe
+- persistent image storage
+- SSE real-time infrastructure
+- secure memory-share-link schema
+- Drizzle ORM + PostgreSQL through DATABASE_URL
+
+FIRST inspect what already exists and reuse it.
+
+MAIN OBJECTIVE
+
+Turn Daymark from a hackathon prototype into a real relationship-memory product.
+
+The strongest recurring loops should become:
+
+1. birthdays and anniversaries
+2. Daylinks
+3. memories from the past
+4. scheduled wishes
+5. public opt-in Globe memories
+6. friend invitations and connections
+7. monthly Memory Capsules
+
+==================================================
+PART 1 — MIGRATE DATABASE TO SUPABASE POSTGRES
+==================================================
+
+Use Supabase PostgreSQL as Daymark's production database.
+
+IMPORTANT:
+
+Do NOT replace Drizzle ORM.
+
+The current database layer already uses:
+
+drizzle-orm/node-postgres
+pg Pool
+DATABASE_URL
+
+Preserve that architecture.
+
+Change the DATABASE_URL to the Supabase Postgres connection string and migrate
+all existing Drizzle schemas safely.
+
+Do NOT introduce a second parallel database.
+
+Supabase should become the single production Postgres database.
+
+Preserve all tables and relationships including:
+
+users
+people
+memories
+memoryPeople
+memoryParticipants
+calendarEvents
+futureGifts
+notifications
+connections
+relationshipStreaks
+streakActivities
+scheduledMessages
+memoryDrops
+memoryShareLinks
+dailyPrompts
+promptResponses
+
+Before migration:
+
+1. inventory all current schema
+2. generate migration
+3. back up existing data
+4. apply migrations to Supabase
+5. verify row counts
+6. verify foreign keys
+7. verify indexes
+8. run the full application against Supabase
+
+Do not lose existing users or memories.
+
+==================================================
+PART 2 — SUPABASE REALTIME
+==================================================
+
+Daymark already uses SSE.
+
+Keep SSE for server-driven application events if useful.
+
+Add Supabase Realtime only where it improves reliability and multi-instance
+deployment.
+
+Good candidates:
+
+notifications
+connections
+Memory Drops
+Daylink updates
+shared-memory updates
+scheduled-message arrival
+
+Do NOT create duplicate event delivery.
+
+Choose one source of truth for each event category.
+
+Preferred architecture:
+
+database = Supabase Postgres
+auth = Clerk
+ORM = Drizzle
+server API = Express
+realtime = Supabase Realtime and/or SSE with clear boundaries
+files = current Object Storage unless intentionally migrated later
+
+If keeping SSE:
+
+make it work safely across multiple server instances, preferably using
+Supabase Postgres events or another shared transport rather than only
+in-memory client maps.
+
+==================================================
+PART 3 — SUPABASE SECURITY
+==================================================
+
+Because Clerk remains the auth provider:
+
+do not switch to Supabase Auth.
+
+Continue using Clerk authentication.
+
+Map Clerk user IDs to Daymark internal users.
+
+All Express routes must still enforce ownership server-side.
+
+If any Supabase client-side table access is introduced:
+
+add proper Row Level Security.
+
+Never expose unrestricted tables through the anon key.
+
+Sensitive tables include:
+
+memories
+people
+scheduledMessages
+memoryDrops
+futureGifts
+connections
+relationshipStreaks
+notifications
+
+Prefer server-mediated access for private Daymark data.
+
+==================================================
+PART 4 — BIRTHDAY + ANNIVERSARY EVENT SYSTEM
+==================================================
+
+Build a first-class Relationship Event system.
+
+Create or extend a model such as:
+
+relationshipEvents
+
+Fields:
+
+id
+ownerUserId
+personId
+linkedUserId optional
+type
+title
+eventMonth
+eventDay
+eventYear optional
+timezone
+isRecurring
+visibility
+reminderSettings
+createdAt
+updatedAt
+
+Types:
+
+birthday
+anniversary
+friendship_anniversary
+graduation
+custom
+
+Use this system to power:
+
+Calendar
+Person Detail
+Home Coming Up
+notifications
+scheduled wishes
+Globe events where explicitly public
+
+==================================================
+PART 5 — NEVER FORGET A BIRTHDAY
+==================================================
+
+A user should be able to save someone's birthday once.
+
+Daymark then handles reminders automatically.
+
+Recommended reminder schedule:
+
+7 days before
+3 days before
+1 day before
+morning of event
+
+Allow user configuration.
+
+Example:
+
+Sarah's birthday is tomorrow 🎂
+
+You haven't prepared anything yet.
+
+Actions:
+
+Write a wish
+Create Future Gift
+Wrap a memory
+Remind me tomorrow
+
+Do not send excessive reminders.
+
+==================================================
+PART 6 — LAST-MINUTE BIRTHDAY SAFETY NET
+==================================================
+
+This is important.
+
+If the birthday arrives and the user has NOT prepared a scheduled message:
+
+show a strong but gentle reminder.
+
+Example:
+
+It's Sarah's birthday today 🎂
+
+You haven't wished her yet.
+
+Quick actions:
+
+Send a wish now
+Share a memory
+Create a birthday gift
+
+Do not automatically impersonate the user.
+
+Daymark must never generate and send a personal wish without user consent.
+
+==================================================
+PART 7 — PRE-SAVED AUTOMATIC BIRTHDAY WISH
+==================================================
+
+If the user prepared a message in advance:
+
+deliver it automatically on the chosen time.
+
+Existing Messages for Later infrastructure should be reused.
+
+Example:
+
+Happy birthday Sarah 💜
+Still one of my favorite people to make memories with.
+
+At delivery time:
+
+1. scheduler claims message
+2. verifies recipient
+3. verifies accepted connection
+4. verifies neither user has blocked the other
+5. marks delivery
+6. creates notification
+7. sends real-time event
+8. places message in recipient inbox
+
+Recipient notification:
+
+Saadia saved something for your birthday 💜
+
+Tap to open.
+
+==================================================
+PART 8 — PROFILE BIRTHDAY WISH WALL
+==================================================
+
+When today's date is a user's birthday, their Daymark profile may show:
+
+Birthday Today 🎂
+
+Connections can tap:
+
+Wish Sarah
+
+Options:
+
+Write a wish
+Send Memory Drop
+Share a memory
+Create Future Gift
+
+After sending, the birthday person sees:
+
+Birthday Wishes
+
+Examples:
+
+Saadia wished you happy birthday 💜
+
+Areeba sent you a memory.
+
+Mom saved you a Future Gift.
+
+Do NOT expose private message content publicly.
+
+==================================================
+PART 9 — WISH RECEIPT
+==================================================
+
+Create a lightweight wish record.
+
+birthdayWishes
+
+Fields:
+
+id
+eventId
+senderUserId
+recipientUserId
+messageId optional
+memoryDropId optional
+futureGiftId optional
+type
+createdAt
+
+Type:
+
+text
+memory
+drop
+future_gift
+
+The recipient profile can display:
+
+14 people remembered your day 💜
+
+But avoid competitive popularity styling.
+
+Do not rank wishes.
+
+==================================================
+PART 10 — ANNIVERSARY WISHING
+==================================================
+
+The same system should support:
+
+friendship anniversaries
+relationship anniversaries
+graduation anniversaries
+custom meaningful dates
+
+Examples:
+
+3 years of being friends ✨
+
+One year since your graduation 🎓
+
+Allow:
+
+Schedule a message
+Share an old memory
+Create Future Gift
+
+==================================================
+PART 11 — PUBLIC MEMORY BIRTHDAYS ON GLOBE
+==================================================
+
+Add an optional feature:
+
+Memory Birthday 🌍
+
+A user can choose to make the anniversary of a selected memory visible on the
+Memory Globe.
+
+Example:
+
+1 year ago today
+Islamabad, Pakistan
+
+“My first university hackathon.”
+
+This must be EXPLICITLY opt-in.
+
+Add settings such as:
+
+showOnGlobeAnniversary
+globeAnniversaryAnonymous
+globeAnniversaryLocationPrecision
+
+Default:
+
+OFF
+
+Never publish private memories automatically.
+
+==================================================
+PART 12 — PUBLIC BIRTHDAY MOMENTS
+==================================================
+
+A user may optionally make their birthday visible on the Globe.
+
+Example:
+
+Birthday moment from Lahore 🎂
+
+“Twenty-two today. Had chai with the people I love.”
+
+Options:
+
+Public with username
+Anonymous
+City only
+Country only
+Hide location
+
+Do NOT publish someone's birthday because another user stored it in My People.
+
+Only the actual Daymark account owner can make their own birthday public.
+
+==================================================
+PART 13 — REAL GLOBAL MAP
+==================================================
+
+Upgrade the current Memory Globe.
+
+The current simplified map should become a proper geographic discovery
+experience.
+
+Support:
+
+country-level view
+city-level view
+zoom
+pan
+clustered memories
+tap cluster
+tap individual moment
+
+When zoomed far out:
+
+show country clusters.
+
+Example:
+
+Pakistan
+82 moments
+
+Japan
+34 moments
+
+Turkey
+18 moments
+
+Zoom in:
+
+Islamabad
+12 moments
+
+Lahore
+21 moments
+
+Karachi
+26 moments
+
+Zoom further:
+
+individual memory points.
+
+==================================================
+PART 14 — LOCATION PRIVACY
+==================================================
+
+Never expose precise personal coordinates by default.
+
+Store both:
+
+exact private location, if user chooses to save it
+
+and
+
+public approximate location for Globe.
+
+Public precision options:
+
+Country
+Region
+City
+
+Do not expose street-level coordinates.
+
+For Globe markers, jitter or use city centroid rather than exact personal GPS
+where appropriate.
+
+==================================================
+PART 15 — GLOBE MEMORY PROFILE
+==================================================
+
+Tap a public memory.
+
+Show:
+
+photo
+caption
+city/country
+category
+date if allowed
+@username or Anonymous
+
+Optional action:
+
+View public Daymark profile
+
+Only if the owner enabled public profile discovery.
+
+Public profile can show ONLY approved public fields:
+
+avatar
+display name
+username
+bio
+country/city if enabled
+public Globe memories
+
+Never show:
+
+email
+birthday unless explicitly public
+private connections
+private memories
+scheduled messages
+People records
+
+==================================================
+PART 16 — WISH FROM GLOBE
+==================================================
+
+If someone sees a public birthday moment on Globe:
+
+allow:
+
+Send a little birthday wish 💜
+
+ONLY if:
+
+recipient explicitly enabled Globe wishes.
+
+For strangers:
+
+do not open direct messaging.
+
+Allow only a short predefined or limited wish.
+
+Example reactions:
+
+Happy birthday! 🎂
+Hope today is beautiful ✨
+Sending a little joy 💜
+
+Do not create unsolicited private chat.
+
+Recipient sees Globe wishes separately from connection wishes.
+
+Add setting:
+
+Allow birthday wishes from Globe
+
+Default:
+
+OFF
+
+==================================================
+PART 17 — PUBLIC PROFILE WISHING
+==================================================
+
+If two users are already connected:
+
+their wish experience can be richer.
+
+Public/profile button:
+
+Wish them
+
+Connected users can:
+
+write custom message
+Memory Drop
+Future Gift
+share a memory
+
+Unconnected users:
+
+only safe lightweight wish if the recipient enabled it.
+
+==================================================
+PART 18 — INVITE FRIENDS
+==================================================
+
+Build an invite loop.
+
+Route/action:
+
+Invite Friends
+
+Allow:
+
+Copy invite link
+WhatsApp
+Instagram Story
+Share
+QR code
+
+Invite URL example:
+
+/join/@saadia?invite=TOKEN
+
+Create:
+
+invites
+
+Fields:
+
+id
+inviterUserId
+token
+expiresAt
+maxUses
+useCount
+createdAt
+
+When friend joins:
+
+show:
+
+Saadia invited you to Daymark 💜
+
+Button:
+
+Connect with Saadia
+
+Do NOT automatically connect without recipient approval.
+
+==================================================
+PART 19 — INVITE FROM PEOPLE
+==================================================
+
+If a Person in My People is not a Daymark user:
+
+show:
+
+Invite to Daymark
+
+Example:
+
+Sarah isn't on Daymark yet.
+
+Invite her so you can:
+
+build a Daylink
+send Future Gifts
+schedule birthday wishes
+share memories together
+
+Buttons:
+
+WhatsApp Invite
+Copy Link
+Share
+
+==================================================
+PART 20 — POST-INVITE LINKING
+==================================================
+
+When the invited person creates an account:
+
+detect the invite token.
+
+After they accept the connection:
+
+ask inviter:
+
+Is this the Sarah already in your People?
+
+Allow linking the new Daymark account to the existing Person record.
+
+Preserve all:
+
+memories
+birthday
+relationship
+notes
+important dates
+
+==================================================
+PART 21 — MONTHLY MEMORY CAPSULE
+==================================================
+
+Implement the Replit suggested Monthly Memory Capsule.
+
+At the end of each month:
+
+create:
+
+Your August in Little Things ✨
+
+Use real stored data.
+
+Show:
+
+memories saved
+people remembered
+places
+moods
+Daylinks
+Future Gifts created
+messages sent for later
+most-kept-close memory
+
+Also show:
+
+One moment you may have forgotten.
+
+Use a real memory.
+
+==================================================
+PART 22 — MONTHLY CAPSULE DELIVERY
+==================================================
+
+Do not make the recap dependent on the user manually opening a page.
+
+Generate a monthly recap record.
+
+monthlyCapsules
+
+Fields:
+
+id
+userId
+year
+month
+generatedAt
+summaryData jsonb
+openedAt
+createdAt
+
+On the first app open after month-end:
+
+show:
+
+Your July is wrapped 🎁
+
+Tap to open.
+
+Send a notification:
+
+Your month is ready to remember.
+
+Do not send email unless the user opts in.
+
+==================================================
+PART 23 — MONTHLY CAPSULE SHARE CARD
+==================================================
+
+Allow sharing a privacy-safe version.
+
+Templates:
+
+My Month in Little Things
+Month in Polaroids
+People Who Made My Month
+
+Let the user choose fields.
+
+Never include private People names by default.
+
+==================================================
+PART 24 — CONNECTIONS SCRAPBOOK REDESIGN
+==================================================
+
+Implement the Replit suggested visual pass.
+
+Connections should no longer feel like a utility list.
+
+Use:
+
+portrait photos
+Polaroid frames
+small friendship tags
+linked ribbon motifs
+handwritten names
+Daylink indicators
+
+Pending request:
+
+looks like a small invitation card.
+
+Accepted connection:
+
+looks like a keepsake portrait.
+
+Keep search clean and functional.
+
+==================================================
+PART 25 — MESSAGES SCRAPBOOK REDESIGN
+==================================================
+
+Messages for Later should feel physical.
+
+Received:
+
+sealed envelope
+
+Scheduled:
+
+postcard with future stamp
+
+Birthday:
+
+birthday card
+
+Anniversary:
+
+ribbon card
+
+Sent:
+
+postmarked letter
+
+Opening a received message should animate like opening stationery.
+
+Do not make it look like SMS or WhatsApp.
+
+==================================================
+PART 26 — PROFILE RELATIONSHIP EVENTS
+==================================================
+
+Profile should include:
+
+Coming Up
+
+Example:
+
+Sarah's birthday
+3 days
+
+Your friendship with Areeba
+2 years next week
+
+Future Gift opens
+Aug 16
+
+Show a compact timeline.
+
+==================================================
+PART 27 — PERSON DETAIL AS RELATIONSHIP HUB
+==================================================
+
+Person Detail should become a key screen.
+
+Show:
+
+portrait
+relationship
+birthday
+important dates
+Daylink
+shared memories
+scheduled wishes
+Future Gifts
+Memory Drops
+
+Actions:
+
+Add Today's Moment
+Schedule a Wish
+Drop a Memory
+Wrap a Memory Together
+Invite to Daymark
+
+If linked user:
+
+show live Daylink.
+
+If not linked:
+
+show Invite to Daymark.
+
+==================================================
+PART 28 — SMART REMINDER RULES
+==================================================
+
+Build useful reminder logic.
+
+Examples:
+
+Birthday in 7 days
+Birthday tomorrow
+Birthday today
+
+Friendship anniversary in 3 days
+
+Future Gift opens tomorrow
+
+Memory anniversary today
+
+Do not send duplicates.
+
+Create a reminders log or notification deduplication key.
+
+A user should not get the same reminder repeatedly after refresh.
+
+==================================================
+PART 29 — REAL-TIME WISHES
+==================================================
+
+When a connected user sends a birthday wish:
+
+recipient profile should update without refresh.
+
+Use real-time events such as:
+
+birthdayWish.created
+anniversaryWish.created
+connection.accepted
+memoryDrop.created
+scheduledMessage.received
+daylink.updated
+
+The recipient should see:
+
+Saadia just wished you 💜
+
+without refreshing.
+
+==================================================
+PART 30 — REAL-TIME PROFILE EVENT COUNTS
+==================================================
+
+If the recipient is on their birthday profile screen:
+
+new wishes should appear live.
+
+Example:
+
+Birthday Wishes
+12 → 13
+
+Animate subtly.
+
+Do not create loud popups.
+
+==================================================
+PART 31 — SUPABASE REALTIME CHANNELS
+==================================================
+
+If using Supabase Realtime:
+
+subscribe only to rows relevant to the authenticated user.
+
+Examples:
+
+notifications where user_id = current user
+birthdayWishes where recipient_user_id = current user
+connections where recipient/requester matches current user
+scheduledMessages where recipient_user_id = current user
+
+Do not subscribe clients to unrestricted global private tables.
+
+Memory Globe can use a dedicated public query/realtime channel containing only
+public DTO fields.
+
+==================================================
+PART 32 — GLOBE REAL-TIME MOMENTS
+==================================================
+
+Optional:
+
+when someone publishes a public Globe memory:
+
+show the new point without full refresh.
+
+Do not animate hundreds of points.
+
+Only update the current viewport.
+
+==================================================
+PART 33 — GLOBE FILTERS
+==================================================
+
+Add lightweight filters:
+
+Today
+This Week
+
+Category:
+
+Little Things
+Friends
+Family
+Travel
+Celebration
+Achievements
+
+Location:
+
+World
+Country
+City
+
+Do not turn Globe into a complex search engine.
+
+==================================================
+PART 34 — CITY EXPLORATION
+==================================================
+
+When user taps a city:
+
+show:
+
+Little moments from Islamabad
+
+Recent public memories.
+
+A small city header.
+
+No rankings.
+
+No influencer lists.
+
+CTA:
+
+Add a memory from Islamabad
+
+Only publish after explicit confirmation.
+
+==================================================
+PART 35 — COUNTRY EXPLORATION
+==================================================
+
+Country card:
+
+Pakistan 🇵🇰
+
+82 little moments shared this week.
+
+Cities:
+
+Islamabad
+Lahore
+Karachi
+Peshawar
+etc.
+
+Do not expose user counts if privacy could be affected in very low-volume
+locations.
+
+==================================================
+PART 36 — BIRTHDAY PRIVACY
+==================================================
+
+Birthday privacy settings:
+
+Nobody
+Connections
+Selected Connections
+Public birthday badge
+
+Public birthday badge must be OFF by default.
+
+Stored birthdays for private People records are NEVER public.
+
+==================================================
+PART 37 — WISH PRIVACY
+==================================================
+
+Wish settings:
+
+Allow wishes from connections
+Allow Globe birthday reactions
+Allow custom messages from connections
+
+Block user must immediately prevent:
+
+future wishes
+scheduled-message delivery
+Memory Drops
+shared-memory invitations
+
+==================================================
+PART 38 — INVITE PRIVACY
+==================================================
+
+Invite links should:
+
+expire
+be revocable
+not reveal private account data
+not automatically connect accounts
+
+Allow:
+
+Revoke invite link
+
+==================================================
+PART 39 — AUTOMATIC VS USER-CONTROLLED ACTIONS
+==================================================
+
+Very important:
+
+Daymark may AUTOMATICALLY:
+
+send a message the user previously wrote and scheduled
+send reminders
+surface memories
+generate monthly recap
+deliver Future Gifts
+
+Daymark must NOT automatically:
+
+invent a birthday message
+send a wish the user never approved
+post to Globe
+post to Instagram
+send WhatsApp messages
+connect two users
+publish a birthday
+
+All outward communication requires prior explicit consent.
+
+==================================================
+PART 40 — CLERK + SUPABASE ARCHITECTURE
+==================================================
+
+Final architecture should be:
+
+AUTH:
+Clerk
+
+DATABASE:
+Supabase PostgreSQL
+
+ORM:
+Drizzle
+
+API:
+Express
+
+REALTIME:
+Supabase Realtime and/or SSE with a documented responsibility split
+
+FILES:
+existing Object Storage initially
+
+FRONTEND:
+React + Wouter + TanStack Query
+
+Do not migrate auth to Supabase Auth.
+
+Do not maintain duplicate user identity systems.
+
+==================================================
+PART 41 — PRODUCTION DATABASE SAFETY
+==================================================
+
+Configure:
+
+connection pooling
+SSL
+migration process
+indexes
+foreign keys
+unique constraints
+
+Add indexes for:
+
+users.username
+connections user pairs
+relationshipEvents dates
+scheduledMessages status + deliveryTimestamp
+birthdayWishes recipientUserId
+globePublishedAt
+public geographic coordinates
+monthlyCapsules userId + year + month
+
+==================================================
+PART 42 — SUPABASE BACKUPS / ENV
+==================================================
+
+Use environment variables.
+
+Never commit:
+
+database password
+service-role key
+Clerk secret
+Supabase secret keys
+
+Document required env variables.
+
+Do not expose Supabase service-role key to frontend.
+
+==================================================
+PART 43 — THREE USER REAL-TIME TEST
+==================================================
+
+Test with:
+
+User A
+User B
+User C
+
+A and B connected.
+
+C unrelated.
+
+Test:
+
+A sends B a connection action
+B sees update live
+
+A schedules B birthday wish
+server delivers it
+
+B profile shows wish live
+
+C cannot access A/B private wishes
+
+B publishes one birthday memory to Globe
+C sees ONLY approved public fields
+
+B removes memory from Globe
+C loses access immediately
+
+==================================================
+PART 44 — INVITE TEST
+==================================================
+
+A creates invite.
+
+B opens invite and creates account.
+
+B sees:
+
+Saadia invited you to Daymark.
+
+B accepts connection.
+
+A receives real-time update.
+
+A links B to existing local Person.
+
+All old memories remain attached.
+
+==================================================
+PART 45 — REMINDER TEST
+==================================================
+
+Set birthday to tomorrow.
+
+Verify:
+
+one reminder created
+
+Refresh repeatedly.
+
+Verify:
+
+no duplicate reminder.
+
+Move date to today.
+
+Verify:
+
+birthday today reminder.
+
+If scheduled wish exists:
+
+show:
+
+Your birthday message is ready to arrive.
+
+If no wish exists:
+
+show quick Wish action.
+
+==================================================
+PART 46 — MONTHLY CAPSULE TEST
+==================================================
+
+Generate a test month.
+
+Confirm recap uses ONLY user's data.
+
+Confirm:
+
+no fake memories
+no other users' private data
+
+Share-card preview must exclude private people/location by default.
+
+==================================================
+PART 47 — MOBILE DESIGN
+==================================================
+
+Keep the entire product mobile-first.
+
+Test:
+
+375 × 812
+390 × 844
+430 × 932
+
+The Globe especially must be usable on mobile.
+
+Country/city zoom controls must not cover memory cards.
+
+==================================================
+PART 48 — FINAL HOME STRUCTURE
+==================================================
+
+Do not overload Home.
+
+Recommended order:
+
+1. Greeting
+2. This Day
+3. Important Today
+4. Daylinks
+5. Today's Little Question
+6. Capture Today
+7. Moment From Somewhere
+8. Coming Up
+9. Your People
+
+Important Today can surface:
+
+birthday
+anniversary
+message arrival
+Future Gift
+
+Show only when relevant.
+
+==================================================
+PART 49 — PRODUCT RETURN REASONS
+==================================================
+
+Before completion ask:
+
+Why would someone open Daymark today?
+
+There should be clear answers:
+
+- Someone I care about has a birthday.
+- Something from my past came back.
+- I want to keep today's Daylink.
+- Someone sent me a Memory Drop.
+- A future message arrived.
+- I want to see a little moment from another city.
+- My monthly capsule is ready.
+
+Do not add manipulative engagement mechanics.
+
+==================================================
+PART 50 — FINAL QA
+==================================================
+
+Run:
+
+Supabase migration
+Drizzle migrations
+typecheck
+production build
+lint if configured
+
+Verify:
+
+no duplicate wishes
+no duplicate scheduled delivery
+no duplicate Daylink increments
+no unauthorized realtime subscriptions
+no private Globe leaks
+no precise public coordinates
+no user-cache leakage after sign out
+no Clerk identity mismatch
+no broken invite tokens
+no duplicate Person after linking
+no timezone birthday errors
+
+FINAL REPORT
+
+Report:
+
+1. Supabase migration result
+2. Tables migrated
+3. Realtime architecture
+4. Birthday reminders
+5. Birthday wish delivery
+6. Anniversary support
+7. Birthday profile wish wall
+8. Globe birthday memories
+9. Globe city/country zoom
+10. Invite system
+11. Person linking
+12. Monthly Capsule
+13. Connections redesign
+14. Messages redesign
+15. Privacy controls
+16. Three-user security test
+17. Realtime two-user test
+18. Typecheck result
+19. Production build result
+20. Remaining production configuration

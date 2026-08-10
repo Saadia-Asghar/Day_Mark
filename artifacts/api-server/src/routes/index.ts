@@ -17,6 +17,9 @@ import globeRouter from "./globe";
 import memoryDropsRouter from "./memory-drops";
 import dailyPromptsRouter from "./daily-prompts";
 import shareLinksRouter from "./share-links";
+import relationshipEventsRouter from "./relationship-events";
+import invitesRouter from "./invites";
+import capsuleRouter from "./capsule";
 
 const router: IRouter = Router();
 
@@ -38,5 +41,8 @@ router.use(globeRouter);
 router.use(memoryDropsRouter);
 router.use(dailyPromptsRouter);
 router.use(shareLinksRouter);
+router.use(relationshipEventsRouter);
+router.use(invitesRouter);
+router.use(capsuleRouter);
 
 export default router;

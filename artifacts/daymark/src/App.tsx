@@ -31,9 +31,15 @@ import GlobePage from '@/pages/globe';
 import PrivacySettingsPage from '@/pages/settings-privacy';
 import NotificationSettingsPage from '@/pages/settings-notifications';
 import SharedMemoryPage from '@/pages/shared-memory';
+import CapsulePage from '@/pages/capsule';
+import InvitePage from '@/pages/invite';
 import { type ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from '@clerk/react';
+import { ClerkProvider, AuthenticateWithRedirectCallback, useAuth, useClerk, useUser } from '@clerk/react';
+import AuthPage from '@/pages/auth';
+import SignInPage from '@/pages/sign-in';
+import SignUpPage from '@/pages/sign-up';
+import ForgotPasswordPage from '@/pages/forgot-password';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 
@@ -257,7 +263,7 @@ function ProtectedRoute({
   const { isAuthenticated, isLoading, user } = useAppAuth();
 
   if (isLoading) return <AppLoadingScreen />;
-  if (!isAuthenticated) return <Redirect to="/sign-in" />;
+  if (!isAuthenticated) return <Redirect to="/auth" />;
 
   // Authenticated user who hasn't completed onboarding → send to /onboarding
   if (requireOnboarding && user?.onboardingCompleted === false) {
@@ -267,17 +273,6 @@ function ProtectedRoute({
   return <Component />;
 }
 
-function SignInPage() {
-  return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-[#FFF9F5] px-4">
-      <SignIn
-        routing="path"
-        path={`${basePath}/sign-in`}
-        signUpUrl={`${basePath}/sign-up`}
-      />
-    </div>
-  );
-}
 function Router() {
   const { isAuthenticated, isLoading } = useAppAuth();
   const sseStatus = useSSEUpdates(isAuthenticated);
@@ -291,15 +286,31 @@ function Router() {
       <SSEBanner status={sseStatus} />
       <Shell>
         <Switch>
-          {/* Public — redirect signed-in users away from landing */}
+          {/* Public — redirect signed-in users away from landing/auth */}
           <Route path="/">
             {isAuthenticated ? <Redirect to="/home" /> : <LandingPage />}
           </Route>
-          {/* REQUIRED — copy "/sign-in/*?" and "/sign-up/*?" verbatim */}
+          <Route path="/auth">
+            {isAuthenticated ? <Redirect to="/home" /> : <AuthPage />}
+          </Route>
           <Route path="/sign-in/*?">
             {isAuthenticated ? <Redirect to="/home" /> : <SignInPage />}
           </Route>
-          <Route path="/sign-up/*?" component={SignUpPage} />
+          <Route path="/sign-up/*?">
+            {isAuthenticated ? <Redirect to="/home" /> : <SignUpPage />}
+          </Route>
+          <Route path="/forgot-password">
+            {isAuthenticated ? <Redirect to="/home" /> : <ForgotPasswordPage />}
+          </Route>
+          {/* OAuth SSO callback */}
+          <Route path="/sso-callback/*?">
+            <AuthenticateWithRedirectCallback
+              signUpUrl={`${basePath}/sign-up`}
+              signInUrl={`${basePath}/sign-in`}
+              signUpForceRedirectUrl={`${basePath}/onboarding`}
+              signInForceRedirectUrl={`${basePath}/home`}
+            />
+          </Route>
 
           {/* Protected */}
           <Route path="/onboarding">
@@ -350,6 +361,20 @@ function Router() {
           <Route path="/settings/notifications">
             <ProtectedRoute component={NotificationSettingsPage} />
           </Route>
+
+          {/* Capsule */}
+          <Route path="/capsule">
+            <ProtectedRoute component={CapsulePage} />
+          </Route>
+          <Route path="/capsule/:year/:month">
+            <ProtectedRoute component={CapsulePage} />
+          </Route>
+
+          {/* Invite / Join */}
+          <Route path="/invite">
+            <ProtectedRoute component={InvitePage} />
+          </Route>
+          <Route path="/join/:slug" component={InvitePage} />
 
           {/* Public — no auth required */}
           <Route path="/m/:token" component={SharedMemoryPage} />
@@ -482,14 +507,3 @@ function stripBase(path: string): string {
     : path;
 }
 
-function SignUpPage() {
-  return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-[#FFF9F5] px-4">
-      <SignUp
-        routing="path"
-        path={`${basePath}/sign-up`}
-        signInUrl={`${basePath}/sign-in`}
-      />
-    </div>
-  );
-}

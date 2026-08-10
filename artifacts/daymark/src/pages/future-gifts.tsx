@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import { differenceInDays, format, isPast } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
 import { SealedGiftCard } from "@/components/scrapbook";
-import markyEmpty from "@assets/generated_images/marky_empty.png";
+import { DaymarkCharacter } from "@/components/daymark-character";
 
 export default function FutureGiftsPage() {
   const { data: gifts, isLoading, isError, refetch } = useListFutureGifts();
@@ -71,7 +71,7 @@ export default function FutureGiftsPage() {
         </div>
       ) : (
         <div className="px-5 mt-16 flex flex-col items-center text-center">
-          <img src={markyEmpty} alt="No future gifts" className="w-40 h-40 object-contain mb-5 opacity-80" />
+          <DaymarkCharacter character="marky" pose="holdingGift" size="lg" animation="float" className="mb-5" />
           <h2 className="text-xl font-bold mb-1">Some moments are meant to arrive later.</h2>
           <p className="text-sm text-muted-foreground mb-7 max-w-xs">
             Seal a memory, a letter, or a photo — and choose when it opens.

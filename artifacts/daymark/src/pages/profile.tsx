@@ -276,11 +276,20 @@ export default function ProfilePage() {
   const { data: futureGifts } = useListFutureGifts();
   const [showEdit, setShowEdit] = useState(false);
   const [daylinksCount, setDaylinksCount] = useState<number | null>(null);
+  const [upcomingEvents, setUpcomingEvents] = useState<Array<{
+    id: number; type: string; title: string; eventMonth: number; eventDay: number;
+    daysUntil: number; nextDate: string;
+  }>>([]);
 
   useEffect(() => {
     fetch("/api/daylinks", { credentials: "include" })
       .then((r) => r.ok ? r.json() : null)
       .then((d) => { if (d?.daylinks) setDaylinksCount(d.daylinks.length); })
+      .catch(() => {});
+
+    fetch("/api/relationship-events/upcoming?days=30", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : { events: [] })
+      .then((d) => setUpcomingEvents(d.events ?? []))
       .catch(() => {});
   }, []);
 
@@ -313,6 +322,8 @@ export default function ProfilePage() {
       items: [
         { label: "Connections",        icon: "💜", href: "/connections" },
         { label: "Messages for Later", icon: "💌", href: "/messages" },
+        { label: "Invite Friends",     icon: "🔗", href: "/invite" },
+        { label: "Monthly Capsule",    icon: "🎁", href: "/capsule" },
       ],
     },
     {
@@ -384,6 +395,35 @@ export default function ProfilePage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Coming Up — upcoming relationship events */}
+      {upcomingEvents.length > 0 && (
+        <div className="px-5 pt-5">
+          <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest mb-3 px-1">Coming Up</p>
+          <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+            {upcomingEvents.slice(0, 5).map((ev, i) => {
+              const EVENT_EMOJI: Record<string, string> = { birthday: "🎂", anniversary: "💍", friendship_anniversary: "💜", graduation: "🎓", custom: "✨" };
+              const emoji = EVENT_EMOJI[ev.type] ?? "📅";
+              const label = ev.daysUntil === 0 ? "Today 🎉" : ev.daysUntil === 1 ? "Tomorrow" : `In ${ev.daysUntil} days`;
+              const date = new Date(ev.nextDate + "T00:00:00");
+              return (
+                <div key={ev.id} className={`flex items-center gap-3 px-5 py-3.5 ${i < Math.min(upcomingEvents.length, 5) - 1 ? "border-b border-border/50" : ""}`}>
+                  <span className="text-xl">{emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate">{ev.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {label}
+                    </p>
+                  </div>
+                  {ev.daysUntil <= 3 && (
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${ev.daysUntil === 0 ? "bg-red-400" : ev.daysUntil <= 1 ? "bg-orange-400" : "bg-primary"}`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Menu sections */}
       <div className="px-5 pt-6 space-y-5">

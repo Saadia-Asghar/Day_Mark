@@ -2,7 +2,7 @@ import { useRoute, Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useGetPerson } from "@workspace/api-client-react";
-import { ArrowLeft, Calendar, Gift, Mail, X, ImageIcon, StickyNote, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, Gift, Mail, X, ImageIcon, StickyNote, Loader2, Plus } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
 import { TapeStrip, DateStamp, RibbonDivider, GiftTag } from "@/components/scrapbook";
@@ -285,8 +285,35 @@ export default function PersonDetailPage() {
   const [dropSheetOpen, setDropSheetOpen] = useState(false);
   const [drops, setDrops] = useState<MemoryDrop[]>([]);
   const [dropsLoaded, setDropsLoaded] = useState(false);
+  const [events, setEvents] = useState<Array<{ id: number; type: string; title: string; eventMonth: number; eventDay: number; daysUntil?: number; nextDate?: string }>>([]);
+  const [addingEvent, setAddingEvent] = useState(false);
+  const [newEventType, setNewEventType] = useState("birthday");
+  const [newEventTitle, setNewEventTitle] = useState("");
+  const [newEventMonth, setNewEventMonth] = useState(new Date().getMonth() + 1);
+  const [newEventDay, setNewEventDay] = useState(new Date().getDate());
+  const [savingEvent, setSavingEvent] = useState(false);
 
   const { data: person, isLoading, isError, refetch } = useGetPerson(id || 0);
+
+  // Load relationship events for this person
+  useEffect(() => {
+    fetch("/api/relationship-events", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : { events: [] })
+      .then((d) => {
+        const personEvents = (d.events ?? []).filter((e: { personId?: number | null }) => e.personId === id);
+        const now = new Date();
+        const enriched = personEvents.map((ev: { id: number; type: string; title: string; eventMonth: number; eventDay: number }) => {
+          const thisYear = now.getFullYear();
+          let next = new Date(thisYear, ev.eventMonth - 1, ev.eventDay);
+          if (next < now) next = new Date(thisYear + 1, ev.eventMonth - 1, ev.eventDay);
+          const daysUntil = Math.ceil((next.getTime() - now.setHours(0,0,0,0)) / 86_400_000);
+          now.setTime(Date.now());
+          return { ...ev, nextDate: next.toISOString().split("T")[0], daysUntil };
+        });
+        setEvents(enriched.sort((a: { daysUntil: number }, b: { daysUntil: number }) => a.daysUntil - b.daysUntil));
+      })
+      .catch(() => {});
+  }, [id]);
 
   // Load drops from/to this person
   useEffect(() => {
@@ -457,6 +484,135 @@ export default function PersonDetailPage() {
             )}
           </div>
         )}
+
+        {/* ── Upcoming Events ──────────────────────────────────── */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">Important Dates</p>
+            <button
+              onClick={() => setAddingEvent(true)}
+              className="flex items-center gap-1 text-xs font-bold text-primary active:scale-95"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add
+            </button>
+          </div>
+
+          {events.length === 0 && !addingEvent && (
+            <button
+              onClick={() => setAddingEvent(true)}
+              className="w-full py-3 border border-dashed border-border/60 rounded-2xl text-xs text-muted-foreground font-medium flex items-center justify-center gap-2 active:scale-[0.98]"
+            >
+              🎂 Add a birthday, anniversary, or special date
+            </button>
+          )}
+
+          {events.length > 0 && (
+            <div className="space-y-2">
+              {events.map((ev) => {
+                const EVENT_EMOJI: Record<string, string> = { birthday: "🎂", anniversary: "💍", friendship_anniversary: "💜", graduation: "🎓", custom: "✨" };
+                const daysUntil = ev.daysUntil ?? 0;
+                return (
+                  <div key={ev.id} className="flex items-center gap-3 bg-white rounded-xl border border-border/60 px-3 py-2.5">
+                    <span className="text-xl">{EVENT_EMOJI[ev.type] ?? "📅"}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold leading-tight">{ev.title}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {ev.nextDate ? new Date(ev.nextDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
+                        {" · "}
+                        {daysUntil === 0 ? "Today 🎉" : daysUntil === 1 ? "Tomorrow" : `${daysUntil} days`}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Add event form */}
+          {addingEvent && (
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mt-2 bg-white rounded-2xl border border-primary/20 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-extrabold">Add an important date</p>
+                <button onClick={() => setAddingEvent(false)} className="text-muted-foreground active:scale-95">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <select
+                value={newEventType}
+                onChange={(e) => {
+                  setNewEventType(e.target.value);
+                  if (!newEventTitle) {
+                    const defaultTitles: Record<string, string> = { birthday: `${person.name}'s Birthday`, anniversary: "Anniversary", friendship_anniversary: "Friendiversary", graduation: "Graduation" };
+                    setNewEventTitle(defaultTitles[e.target.value] ?? "");
+                  }
+                }}
+                className="w-full bg-muted/30 border border-border rounded-xl px-3 py-2.5 text-sm font-medium outline-none focus:border-primary"
+              >
+                <option value="birthday">🎂 Birthday</option>
+                <option value="anniversary">💍 Anniversary</option>
+                <option value="friendship_anniversary">💜 Friendiversary</option>
+                <option value="graduation">🎓 Graduation</option>
+                <option value="custom">✨ Custom</option>
+              </select>
+              <input
+                type="text"
+                value={newEventTitle}
+                onChange={(e) => setNewEventTitle(e.target.value)}
+                placeholder="Event name"
+                className="w-full bg-muted/30 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
+              />
+              <div className="flex gap-2">
+                <select
+                  value={newEventMonth}
+                  onChange={(e) => setNewEventMonth(Number(e.target.value))}
+                  className="flex-1 bg-muted/30 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
+                >
+                  {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => (
+                    <option key={m} value={i + 1}>{m}</option>
+                  ))}
+                </select>
+                <select
+                  value={newEventDay}
+                  onChange={(e) => setNewEventDay(Number(e.target.value))}
+                  className="w-24 bg-muted/30 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary"
+                >
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+              <button
+                disabled={savingEvent || !newEventTitle.trim()}
+                onClick={async () => {
+                  if (!newEventTitle.trim()) return;
+                  setSavingEvent(true);
+                  try {
+                    const res = await fetch("/api/relationship-events", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      credentials: "include",
+                      body: JSON.stringify({ personId: id, type: newEventType, title: newEventTitle.trim(), eventMonth: newEventMonth, eventDay: newEventDay }),
+                    });
+                    if (res.ok) {
+                      const d = await res.json();
+                      const now = new Date();
+                      const thisYear = now.getFullYear();
+                      let next = new Date(thisYear, d.event.eventMonth - 1, d.event.eventDay);
+                      if (next < now) next = new Date(thisYear + 1, d.event.eventMonth - 1, d.event.eventDay);
+                      const daysUntil = Math.ceil((next.getTime() - now.setHours(0,0,0,0)) / 86_400_000);
+                      now.setTime(Date.now());
+                      setEvents((prev) => [...prev, { ...d.event, daysUntil, nextDate: next.toISOString().split("T")[0] }].sort((a, b) => (a.daysUntil ?? 0) - (b.daysUntil ?? 0)));
+                      setAddingEvent(false);
+                      setNewEventTitle("");
+                    }
+                  } catch { /* silent */ }
+                  setSavingEvent(false);
+                }}
+                className="w-full h-10 bg-primary text-white rounded-xl text-sm font-bold flex items-center justify-center disabled:opacity-50 active:scale-[0.98] transition-all"
+              >
+                {savingEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save date"}
+              </button>
+            </motion.div>
+          )}
+        </div>
 
         {/* ── Our Story Timeline ───────────────────────────────── */}
         <h2 className="text-base font-extrabold uppercase tracking-widest text-muted-foreground mb-5 mt-4">

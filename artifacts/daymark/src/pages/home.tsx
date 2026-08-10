@@ -6,8 +6,8 @@ import {
   useMarkNotificationRead, useMarkAllNotificationsRead,
 } from "@workspace/api-client-react";
 import type { CalendarEvent, Notification } from "@workspace/api-client-react";
-import markyWaving from "@assets/generated_images/marky_waving.png";
-import { Gift, Bell, Camera, Mic, MapPin, Edit3, Plus, X, CheckCheck, Globe2, Sparkles } from "lucide-react";
+import { DaymarkCharacter } from "@/components/daymark-character";
+import { Gift, Bell, Camera, Mic, MapPin, Edit3, Plus, X, CheckCheck, Globe2, Sparkles, Package } from "lucide-react";
 import { format, formatDistanceToNow, differenceInYears } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
 import { TapeStrip, GiftFromPastSkeleton, EmptyPastGiftState } from "@/components/scrapbook";
@@ -566,13 +566,12 @@ export default function HomePage() {
               What will you remember about today?
             </h1>
           </motion.div>
-          <motion.img
-            src={markyWaving}
-            alt="Marky"
-            className="absolute right-5 bottom-0 w-[90px] h-[90px] drop-shadow-md"
-            initial={{ opacity: 0, scale: 0.8, rotate: -8 }}
-            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            transition={{ delay: 0.25, type: "spring", stiffness: 200 }}
+          <DaymarkCharacter
+            character="marky"
+            pose="wave"
+            size="md"
+            animation="float"
+            className="absolute right-5 bottom-0"
           />
         </section>
 
@@ -671,12 +670,12 @@ export default function HomePage() {
                   </div>
                 </motion.div>
 
-                <motion.img
-                  src={markyWaving}
-                  alt="Marky"
-                  className="absolute -bottom-5 -right-1 w-14 h-14 drop-shadow-md z-20 pointer-events-none"
-                  animate={{ rotate: [-3, 3, -3] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                <DaymarkCharacter
+                  character="marky"
+                  pose="celebrate"
+                  size="sm"
+                  animation="float"
+                  className="absolute -bottom-5 -right-1 z-20"
                 />
               </div>
             </Link>
@@ -692,6 +691,9 @@ export default function HomePage() {
             </div>
           )}
         </section>
+
+        {/* ── 3. Important Today ───────────────────────────────────── */}
+        <ImportantTodaySection />
 
         {/* ── 3. Daylinks ✨ ────────────────────────────────────────── */}
         {daylinks.length > 0 && (
@@ -847,6 +849,86 @@ export default function HomePage() {
 
       <NotificationsDrawer open={showNotifications} onClose={() => setShowNotifications(false)} />
     </div>
+  );
+}
+
+// ── Important Today section ───────────────────────────────────────────────
+interface UpcomingEvent {
+  id: number; type: string; title: string; eventMonth: number; eventDay: number;
+  nextDate: string; daysUntil: number;
+}
+
+function ImportantTodaySection() {
+  const [events, setEvents] = useState<UpcomingEvent[]>([]);
+  const [capsuleReady, setCapsuleReady] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/relationship-events/upcoming?days=1", { credentials: "include" })
+        .then((r) => r.ok ? r.json() : { events: [] })
+        .then((d) => setEvents((d.events ?? []).filter((e: UpcomingEvent) => e.daysUntil <= 1))),
+      (new Date().getDate() <= 7
+        ? fetch("/api/capsule/latest", { credentials: "include" })
+            .then((r) => r.ok ? r.json() : null)
+            .then((d) => { if (d?.capsule && !d.capsule.openedAt) setCapsuleReady(true); })
+        : Promise.resolve()),
+    ]).finally(() => setLoaded(true));
+  }, []);
+
+  const hasContent = events.length > 0 || capsuleReady;
+  if (!loaded || !hasContent) return null;
+
+  const EVENT_EMOJI: Record<string, string> = {
+    birthday: "🎂", anniversary: "💍", friendship_anniversary: "💜",
+    graduation: "🎓", custom: "✨",
+  };
+
+  return (
+    <section className="mt-8 px-5">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="text-[11px] font-extrabold tracking-[0.12em] text-primary uppercase">Important Today</span>
+        <div className="flex-1 h-px bg-primary/20" />
+      </div>
+      <div className="space-y-3">
+        {events.map((ev) => (
+          <motion.div key={ev.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-3 bg-white rounded-2xl border border-primary/20 shadow-sm px-4 py-3">
+            <div className="w-10 h-10 rounded-xl bg-[#EAE3FF] flex items-center justify-center text-xl flex-shrink-0">
+              {EVENT_EMOJI[ev.type] ?? "📅"}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm leading-tight">{ev.title}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {ev.daysUntil === 0 ? "Today 🎉" : "Tomorrow"}
+              </p>
+            </div>
+            {ev.type === "birthday" && (
+              <Link href="/messages">
+                <button className="text-xs bg-primary text-white font-bold px-3 py-1.5 rounded-full active:scale-95">
+                  Write a wish
+                </button>
+              </Link>
+            )}
+          </motion.div>
+        ))}
+        {capsuleReady && (
+          <Link href="/capsule">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-3 bg-gradient-to-r from-[#EAE3FF] to-[#FFF9F5] rounded-2xl border border-primary/20 shadow-sm px-4 py-3 active:scale-[0.98] transition-all cursor-pointer">
+              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-xl flex-shrink-0">
+                <Package className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm">Your memory capsule is ready 🎁</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Last month wrapped up. Tap to open.</p>
+              </div>
+              <span className="text-primary text-lg">→</span>
+            </motion.div>
+          </Link>
+        )}
+      </div>
+    </section>
   );
 }
 
