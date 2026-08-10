@@ -1,0 +1,1188 @@
+Review the current Daymark repository before editing.
+
+This is a product completion pass.
+
+DO NOT rebuild the application.
+DO NOT remove persistent storage, SSE, TanStack Query, Wouter, Express, Framer Motion, the current database, or the Memory Shelf design system.
+
+CURRENT PRODUCT ALREADY HAS
+
+- mobile-first Daymark app
+- Memory Shelf visual system
+- memories
+- My Gifts
+- Gift Detail
+- Calendar
+- People
+- Person Detail
+- Future Gifts
+- persistent photo storage
+- Replit Auth
+- user-owned data
+- protected routes
+- SSE real-time updates
+- Wrap a Memory
+- gift customization
+- Future Gifts
+- responsive 430px mobile shell
+
+The goal now is to complete Daymark as a polished social memory product.
+
+==================================================
+PART 1: MIGRATE AUTH FROM REPLIT AUTH TO CLERK
+==================================================
+
+Replace Replit Auth with Clerk Auth.
+
+Do NOT run Clerk Auth and Replit Auth as parallel identity systems.
+
+Use Clerk as the single authentication source.
+
+Follow the current Replit-supported Clerk integration where available.
+
+Authentication methods:
+
+PRIMARY
+
+Continue with Google
+
+OPTIONAL
+
+Email sign-in / verification if Clerk’s default configuration supports it cleanly.
+
+Do not implement passwords manually.
+
+Use Clerk-managed sessions.
+
+Keep authentication secure and server-verified.
+
+==================================================
+GOOGLE SIGN-IN
+==================================================
+
+Enable Google as a Clerk social connection.
+
+The login experience should feel fully branded as Daymark.
+
+Login screen:
+
+Daymark logo
+
+Marky illustration
+
+Heading:
+
+Your memories have a home.
+
+Text:
+
+Save the moments, people and little things that make life yours.
+
+Primary button:
+
+Continue with Google
+
+Secondary privacy message:
+
+Your memories stay private unless you choose to share them.
+
+Do not expose Clerk implementation details in the UI.
+
+==================================================
+AUTH MIGRATION
+==================================================
+
+The app currently contains Replit-authenticated user records.
+
+Do not destroy existing memory data.
+
+Create a safe migration strategy.
+
+Recommended Daymark internal user table:
+
+users
+
+- id
+- clerkUserId
+- email
+- firstName
+- lastName
+- displayName
+- avatarUrl
+- birthday
+- city
+- onboardingCompleted
+- createdAt
+- updatedAt
+
+Use Daymark’s internal users.id as the foreign key across:
+
+- memories
+- people
+- future gifts
+- calendar events
+- scheduled messages
+- notifications
+- memory participants
+
+Do not use the Clerk user ID directly everywhere in product tables if an internal user model already exists.
+
+On first Clerk login:
+
+1. look for existing user by verified email
+2. if safe match exists, attach clerkUserId
+3. preserve existing memories and data
+4. never merge two accounts solely on an unverified email
+
+==================================================
+PART 2: USER DISCOVERY
+==================================================
+
+Daymark needs people to be actual app users when using social features.
+
+Add a way to find another Daymark user.
+
+Search by:
+
+- exact username
+- email
+- optional profile link
+
+Do not expose a public searchable directory of all users.
+
+Recommended fields:
+
+username
+discoverableByEmail boolean
+
+Allow users to control whether others can find them.
+
+When adding someone under My People:
+
+Offer two choices:
+
+1. Add someone privately
+2. Connect with a Daymark user
+
+Private person:
+
+exists only in the user’s personal memory graph.
+
+Daymark user:
+
+connects to an authenticated account after invitation acceptance.
+
+==================================================
+PART 3: CONNECTION / FRIEND REQUEST SYSTEM
+==================================================
+
+Create a connection model.
+
+connections
+
+- id
+- requesterUserId
+- recipientUserId
+- status
+- createdAt
+- acceptedAt
+
+Statuses:
+
+pending
+accepted
+declined
+blocked
+
+Users must not automatically become connected simply because one person searches their email.
+
+Flow:
+
+1. Search user
+2. Send connection request
+3. Recipient receives notification
+4. Recipient accepts or declines
+5. Accepted users can use shared Daymark features
+
+Add Block functionality.
+
+Blocked users must not:
+
+- search/connect again where applicable
+- send scheduled messages
+- invite to shared memories
+- see private profile content
+
+==================================================
+PART 4: SCHEDULED MESSAGES
+==================================================
+
+This should become a major Daymark feature.
+
+Users should be able to write a message today and have Daymark deliver it automatically on a future date.
+
+Examples:
+
+birthday message
+anniversary message
+graduation message
+good luck message
+future encouragement
+personal reminder
+friendship anniversary
+
+Feature name:
+
+Messages for Later
+
+Alternative UI language:
+
+Send this when it matters.
+
+==================================================
+SCHEDULED MESSAGE MODEL
+==================================================
+
+Create:
+
+scheduledMessages
+
+Fields:
+
+- id
+- senderUserId
+- recipientUserId
+- title
+- message
+- mediaUrls
+- deliveryDate
+- deliveryTimezone
+- repeatType
+- occasionType
+- status
+- sentAt
+- createdAt
+- updatedAt
+
+occasionType:
+
+birthday
+anniversary
+graduation
+custom
+just_because
+
+repeatType:
+
+none
+yearly
+
+status:
+
+scheduled
+sent
+cancelled
+failed
+
+==================================================
+PART 5: BIRTHDAY AUTO-SEND
+==================================================
+
+Implement the feature requested:
+
+A user can prepare a birthday message in advance.
+
+Example:
+
+Sarah’s birthday
+January 13
+
+Message:
+
+Happy birthday Sarah 💜
+Thank you for being part of so many of my favorite memories.
+
+The sender selects:
+
+Send automatically on Sarah’s birthday
+
+IMPORTANT:
+
+The recipient must be an authenticated Daymark user and an accepted connection.
+
+Do not auto-send messages to arbitrary phone numbers, WhatsApp accounts, Instagram accounts, or emails without an explicit supported integration.
+
+Delivery occurs INSIDE DAYMARK.
+
+At the scheduled time:
+
+1. server checks due scheduled messages
+2. confirms recipient still exists
+3. confirms connection is still permitted
+4. marks message sent atomically
+5. creates recipient notification
+6. emits real-time SSE event
+7. makes message visible in recipient inbox
+8. records sentAt
+
+Never rely only on an open browser tab.
+
+Scheduling must happen server-side.
+
+==================================================
+PART 6: BIRTHDAY AUTOMATION UI
+==================================================
+
+On Person Detail, if the person is a connected Daymark user and has a birthday:
+
+show:
+
+Birthday in 12 days 🎂
+
+Button:
+
+Schedule a birthday message
+
+Flow:
+
+STEP 1
+
+Write your message.
+
+STEP 2
+
+Add memory/photo if desired.
+
+STEP 3
+
+Choose delivery:
+
+12:00 AM on their birthday
+Morning
+Custom time
+
+Use recipient’s timezone if available.
+
+Clearly display:
+
+This will be delivered on January 13 at 9:00 AM PKT.
+
+STEP 4
+
+Confirmation:
+
+Ready for their day 🎁
+
+==================================================
+PART 7: MESSAGES INBOX
+==================================================
+
+Create:
+
+/messages
+
+Mobile-first.
+
+Sections:
+
+Received
+Scheduled
+Sent
+
+Received message card:
+
+sender avatar
+sender name
+occasion
+delivery date
+message preview
+
+Scheduled:
+
+recipient
+delivery date
+countdown
+edit
+cancel
+
+Sent:
+
+recipient
+sent date
+delivery status
+
+Use Daymark Memory Shelf styling lightly.
+
+Do not make it look like a generic chat app.
+
+This is not live messaging.
+
+It is meaningful scheduled delivery.
+
+==================================================
+PART 8: FUTURE GIFTS + SCHEDULED MESSAGES
+==================================================
+
+Integrate these concepts without duplicating functionality.
+
+Future Gift:
+
+larger package containing:
+- message
+- media
+- memories
+- reveal interaction
+
+Scheduled Message:
+
+lighter-weight communication that appears automatically in recipient inbox.
+
+Allow:
+
+Convert to Future Gift
+
+from a scheduled message.
+
+Do not force every scheduled message to become a Future Gift.
+
+==================================================
+PART 9: INSTAGRAM SHARING
+==================================================
+
+Add a share experience for memories.
+
+Users should be able to turn a Daymark memory into a beautiful share card.
+
+From Gift Detail:
+
+button:
+
+Share
+
+Open sheet:
+
+Instagram
+WhatsApp
+Copy Link
+Save Share Card
+More
+
+Create a dedicated:
+
+ShareCard
+
+component.
+
+Formats:
+
+Instagram Story
+1080 × 1920
+
+Square
+1080 × 1080
+
+Portrait
+1080 × 1350
+
+Share card can include:
+
+- memory photo
+- Daymark logo
+- title
+- date
+- short quote
+- subtle ribbon
+- category sticker
+
+Allow toggle:
+
+Show Daymark branding
+Hide Daymark branding
+
+Do not expose private people names or locations by default.
+
+Before generating the card ask:
+
+Share details:
+
+Photo
+Title
+Date
+Quote
+Location OFF by default
+People OFF by default
+
+==================================================
+INSTAGRAM BEHAVIOR
+==================================================
+
+For browsers where direct Instagram publishing is unavailable:
+
+1. generate the story/share image
+2. use Web Share API where supported
+3. otherwise offer Save Share Card
+4. clearly tell user:
+
+Your Daymark card is ready to share.
+
+Do not claim that the web app posted directly to Instagram if it did not.
+
+==================================================
+PART 10: WHATSAPP SHARING
+==================================================
+
+From Share:
+
+WhatsApp
+
+Generate a prefilled share message such as:
+
+“Found this little gift from the past 💜
+Murree Trip · Aug 9, 2025
+Shared from Daymark”
+
+Include a share URL only if the memory has explicitly been made shareable.
+
+Private memories must NOT get public URLs automatically.
+
+Two sharing modes:
+
+PRIVATE IMAGE SHARE
+
+share generated image only
+
+PUBLIC MEMORY LINK
+
+requires user to explicitly enable:
+
+Create shareable link
+
+==================================================
+SHAREABLE MEMORY LINKS
+==================================================
+
+Create a secure sharing model.
+
+memoryShareLinks
+
+- id
+- memoryId
+- ownerUserId
+- token
+- expiresAt
+- revokedAt
+- createdAt
+
+Sharing options:
+
+1 hour
+24 hours
+7 days
+Never expires
+
+Default:
+
+24 hours
+
+User can revoke link anytime.
+
+Public share page must show only explicitly approved fields.
+
+Do not expose:
+
+- private comments
+- participant emails
+- scheduled messages
+- internal IDs
+- hidden media
+- exact private location unless user opted in
+
+==================================================
+PART 11: NATIVE SHARE API
+==================================================
+
+Use navigator.share where supported.
+
+Support sharing:
+
+- generated image/file where browser allows
+- text
+- approved public URL
+
+Fallback:
+
+- copy link
+- save generated card
+
+Use Daymark toast notifications rather than alert().
+
+==================================================
+PART 12: SHARE PREVIEW
+==================================================
+
+Before sharing, show preview:
+
+“Your memory, your choice.”
+
+Allow toggles:
+
+Photo
+Title
+Date
+Story
+People
+Location
+Daymark logo
+
+Privacy-sensitive options:
+
+People OFF initially
+Location OFF initially
+Full story OFF initially
+
+==================================================
+PART 13: NOTIFICATIONS
+==================================================
+
+Complete notifications if not already finished.
+
+Add types:
+
+connection_request
+connection_accepted
+scheduled_message_received
+scheduled_message_failed
+birthday_upcoming
+birthday_message_scheduled
+future_gift_ready
+shared_memory_updated
+memory_anniversary
+
+Notification examples:
+
+Sarah wants to connect with you.
+
+Your birthday message for Sarah is scheduled 🎂
+
+A message from Areeba arrived right on time 💜
+
+Your Future Gift is ready to open.
+
+==================================================
+PART 14: SERVER-SIDE SCHEDULER
+==================================================
+
+Scheduled messages must work even if nobody has Daymark open.
+
+Implement a durable server-side scheduling mechanism compatible with the current deployment environment.
+
+Do not use browser setTimeout.
+
+Preferred architecture:
+
+- database stores scheduled messages
+- background/cron worker periodically checks due messages
+- row-level locking or atomic update prevents duplicate sends
+- sent status persisted
+- notification created
+- SSE used only for immediate UI delivery if recipient is online
+
+The database is the source of truth.
+
+Scheduler should be idempotent.
+
+A message must never be delivered twice.
+
+==================================================
+PART 15: TIMEZONE HANDLING
+==================================================
+
+This is important for birthdays.
+
+Store delivery timestamps in UTC.
+
+Store or infer each user’s timezone.
+
+Users may select:
+
+At midnight
+Morning
+Custom time
+
+Display date/time in local timezone.
+
+Example:
+
+Sarah lives in Islamabad.
+
+Birthday message:
+
+January 13
+9:00 AM Asia/Karachi
+
+Convert to UTC for storage.
+
+Do not calculate recurring birthday schedules using UTC calendar dates alone.
+
+==================================================
+PART 16: ANNUAL BIRTHDAY OPTION
+==================================================
+
+Allow:
+
+Repeat every birthday
+
+Default:
+
+OFF
+
+If enabled:
+
+the message repeats yearly.
+
+Before the next birthday, optionally notify sender:
+
+Sarah’s birthday message is scheduled for January 13.
+
+Allow:
+
+Edit
+Pause
+Cancel
+
+Do not automatically repeat unless the sender explicitly enables it.
+
+==================================================
+PART 17: PERSON → USER LINKING
+==================================================
+
+Existing People records may represent real friends who were added before account connections existed.
+
+Add optional field:
+
+linkedUserId
+
+When connecting with a Daymark account:
+
+Allow:
+
+Link Sarah to this Daymark account?
+
+Show:
+
+local person record
+matching Daymark user
+
+Require confirmation.
+
+After linking:
+
+preserve all existing memories attached to the Person record.
+
+Do not duplicate the person.
+
+==================================================
+PART 18: SHARING A MEMORY WITH A DAYMARK USER
+==================================================
+
+Gift Detail:
+
+Share with someone
+
+Options:
+
+Daymark connection
+Instagram
+WhatsApp
+More
+
+If sharing with a Daymark connection:
+
+allow:
+
+View only
+Add memories
+
+Use existing memoryParticipants model.
+
+Send invitation.
+
+Do not grant access until accepted.
+
+==================================================
+PART 19: PROFILE + USERNAME
+==================================================
+
+Profile should include:
+
+avatar
+display name
+username
+email
+birthday
+timezone
+city
+memory count
+connections count
+scheduled messages count
+
+Allow user to choose:
+
+@username
+
+Validate uniqueness.
+
+Example:
+
+@saadia
+
+Use username for Daymark sharing and discovery.
+
+Do not expose email publicly.
+
+==================================================
+PART 20: PRIVACY CONTROLS
+==================================================
+
+Create Privacy settings.
+
+Options:
+
+Allow people to find me by email
+Allow people to find me by username
+Show birthday to connections
+Allow connection requests
+Default memory sharing
+Default share-card details
+
+Default should favor privacy.
+
+Birthday visibility options:
+
+Nobody
+Connections
+Selected people
+
+==================================================
+PART 21: BLOCKING AND SAFETY
+==================================================
+
+Allow a user to block another user.
+
+Blocked user cannot:
+
+- send connection requests
+- send scheduled messages
+- invite into memories
+- interact with shared memories
+- access new shared links intended specifically for that user
+
+Do not notify someone that they have been blocked.
+
+==================================================
+PART 22: MEMORY ANNIVERSARY SHARING
+==================================================
+
+When Daymark surfaces:
+
+A Gift From Your Past
+
+add:
+
+Share this memory
+
+Generate the polished share card.
+
+Example text:
+
+“One year ago today 💜”
+
+This makes the “Gift From Your Past” feature highly shareable.
+
+==================================================
+PART 23: BIRTHDAY MEMORY PACKAGE
+==================================================
+
+On someone’s birthday, if they are a connected Daymark user:
+
+show sender:
+
+It’s Sarah’s birthday 🎂
+
+Quick actions:
+
+Send scheduled message
+Create Future Gift
+Share a memory together
+
+If a scheduled birthday message already exists:
+
+show:
+
+Your message is ready to arrive at 9:00 AM.
+
+Do not send duplicates.
+
+==================================================
+PART 24: AUTHORIZATION
+==================================================
+
+All social functionality must be enforced server-side.
+
+A user cannot:
+
+- schedule a message from another sender ID
+- read another user’s scheduled messages
+- alter another user’s connections
+- impersonate another user
+- access a private memory through a share token not issued for it
+- send to blocked users
+- modify another user’s profile
+- forge recipient IDs
+
+Never trust senderUserId from frontend.
+
+Derive sender from authenticated Clerk session.
+
+==================================================
+PART 25: REAL-TIME EVENTS
+==================================================
+
+Extend current SSE events:
+
+connection.requested
+connection.accepted
+scheduledMessage.received
+notification.created
+memory.shared
+futureGift.unlocked
+
+Send minimal payloads:
+
+{
+  "id": 123
+}
+
+Do not put message text or private memory content inside SSE events.
+
+Client refetches through authorized APIs.
+
+==================================================
+PART 26: OFFLINE BEHAVIOR
+==================================================
+
+If recipient is offline when a scheduled message is delivered:
+
+message remains in database.
+
+When they next open Daymark:
+
+- message appears unread
+- notification appears
+- delivery timestamp preserved
+
+SSE is an enhancement, not the delivery mechanism.
+
+==================================================
+PART 27: SHARE CARD VISUAL DESIGN
+==================================================
+
+Make social cards visually excellent.
+
+Use Daymark’s Memory Shelf identity:
+
+- realistic photo
+- subtle tape
+- ribbon
+- date stamp
+- small gift icon
+- warm cream typography area
+- tasteful Daymark logo
+
+Do not make cards look like generic Canva templates.
+
+Provide at least 3 templates:
+
+1. Little Gift
+2. Polaroid Memory
+3. On This Day
+
+==================================================
+PART 28: COMPLETE EXISTING WORK TOO
+==================================================
+
+Before adding these new social features, also complete all remaining previously identified gaps:
+
+- Memory Shelf design on Gift Detail
+- Memory Shelf design on Calendar
+- Memory Shelf design on People
+- Memory Shelf design on Person Detail
+- Memory Shelf design on Future Gifts
+- Memory Shelf design on Create Future Gift
+- physical gift-closing animation
+- persistent onboarding state
+- Profile page
+- notification center
+- strict ownership checks
+- person ID ownership validation
+- safe handling of legacy userId = null records
+- Future Gift secure unlock logic
+- shared-memory permissions
+- SSE reconnect handling
+- logout cache clearing
+- complete empty/loading/error states
+
+==================================================
+PART 29: MOBILE NAVIGATION
+==================================================
+
+Recommended bottom navigation:
+
+Home
+Calendar
++
+Gifts
+You
+
+Do not add Messages as a sixth bottom item.
+
+Access Messages from:
+
+- Home notification/message icon
+- Profile
+- birthday/person pages
+
+Add a small unread badge where appropriate.
+
+==================================================
+PART 30: FINAL USER FLOWS
+==================================================
+
+TEST FLOW A
+
+NEW USER
+
+1. Open Daymark
+2. Continue with Google
+3. Clerk authentication completes
+4. First-time onboarding
+5. Create username
+6. Home
+
+TEST FLOW B
+
+MEMORY
+
+1. Wrap a Memory
+2. Upload photo
+3. Add people
+4. Add mood/location
+5. Wrap animation
+6. Save
+7. Open Gift
+8. Share to WhatsApp
+9. Generate Instagram Story card
+
+TEST FLOW C
+
+CONNECTION
+
+1. Search @username
+2. Send connection request
+3. Recipient gets real-time notification
+4. Recipient accepts
+5. Both users appear as connected
+
+TEST FLOW D
+
+BIRTHDAY MESSAGE
+
+1. Open connected person
+2. Birthday visible
+3. Schedule birthday message
+4. Select January 13 at 9 AM
+5. Message stored server-side
+6. Sender closes Daymark
+7. Scheduled date arrives
+8. Server delivers message
+9. Recipient gets notification
+10. Recipient opens birthday message
+11. Sender sees Sent
+
+TEST FLOW E
+
+SHARED MEMORY
+
+1. Open memory
+2. Share with Daymark user
+3. Invite as Viewer
+4. Recipient accepts
+5. Memory becomes visible
+6. Private unrelated memories remain inaccessible
+
+==================================================
+PART 31: TWO-USER SECURITY TEST
+==================================================
+
+Use two accounts.
+
+Test all:
+
+- profile isolation
+- memory isolation
+- image isolation
+- Future Gift isolation
+- scheduled message isolation
+- connection permissions
+- blocked-user behavior
+- share-link expiration
+- shared-memory permissions
+- SSE event targeting
+- account switching cache cleanup
+
+Do not consider this implementation complete until two-user isolation is verified.
+
+==================================================
+PART 32: FINAL BUILD CHECK
+==================================================
+
+Run:
+
+- database migrations
+- API codegen
+- TypeScript typecheck
+- production build
+- lint if configured
+
+Report:
+
+1. Clerk migration completed
+2. Google sign-in working
+3. Existing users migrated safely
+4. Connections implemented
+5. Scheduled messages implemented
+6. Birthday auto-delivery implemented
+7. Server scheduler method
+8. Instagram share-card flow
+9. WhatsApp sharing flow
+10. Public memory-link security
+11. Blocking/privacy implemented
+12. shared memories verified
+13. SSE events added
+14. two-user isolation result
+15. typecheck result
+16. production build result
+17. any production credentials still required
+
+IMPORTANT
+
+Do not auto-post to Instagram.
+Do not automatically send WhatsApp messages without a supported authorized WhatsApp integration.
+
+For this version:
+
+Instagram = generate/share Story or post asset.
+WhatsApp = native/prefilled user-initiated share.
+Birthday automatic delivery = Daymark-to-Daymark scheduled message.
+
+Keep these distinctions technically accurate.
