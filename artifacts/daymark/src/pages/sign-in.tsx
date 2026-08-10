@@ -70,13 +70,19 @@ export default function SignInPage() {
   };
 
   const handleGoogle = async () => {
+    if (!signIn) return;
+    setError(null);
     try {
-      await signIn?.sso({
+      await signIn.sso({
         strategy: "oauth_google",
         redirectUrl: `${window.location.origin}${basePath}/sso-callback`,
-        redirectCallbackUrl: `${window.location.origin}${basePath}/auth`,
+        redirectCallbackUrl: `${window.location.origin}${basePath}/home`,
       });
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      console.error("Google sign-in error", e);
+      const msg = e?.errors?.[0]?.longMessage ?? e?.errors?.[0]?.message ?? e?.message ?? "Google sign-in failed.";
+      setError(msg);
+    }
   };
 
   return (

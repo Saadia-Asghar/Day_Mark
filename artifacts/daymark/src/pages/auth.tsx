@@ -1,6 +1,7 @@
 /**
  * /auth — Auth chooser landing.
  */
+import React from "react";
 import { useSignIn } from "@clerk/react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
@@ -20,15 +21,25 @@ const GoogleIcon = () => (
 
 export default function AuthPage() {
   const { signIn } = useSignIn();
+  const [googleError, setGoogleError] = React.useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = React.useState(false);
 
   const handleGoogle = async () => {
+    if (!signIn || googleLoading) return;
+    setGoogleError(null);
+    setGoogleLoading(true);
     try {
-      await signIn?.sso({
+      await signIn.sso({
         strategy: "oauth_google",
         redirectUrl: `${window.location.origin}${basePath}/sso-callback`,
-        redirectCallbackUrl: `${window.location.origin}${basePath}/auth`,
+        redirectCallbackUrl: `${window.location.origin}${basePath}/home`,
       });
-    } catch (e) { console.error("Google auth error", e); }
+    } catch (e: any) {
+      console.error("Google auth error", e);
+      const msg = e?.errors?.[0]?.longMessage ?? e?.errors?.[0]?.message ?? e?.message ?? "Google sign-in failed.";
+      setGoogleError(msg);
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -86,10 +97,18 @@ export default function AuthPage() {
         </div>
         <button
           onClick={handleGoogle}
-          className="w-full h-[54px] bg-white border border-border rounded-full text-sm font-bold text-foreground flex items-center justify-center gap-3 active:scale-[0.97] transition-all shadow-sm"
+          disabled={googleLoading}
+          className="w-full h-[54px] bg-white border border-border rounded-full text-sm font-bold text-foreground flex items-center justify-center gap-3 active:scale-[0.97] transition-all shadow-sm disabled:opacity-60"
         >
-          <GoogleIcon /> Continue with Google
+          {googleLoading
+            ? <span className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+            : <GoogleIcon />
+          }
+          Continue with Google
         </button>
+        {googleError && (
+          <p className="text-center text-xs text-destructive font-medium -mt-1">{googleError}</p>
+        )}
         <p className="text-center text-xs text-muted-foreground mt-1 leading-relaxed">
           By continuing, you agree to our{" "}
           <span className="text-primary font-semibold">Terms</span> and{" "}
