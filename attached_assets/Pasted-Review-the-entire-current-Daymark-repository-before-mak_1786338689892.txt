@@ -1,0 +1,1476 @@
+Review the entire current Daymark repository before making changes.
+
+This is the next major product-completion pass.
+
+Do NOT rebuild the app.
+Do NOT replace the existing React, TypeScript, Express, Wouter, TanStack Query, Framer Motion, database, SSE, or Object Storage architecture unless a change is explicitly required below.
+
+CURRENT REPOSITORY ALREADY HAS
+
+- mobile-first shell
+- persistent photo storage
+- authentication
+- protected routes
+- user-scoped memories
+- user-scoped people
+- Future Gifts
+- Calendar
+- My Gifts
+- Gift Detail
+- Wrap a Memory
+- SSE real-time updates
+- Memory Shelf design on Home
+- Memory Shelf design on Gifts
+- Memory Shelf design on parts of Wrap
+- nullable Gift From Your Past handling
+- image upload guards
+- broken-image fallbacks
+
+DO NOT recreate working features.
+
+MAIN PRODUCT GOAL
+
+Turn Daymark into a product users want to return to daily.
+
+Daymark should have three layers:
+
+1. PRIVATE MEMORY
+   Save life for yourself.
+
+2. RELATIONSHIP MEMORY
+   Build a shared story with people you care about.
+
+3. FUTURE MEMORY
+   Send moments and messages into the future.
+
+The strongest retention feature should be a meaningful relationship streak system inspired by the simplicity of Snapchat streaks, but original to Daymark.
+
+==================================================
+PART 1: INTRODUCE “DAYLINK” STREAKS
+==================================================
+
+Feature name:
+
+Daylink ✨
+
+Alternative UI label:
+
+Memory Streak
+
+Daylink measures how many consecutive days two connected Daymark users have shared or saved a meaningful moment together.
+
+This should NOT be based on generic chat messages.
+
+A day counts when at least one qualifying shared action happens between two connected users.
+
+QUALIFYING ACTIONS
+
+Examples:
+
+- shared photo memory
+- shared written memory
+- shared voice memory, when implemented
+- one user sends the other a Memory Drop
+- both are tagged in a new shared memory
+- one user responds to a Daily Prompt together
+- one user sends a Daymark moment and the recipient opens/reacts to it
+
+DO NOT count:
+
+- opening the app
+- liking something repeatedly
+- empty messages
+- spam interactions
+
+The streak should reward meaningful connection.
+
+==================================================
+PART 2: DAYLINK DATA MODEL
+==================================================
+
+Create:
+
+relationshipStreaks
+
+Fields:
+
+- id
+- userAId
+- userBId
+- currentStreak
+- longestStreak
+- lastQualifiedDate
+- startedAt
+- updatedAt
+- graceUsedAt
+- status
+
+status:
+
+active
+at_risk
+paused
+ended
+
+Ensure userAId/userBId pair uniqueness regardless of order.
+
+Store streak days based on a consistent user timezone strategy.
+
+Create:
+
+streakActivities
+
+Fields:
+
+- id
+- streakId
+- activityType
+- sourceMemoryId
+- actorUserId
+- activityDate
+- createdAt
+
+Do not allow duplicate qualifying activity to increase streak more than once per calendar day.
+
+==================================================
+PART 3: STREAK LOGIC
+==================================================
+
+At most one streak day can be earned per relationship per calendar day.
+
+Example:
+
+Day 1:
+Saadia and Sarah save a memory together.
+
+Daylink:
+1 ✨
+
+Next day:
+one of them shares a memory and the other opens it.
+
+Daylink:
+2 ✨
+
+If another qualifying action happens that same day:
+
+remain:
+2 ✨
+
+Do not increment multiple times per day.
+
+==================================================
+PART 4: HUMANE STREAK DESIGN
+==================================================
+
+Do not make Daylink stressful.
+
+Avoid:
+
+“YOU LOST EVERYTHING!”
+
+Use softer copy.
+
+If a day is missed:
+
+“Your Daylink is taking a little pause.”
+
+Provide one optional Grace Day per reasonable interval.
+
+For example:
+
+one Grace Day every 14 days of active streaking.
+
+Grace Day preserves the streak.
+
+Do not sell streak restoration.
+
+Do not use dark patterns.
+
+==================================================
+PART 5: DAYLINK VISUAL DESIGN
+==================================================
+
+Do not copy Snapchat’s flame.
+
+Create an original Daymark visual.
+
+Use:
+
+two tiny ribbons joining together
+
+or
+
+two glowing gift tags linked together
+
+Main Daylink icon:
+
+✨ linked ribbons
+
+Visual evolution:
+
+1–6 days:
+small ribbon
+
+7 days:
+ribbon + small sparkle
+
+30 days:
+special stitched ribbon
+
+100 days:
+gold embroidered Daylink badge
+
+365 days:
+anniversary keepsake
+
+Keep it premium and emotional.
+
+==================================================
+PART 6: HOME DAYLINK SECTION
+==================================================
+
+Add a small Home section:
+
+Your Daylinks ✨
+
+Show only the top 3 active relationships.
+
+Example:
+
+Sarah
+🔥 replace with original Daylink icon
+27 days
+
+Areeba
+12 days
+
+Mom
+5 days
+
+Use real profile pictures.
+
+Do not turn Home into a scoreboard.
+
+Tap a person to open their shared story.
+
+==================================================
+PART 7: PERSON DETAIL DAYLINK
+==================================================
+
+On Person Detail:
+
+Sarah
+
+Best Friend
+
+Daylink ✨
+27 days together
+
+Longest:
+42 days
+
+Below:
+
+Today’s Daylink
+
+If completed:
+
+Today is saved 💜
+
+If not completed:
+
+Add a little moment together.
+
+CTA:
+
+Add Today’s Moment
+
+Do not use aggressive countdown timers.
+
+==================================================
+PART 8: DAILY MEMORY PROMPT
+==================================================
+
+Add a lightweight daily prompt.
+
+Name:
+
+Today’s Little Question
+
+Examples:
+
+What made you laugh today?
+
+What’s one thing you don’t want to forget?
+
+Who made today better?
+
+What felt different today?
+
+What did today sound like?
+
+What small thing are you grateful for?
+
+What would you tell your future self about today?
+
+Users can answer privately or with a connection.
+
+Options:
+
+Keep for myself
+
+Share with Sarah
+
+Add photo
+
+Write answer
+
+Skip
+
+Do not force completion.
+
+==================================================
+PART 9: DAILY PROMPT DATA MODEL
+==================================================
+
+Create:
+
+dailyPrompts
+
+Fields:
+
+- id
+- text
+- category
+- activeDate
+- createdAt
+
+Create:
+
+promptResponses
+
+Fields:
+
+- id
+- promptId
+- userId
+- connectedUserId optional
+- memoryId optional
+- responseText
+- createdAt
+
+A shared response can count toward Daylink if both users are connected and the interaction qualifies.
+
+==================================================
+PART 10: MEMORY DROP
+==================================================
+
+Add a signature quick-send feature:
+
+Memory Drop 💌
+
+This should be faster than creating a full memory.
+
+A user taps:
+
+Drop a Moment
+
+Choose connection.
+
+Then send:
+
+- photo
+- short note
+- memory
+- small audio in future
+- reaction
+
+Example:
+
+“Thought you’d like this one 💜”
+
+Recipient receives:
+
+Saadia dropped you a moment.
+
+Opening animation:
+
+small envelope or gift-tag opens.
+
+Memory Drop can count toward Daylink when recipient meaningfully interacts.
+
+Do not turn this into instant messaging.
+
+==================================================
+PART 11: CONNECTION SYSTEM
+==================================================
+
+If not already implemented, create real Daymark connections.
+
+Users should have:
+
+username
+
+Example:
+
+@saadia
+
+Connections require:
+
+request
+accept
+decline
+block
+
+A Person record may optionally connect to an actual Daymark user.
+
+Add:
+
+linkedUserId
+
+Do not delete existing Person memories when linking accounts.
+
+==================================================
+PART 12: CLERK + GOOGLE AUTH
+==================================================
+
+Replace Replit Auth with Clerk if the prior migration has not already been implemented.
+
+Use Clerk as the single identity provider.
+
+Enable:
+
+Continue with Google
+
+Optionally:
+
+email sign-in
+
+Do not run multiple auth systems at the same time.
+
+Preserve existing user records.
+
+On first Clerk login:
+
+match verified existing account carefully.
+
+Do not merge accounts using unverified email.
+
+Internal users table should contain:
+
+id
+clerkUserId
+email
+username
+displayName
+avatarUrl
+birthday
+timezone
+city
+onboardingCompleted
+createdAt
+updatedAt
+
+Use internal user ID across Daymark product tables.
+
+==================================================
+PART 13: USERNAME DISCOVERY
+==================================================
+
+Allow users to choose:
+
+@username
+
+Example:
+
+@saadia
+
+Profile link:
+
+daymark/.../@saadia
+
+Validate uniqueness.
+
+Allow discovery by:
+
+username
+
+Optionally:
+
+email if the user enables it.
+
+Privacy default:
+
+username search allowed
+
+email search OFF
+
+==================================================
+PART 14: SCHEDULED BIRTHDAY MESSAGES
+==================================================
+
+Implement:
+
+Messages for Later
+
+A user can prepare a birthday message for a connected Daymark user.
+
+Person Detail:
+
+Sarah’s birthday
+January 13
+
+Button:
+
+Schedule birthday message
+
+Flow:
+
+1. Write message
+2. Add photo/memory
+3. Choose delivery time
+4. Confirm
+
+Delivery options:
+
+Midnight
+Morning
+Custom
+
+Deliver automatically inside Daymark.
+
+Do NOT auto-send WhatsApp messages without an official authorized WhatsApp integration.
+
+Do NOT auto-post Instagram content.
+
+==================================================
+PART 15: SCHEDULED MESSAGE DELIVERY
+==================================================
+
+Implement server-side durable scheduling.
+
+Create:
+
+scheduledMessages
+
+Fields:
+
+id
+senderUserId
+recipientUserId
+title
+message
+mediaUrls
+deliveryTimestamp
+timezone
+occasionType
+repeatType
+status
+sentAt
+createdAt
+
+status:
+
+scheduled
+sent
+cancelled
+failed
+
+occasionType:
+
+birthday
+anniversary
+graduation
+custom
+just_because
+
+repeatType:
+
+none
+yearly
+
+Server must check due messages.
+
+Do not use browser setTimeout.
+
+Messages must deliver even if both users are offline.
+
+Use an idempotent background worker or cron-compatible process.
+
+==================================================
+PART 16: MESSAGES FOR LATER SCREEN
+==================================================
+
+Create:
+
+/messages
+
+Sections:
+
+Received
+Scheduled
+Sent
+
+Do not make it look like WhatsApp.
+
+This is not chat.
+
+It is a meaningful future-message space.
+
+Received card:
+
+sender
+occasion
+date
+message preview
+
+Scheduled:
+
+recipient
+date
+countdown
+edit
+cancel
+
+Sent:
+
+recipient
+sent date
+
+==================================================
+PART 17: FUTURE GIFT VS MESSAGE FOR LATER
+==================================================
+
+Keep these concepts different.
+
+Future Gift:
+
+larger immersive package containing:
+
+- memory
+- message
+- photos
+- reveal animation
+
+Messages for Later:
+
+lightweight scheduled communication.
+
+Allow:
+
+Turn this message into a Future Gift
+
+Do not force it.
+
+==================================================
+PART 18: INSTAGRAM SHARE CARDS
+==================================================
+
+Add a polished Share Memory flow.
+
+From Gift Detail:
+
+Share
+
+Sheet:
+
+Instagram Story
+WhatsApp
+Daymark Friend
+Copy Link
+More
+
+Generate Daymark share cards.
+
+Templates:
+
+1. Little Gift
+2. Polaroid Memory
+3. On This Day
+
+Instagram Story:
+
+1080 × 1920
+
+Portrait:
+
+1080 × 1350
+
+Square:
+
+1080 × 1080
+
+Allow:
+
+photo
+title
+date
+quote
+location
+people
+Daymark branding
+
+Privacy defaults:
+
+Location OFF
+People OFF
+Full story OFF
+
+==================================================
+PART 19: WHATSAPP SHARE
+==================================================
+
+Allow user-initiated WhatsApp sharing.
+
+Generate:
+
+image
+text
+optional secure share link
+
+Example:
+
+Found this little gift from the past 💜
+Murree Trip · Aug 9, 2025
+Shared from Daymark
+
+Use native Web Share where supported.
+
+Do not claim Daymark auto-posted to WhatsApp.
+
+==================================================
+PART 20: SECURE SHARE LINKS
+==================================================
+
+Create:
+
+memoryShareLinks
+
+Fields:
+
+id
+memoryId
+ownerUserId
+token
+expiresAt
+revokedAt
+createdAt
+
+Expiry choices:
+
+1 hour
+24 hours
+7 days
+Never
+
+Default:
+
+24 hours
+
+User can revoke.
+
+Public share pages show only explicitly approved content.
+
+==================================================
+PART 21: MEMORY REACTIONS
+==================================================
+
+For shared memories and Memory Drops, allow lightweight reactions.
+
+Use original reactions:
+
+💜
+🥹
+😂
+✨
+🤍
+
+Do not add public like counts.
+
+Reactions are private to participants.
+
+A reaction can help confirm a Memory Drop was meaningfully received, but must not independently create multiple streak increments.
+
+==================================================
+PART 22: “THIS DAY” HOOK
+==================================================
+
+Every day, Daymark should have one emotionally strong return reason.
+
+Create:
+
+This Day ✨
+
+It can show:
+
+1 year ago today
+2 years ago today
+Birthday memory
+Friendship anniversary
+First saved memory
+Trip anniversary
+
+Example:
+
+One year ago today...
+
+[photo]
+
+HackSummer 2025
+
+Button:
+
+Open this gift
+
+Secondary:
+
+Share this memory
+
+This is separate from the general Home hero if appropriate.
+
+==================================================
+PART 23: MEMORY CAPSULE
+==================================================
+
+Add another hook:
+
+Memory Capsule
+
+Users can create a mini collection around a period.
+
+Examples:
+
+August 2026
+My Third Year
+Summer Internship
+Ramadan
+Finals Week
+Hackathon Month
+
+At the end of the period:
+
+Daymark creates a visual capsule with:
+
+- top memories
+- people
+- places
+- moods
+- favorite photo
+- most active relationship
+
+Do not use AI-generated fake summaries.
+
+Summaries must use real stored user data.
+
+==================================================
+PART 24: MONTHLY RECAP
+==================================================
+
+Create:
+
+Your Month in Little Things
+
+Automatically generate a recap from real memories.
+
+Show:
+
+12 memories saved
+5 people
+3 places
+Most common mood
+Favorite memory
+Longest Daylink
+
+Use a scrapbook-style vertical recap.
+
+Allow:
+
+Share recap
+
+This becomes highly shareable.
+
+==================================================
+PART 25: DAYMARK BADGES
+==================================================
+
+Add subtle collectible milestones.
+
+Examples:
+
+First Gift
+7-Day Daylink
+30 Memories
+First Future Gift
+First Shared Memory
+10 Places
+Birthday Keeper
+One Year With Daymark
+
+Do not create dozens.
+
+Keep badges meaningful.
+
+Never tie basic product functionality to badges.
+
+==================================================
+PART 26: OPTIONAL “CLOSE CIRCLE”
+==================================================
+
+Allow users to select up to a small number of important connections.
+
+Name:
+
+Close Circle
+
+These people appear more prominently on Home.
+
+This is NOT a public follower system.
+
+No follower counts.
+
+No popularity metrics.
+
+Daymark remains relationship-first.
+
+==================================================
+PART 27: PROFILE
+==================================================
+
+Complete Profile.
+
+Show:
+
+avatar
+name
+@username
+birthday
+city
+timezone
+
+Stats:
+
+memories
+people
+Daylinks
+Future Gifts
+places
+
+Sections:
+
+My Story
+Close Circle
+Messages for Later
+Future Gifts
+Privacy
+Notifications
+Edit Profile
+Sign Out
+
+==================================================
+PART 28: NOTIFICATIONS
+==================================================
+
+Complete notifications.
+
+Types:
+
+connection_request
+connection_accepted
+daylink_at_risk
+daylink_milestone
+memory_drop
+scheduled_message_received
+birthday_upcoming
+future_gift_ready
+memory_anniversary
+shared_memory_updated
+
+Example copy:
+
+Sarah added today’s little moment ✨
+
+Your Daylink with Areeba reached 30 days.
+
+A message from Sarah arrived right on time 💜
+
+A gift from your past is waiting.
+
+Do not send excessive streak reminders.
+
+At most one gentle Daylink reminder per relevant day.
+
+==================================================
+PART 29: DAYLINK REMINDER RULES
+==================================================
+
+Avoid notification spam.
+
+Rules:
+
+Do not notify if today already qualifies.
+
+Do not send multiple streak reminders in one day.
+
+Suggested copy:
+
+Your Daylink with Sarah is waiting for today’s little moment.
+
+Not:
+
+YOUR STREAK WILL DIE!
+
+Allow user to disable Daylink reminders.
+
+==================================================
+PART 30: SHARED MEMORY PERMISSIONS
+==================================================
+
+Complete memoryParticipants if not yet finished.
+
+Roles:
+
+owner
+contributor
+viewer
+
+Statuses:
+
+pending
+accepted
+declined
+
+Create:
+
+invite
+accept
+decline
+remove
+
+Authorization helpers:
+
+canViewMemory
+canEditMemory
+canDeleteMemory
+canInviteToMemory
+
+==================================================
+PART 31: AUTHORIZATION AUDIT
+==================================================
+
+Audit every protected resource.
+
+Strictly enforce ownership for:
+
+memories
+people
+Future Gifts
+scheduled messages
+connections
+Daylinks
+notifications
+photos
+share links
+prompt responses
+Memory Drops
+
+Never trust sender IDs from frontend.
+
+Derive authenticated user from server session.
+
+Validate personIds belong to the current user.
+
+Prevent legacy userId=null records from leaking.
+
+==================================================
+PART 32: REAL-TIME EVENTS
+==================================================
+
+Extend SSE.
+
+Events:
+
+memory.created
+memory.updated
+memory.deleted
+futureGift.created
+futureGift.unlocked
+person.updated
+connection.requested
+connection.accepted
+memoryDrop.created
+daylink.updated
+scheduledMessage.received
+notification.created
+sharedMemory.updated
+
+Send minimal payloads.
+
+Example:
+
+{
+  "id": 123
+}
+
+No private memory text in SSE.
+
+==================================================
+PART 33: REAL-TIME DAYLINK UPDATE
+==================================================
+
+When qualifying activity happens:
+
+server updates streak atomically.
+
+Then emit:
+
+daylink.updated
+
+Both users should see the new streak without refresh.
+
+If multiple qualifying actions occur simultaneously:
+
+do not double increment.
+
+Use transaction / unique date enforcement.
+
+==================================================
+PART 34: STREAK HISTORY
+==================================================
+
+Person Detail can show a tiny Daylink history.
+
+Example:
+
+M T W T F S S
+
+✨ ✨ ✨ ✨ ✨ ○ ✨
+
+Do not show months of obsessive analytics.
+
+Keep it lightweight.
+
+==================================================
+PART 35: CALENDAR INTEGRATION
+==================================================
+
+Calendar should show:
+
+memories
+birthdays
+anniversaries
+Future Gift unlocks
+scheduled messages
+Daylink milestones
+personal events
+
+Use small markers.
+
+Do not overcrowd cells.
+
+==================================================
+PART 36: EMPTY STATES
+==================================================
+
+Complete all empty states.
+
+Examples:
+
+No connections:
+
+The best stories usually start with someone.
+
+Button:
+
+Find a Daymark friend
+
+No Daylinks:
+
+Save a moment with someone to begin your first Daylink.
+
+No messages:
+
+Nothing is waiting in the future yet.
+
+No memories:
+
+Your first little gift is waiting.
+
+==================================================
+PART 37: ONBOARDING
+==================================================
+
+First-time onboarding should explain Daymark in 3–4 steps.
+
+1.
+
+Keep your moments.
+
+2.
+
+Build stories with your people.
+
+3.
+
+Send something into the future.
+
+4.
+
+Come back to see what life left you.
+
+Then create:
+
+username
+optional birthday
+timezone
+memory interests
+
+Store onboardingCompleted in database.
+
+==================================================
+PART 38: LANDING PAGE VALUE PROPOSITION
+==================================================
+
+Update mobile landing page.
+
+Headline:
+
+Keep the little gifts life gives you.
+
+Supporting message:
+
+Save everyday moments, build shared stories with your people, and send memories into the future.
+
+Feature preview:
+
+Wrap a Memory
+
+Daylink
+
+Future Gifts
+
+This Day
+
+Do not put every feature on landing page.
+
+==================================================
+PART 39: NAVIGATION
+==================================================
+
+Keep bottom navigation simple:
+
+Home
+Calendar
++
+Gifts
+You
+
+Do not add:
+
+Messages
+Streaks
+Connections
+
+as additional tabs.
+
+Access these through:
+
+Home
+Profile
+Person Detail
+Notifications
+
+==================================================
+PART 40: HOME INFORMATION ARCHITECTURE
+==================================================
+
+Do not overload Home.
+
+Recommended order:
+
+1. Greeting
+2. This Day / Gift From Your Past
+3. Your Daylinks
+4. Capture Today
+5. Coming Up
+6. Your People
+
+Optional daily prompt can appear between Daylinks and Capture Today.
+
+Keep vertical rhythm.
+
+==================================================
+PART 41: PERFORMANCE
+==================================================
+
+Optimize new features.
+
+Do not request entire memory history to calculate everything client-side.
+
+Calculate:
+
+Daylinks
+recaps
+anniversaries
+
+server-side where appropriate.
+
+Add indexes to:
+
+user IDs
+connection pairs
+activity dates
+delivery timestamps
+share tokens
+
+==================================================
+PART 42: TWO-USER TEST
+==================================================
+
+Test using two actual accounts.
+
+User A and User B:
+
+connect
+create shared memory
+start Daylink
+perform qualifying action
+confirm streak = 1
+
+Next simulated day:
+
+perform new qualifying action
+confirm streak = 2
+
+Same day:
+perform more actions
+confirm streak remains 2
+
+Missed day:
+confirm correct pause/grace behavior
+
+Test blocking.
+
+Test connection removal.
+
+Test shared memory permission removal.
+
+Test scheduled message.
+
+Test Future Gift.
+
+Test image isolation.
+
+Test SSE targeting.
+
+==================================================
+PART 43: THREE-USER SECURITY TEST
+==================================================
+
+Use User C as unrelated user.
+
+User C must not:
+
+see A/B Daylink
+access shared memory
+see messages
+retrieve media
+receive SSE
+see private birthdays
+access share links after revocation
+
+==================================================
+PART 44: FINAL PRODUCT HOOK TEST
+==================================================
+
+Ask:
+
+Why would someone open Daymark today?
+
+There should be at least four clear answers:
+
+1. See a memory from the past
+2. Keep today’s little moment
+3. Maintain a meaningful Daylink with someone
+4. Check something waiting in the future
+
+If these are not obvious from Home, refine the information architecture.
+
+==================================================
+PART 45: DO NOT BUILD YET
+==================================================
+
+Do not add:
+
+public follower counts
+public likes
+public feeds
+random discovery feed
+ads
+leaderboards
+Snapchat-style competitive streak ranking
+complex AI chatbot
+native mobile conversion
+voice/video calling
+
+Daymark should remain intimate, private, and memory-centered.
+
+==================================================
+PART 46: FINAL QUALITY PASS
+==================================================
+
+Test:
+
+375 × 812
+390 × 844
+430 × 932
+
+Run:
+
+database migrations
+API codegen
+TypeScript typecheck
+production build
+lint if configured
+
+Verify:
+
+no horizontal overflow
+no duplicate SSE connections
+no leaked data
+no broken uploads
+no repeated streak increment
+no duplicate scheduled delivery
+no stale cache between users
+no route without authorization
+no broken reduced-motion state
+
+==================================================
+FINAL REPORT
+==================================================
+
+Report:
+
+1. Daylink implementation
+2. Qualifying activity rules
+3. Grace-day behavior
+4. Daily prompt implementation
+5. Memory Drop implementation
+6. Connection system
+7. Clerk/Google auth state
+8. Scheduled birthday messages
+9. Instagram sharing
+10. WhatsApp sharing
+11. This Day implementation
+12. Monthly recap implementation
+13. Future Gift integration
+14. Notifications
+15. Shared memory permissions
+16. Authorization audit
+17. Two-user streak test
+18. Three-user privacy test
+19. Typecheck result
+20. Production build result
+21. Anything still requiring configuration
+
+Do not mark this complete until Daymark has a clear daily return loop without turning into a generic social network.

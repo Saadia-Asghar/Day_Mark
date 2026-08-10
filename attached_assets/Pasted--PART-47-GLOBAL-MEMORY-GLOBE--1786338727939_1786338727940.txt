@@ -1,0 +1,607 @@
+==================================================
+PART 47: GLOBAL MEMORY GLOBE
+==================================================
+
+Add a new optional discovery feature called:
+
+Memory Globe 🌍
+
+Alternative name:
+
+Around the World
+
+The idea:
+
+Users can explicitly choose to publish selected memories to a global Daymark map.
+
+Only memories that users manually approve for public discovery should appear.
+
+Private memories must NEVER appear automatically.
+
+The Globe should let people discover small everyday moments from around the world.
+
+Examples:
+
+Karachi
+“Chai after class with my best friend.”
+
+Tokyo
+“First cherry blossoms of the season.”
+
+Istanbul
+“Breakfast with my grandmother.”
+
+Hunza
+“Sunrise before everyone woke up.”
+
+The focus should be ordinary human moments, not influencer content.
+
+==================================================
+GLOBAL MEMORY PRIVACY MODEL
+==================================================
+
+Add explicit publication state to memories.
+
+Recommended fields:
+
+visibility
+
+private
+connections
+public_globe
+
+Add optional public sharing fields:
+
+- globePublishedAt
+- globeLocationLabel
+- globeLatitude
+- globeLongitude
+- globePrecision
+- globeCaption
+- globeAnonymous
+- globeShowUsername
+- globeShowDate
+- globeShowLocation
+- globeShowPhoto
+
+DEFAULT:
+
+private
+
+Never publish anything to the Globe without direct user action.
+
+==================================================
+LOCATION PRIVACY
+==================================================
+
+Exact coordinates must NOT be public by default.
+
+Use approximate location.
+
+Options:
+
+City
+Region
+Country
+
+Default:
+
+City-level or coarser
+
+For example:
+
+Islamabad, Pakistan
+
+rather than:
+
+exact hostel building coordinates
+
+If user enables map sharing, explain clearly:
+
+“Your exact location stays private. Daymark will only show the approximate area you choose.”
+
+Do not expose home addresses or precise GPS coordinates.
+
+==================================================
+PUBLISH TO GLOBE FLOW
+==================================================
+
+From Gift Detail:
+
+Share
+
+Add option:
+
+Add to Memory Globe 🌍
+
+Open a preview sheet.
+
+Heading:
+
+Let this little moment travel.
+
+Allow user to configure:
+
+PHOTO
+ON/OFF
+
+CAPTION
+editable
+
+NAME
+
+Show username
+Anonymous
+
+LOCATION
+
+City
+Region
+Country
+Hide location
+
+DATE
+
+Show date
+Hide date
+
+PEOPLE
+
+OFF by default
+
+Do not allow tagging or publicly exposing another person's identity without appropriate permission.
+
+Primary CTA:
+
+Publish to Globe
+
+Secondary:
+
+Keep Private
+
+==================================================
+GLOBAL GLOBE SCREEN
+==================================================
+
+Create route:
+
+/globe
+
+Make this one of Daymark's most visually impressive screens.
+
+Do NOT add it as another bottom navigation item.
+
+Access it from Home through:
+
+Around the World 🌍
+
+or
+
+Memory Globe
+
+The interface should show an interactive globe or world map.
+
+Use soft Daymark visual styling:
+
+cream
+lavender
+purple
+small glowing memory points
+
+Each public memory should appear as a small glowing pin or gift/star point.
+
+Do not use aggressive heat maps.
+
+==================================================
+GLOBE INTERACTION
+==================================================
+
+Users can:
+
+- rotate globe
+- zoom
+- tap a glowing point
+- open a small memory card
+- move between nearby memories
+
+Memory preview shows:
+
+photo
+short caption
+approximate location
+date if enabled
+username or Anonymous
+small Daymark category tag
+
+CTA:
+
+Open Moment
+
+Do not expose private profile data.
+
+==================================================
+EVERYDAY MEMORIES FEED
+==================================================
+
+Below or alongside the Globe, create:
+
+Today Around the World
+
+Show public memories posted recently.
+
+Use a vertically scrolling collection of moments.
+
+Example:
+
+Islamabad, Pakistan
+
+“Maghrib chai on the rooftop.”
+
+2 hours ago
+
+────────────────
+
+Seoul, South Korea
+
+“Finally finished my semester project.”
+
+4 hours ago
+
+────────────────
+
+Lahore, Pakistan
+
+“Ammi made kheer because I came home.”
+
+Do not show follower counts or popularity scores.
+
+==================================================
+DISCOVERY PHILOSOPHY
+==================================================
+
+Memory Globe should NOT become:
+
+Instagram Explore
+TikTok feed
+influencer discovery
+engagement leaderboard
+
+Avoid:
+
+likes count
+followers
+view count
+trending creators
+most popular memories
+
+Daymark should celebrate ordinary life.
+
+Recommended language:
+
+Small moments from everywhere.
+
+==================================================
+LIGHTWEIGHT REACTIONS
+==================================================
+
+For public Globe memories, optionally allow only simple reactions.
+
+Examples:
+
+💜
+✨
+🥹
+
+Do NOT show public reaction totals prominently.
+
+A user may see that someone reacted to their public memory through notifications.
+
+Do not create comment threads in the first version.
+
+==================================================
+PUBLIC MEMORY REPORTING
+==================================================
+
+Add:
+
+Report Memory
+
+Reasons:
+
+- personal information
+- harassment
+- inappropriate content
+- spam
+- unsafe location disclosure
+- other
+
+Reported memories should be flagged for review.
+
+Also allow users to:
+
+Remove from Globe
+
+at any time.
+
+Removal should immediately make it unavailable through Globe queries.
+
+==================================================
+BLOCKED USERS
+==================================================
+
+If User A blocks User B:
+
+User B should not see User A’s public Globe memories while authenticated.
+
+Likewise:
+
+User A should not see User B’s memories.
+
+Where technically reasonable, enforce blocking in Globe discovery queries.
+
+==================================================
+GLOBAL MEMORY DATA MODEL
+==================================================
+
+Prefer using the existing memories table with visibility metadata rather than duplicating complete memory records.
+
+Possible fields:
+
+visibility
+globePublishedAt
+globeCaption
+globeLatitude
+globeLongitude
+globeLocationLabel
+globePrecision
+globeAnonymous
+globeShowUsername
+globeShowDate
+globeShowPhoto
+
+Create indexes for:
+
+visibility
+globePublishedAt
+approximate geographic coordinates
+
+Only query:
+
+visibility = public_globe
+
+==================================================
+GLOBE API
+==================================================
+
+Create endpoints such as:
+
+GET /api/globe/memories
+
+Query parameters:
+
+- bounds
+- since
+- category
+- limit
+- cursor
+
+POST /api/memories/:id/publish-globe
+
+PATCH /api/memories/:id/globe-settings
+
+DELETE /api/memories/:id/globe
+
+Do not return full private memory objects.
+
+Create a dedicated public DTO containing only allowed fields.
+
+Example:
+
+{
+  publicId,
+  caption,
+  photoUrl,
+  category,
+  locationLabel,
+  approximateLatitude,
+  approximateLongitude,
+  displayName,
+  anonymous,
+  date
+}
+
+Never return:
+
+owner email
+internal user id
+private story
+private people
+exact GPS
+private media
+scheduled content
+
+==================================================
+GLOBE PERFORMANCE
+==================================================
+
+Do not load every global memory at once.
+
+Use:
+
+bounding-box queries
+pagination
+clustering
+recent-memory limits
+
+When zoomed out:
+
+cluster points.
+
+When zoomed in:
+
+show individual moments.
+
+Lazy-load images.
+
+==================================================
+GLOBE HOME HOOK
+==================================================
+
+Add a Home card:
+
+🌍 Around the World
+
+“See the little moments people chose to share today.”
+
+Show 2–3 tiny preview memories from different locations.
+
+CTA:
+
+Explore Globe
+
+This can become another reason to open Daymark daily.
+
+==================================================
+DAILY GLOBE MOMENT
+==================================================
+
+Add:
+
+Moment From Somewhere
+
+Once per day, optionally surface one random or curated public memory.
+
+Example:
+
+A little moment from Peshawar 💜
+
+[photo]
+
+“Abu teaching my younger brother how to ride a bike.”
+
+CTA:
+
+See another part of the world
+
+Do not personalize using sensitive characteristics.
+
+==================================================
+GLOBE + DAYLINK SEPARATION
+==================================================
+
+Public Globe interactions must NOT count toward Daylink streaks.
+
+Daylink is for real connected relationships.
+
+Global discovery is separate.
+
+Do not let random public reactions maintain streaks.
+
+==================================================
+GLOBE + SHARE CARDS
+==================================================
+
+If a user publishes a memory to Globe:
+
+allow them to generate a card:
+
+Now floating on Daymark 🌍
+
+Example:
+
+“My little moment from Islamabad is now on the Memory Globe.”
+
+Useful for Instagram Story and WhatsApp sharing.
+
+==================================================
+NEW DAILY RETURN LOOP
+==================================================
+
+After implementing Memory Globe, Daymark should have these daily hooks:
+
+1. THIS DAY
+   Rediscover your own past.
+
+2. DAYLINK
+   Keep a meaningful shared connection alive.
+
+3. TODAY'S LITTLE QUESTION
+   Save something from today.
+
+4. MEMORY DROP
+   Send a small moment to someone.
+
+5. MEMORY GLOBE
+   See ordinary moments from around the world.
+
+6. FUTURE GIFTS / MESSAGES
+   See what is waiting to arrive.
+
+These should appear naturally across the app rather than all competing on the Home screen.
+
+==================================================
+HOME PRIORITY AFTER GLOBE
+==================================================
+
+Keep Home concise.
+
+Recommended order:
+
+1. Greeting
+2. This Day / Gift From Your Past
+3. Daylinks
+4. Today’s Little Question
+5. Capture Today
+6. Around the World preview
+7. Coming Up
+8. Your People
+
+Do not add a huge Globe directly onto Home.
+
+Use a compact preview card that opens /globe.
+
+==================================================
+GLOBE SECURITY TEST
+==================================================
+
+Test:
+
+User A creates private memory.
+
+Confirm:
+not visible on Globe.
+
+User A explicitly publishes memory.
+
+Confirm:
+visible using only selected public fields.
+
+User A selects Anonymous.
+
+Confirm:
+username absent.
+
+User A hides location.
+
+Confirm:
+no coordinates/location label returned.
+
+User A removes memory from Globe.
+
+Confirm:
+immediately unavailable.
+
+Blocked User B:
+
+Confirm:
+cannot see A’s Globe memory while authenticated.
+
+Unrelated User C:
+
+Confirm:
+can see only approved public fields.
+
+Attempt direct API access:
+
+Confirm:
+private fields never appear in Globe responses.
