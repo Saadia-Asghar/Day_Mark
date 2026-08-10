@@ -105,7 +105,11 @@ router.get("/people/:id", async (req, res): Promise<void> => {
     ? await db
         .select()
         .from(memoriesTable)
-        .where(and(eq(memoriesTable.id, links[0].memoryId), eq(memoriesTable.userId, req.user.id)))
+        .where(and(
+          eq(memoriesTable.userId, req.user.id),
+          // Filter to only memoryIds in the links list
+        ))
+        .then((all) => all.filter((m) => links.some((l) => l.memoryId === m.id)))
     : [];
 
   let nextImportantDate: string | null = null;
@@ -121,18 +125,17 @@ router.get("/people/:id", async (req, res): Promise<void> => {
     }
   }
 
-  res.json(
-    GetPersonResponse.parse({
-      id: person.id,
-      name: person.name,
-      relationship: person.relationship ?? null,
-      avatarUrl: person.avatarUrl ?? null,
-      birthday: person.birthday ?? null,
-      memoriesCount,
-      nextImportantDate,
-      memories: memories.map((m) => ({ ...m, people: [] })),
-    })
-  );
+  const parsed = GetPersonResponse.parse({
+    id: person.id,
+    name: person.name,
+    relationship: person.relationship ?? null,
+    avatarUrl: person.avatarUrl ?? null,
+    birthday: person.birthday ?? null,
+    memoriesCount,
+    nextImportantDate,
+    memories: memories.map((m) => ({ ...m, people: [] })),
+  });
+  res.json({ ...parsed, linkedUserId: (person as any).linkedUserId ?? null });
 });
 
 export default router;

@@ -30,6 +30,9 @@ import PersonDetailPage from '@/pages/person-detail';
 import FutureGiftsPage from '@/pages/future-gifts';
 import CreateFutureGiftPage from '@/pages/future-gift-new';
 import ProfilePage from '@/pages/profile';
+import ConnectionsPage from '@/pages/connections';
+import MessagesPage from '@/pages/messages';
+import GlobePage from '@/pages/globe';
 
 const queryClient = new QueryClient();
 
@@ -276,6 +279,15 @@ function Router() {
           </Route>
           <Route path="/profile">
             <ProtectedRoute component={ProfilePage} />
+          </Route>
+          <Route path="/connections">
+            <ProtectedRoute component={ConnectionsPage} />
+          </Route>
+          <Route path="/messages">
+            <ProtectedRoute component={MessagesPage} />
+          </Route>
+          <Route path="/globe">
+            <ProtectedRoute component={GlobePage} />
           </Route>
 
           <Route component={NotFound} />

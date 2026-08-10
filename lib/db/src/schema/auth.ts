@@ -22,6 +22,20 @@ export const usersTable = pgTable('users', {
   lastName: varchar('last_name'),
   profileImageUrl: varchar('profile_image_url'),
   onboardingCompleted: boolean('onboarding_completed').notNull().default(false),
+
+  // ── Social identity ──────────────────────────────────────────────────────
+  // Unique @handle chosen during onboarding, e.g. "saadia"
+  username: varchar('username', { length: 24 }).unique(),
+  displayName: varchar('display_name', { length: 60 }),
+  bio: varchar('bio', { length: 200 }),
+  birthday: varchar('birthday'), // YYYY-MM-DD string, kept as varchar for flexibility
+  timezone: varchar('timezone', { length: 64 }).default('UTC'),
+  city: varchar('city', { length: 100 }),
+
+  // ── Privacy ─────────────────────────────────────────────────────────────
+  discoverableByUsername: boolean('discoverable_by_username').notNull().default(true),
+  discoverableByEmail: boolean('discoverable_by_email').notNull().default(false),
+
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -10,6 +10,11 @@ import futureGiftsRouter from "./future-gifts";
 import storageRouter from "./storage";
 import eventsRouter from "./events";
 import notificationsRouter from "./notifications";
+import connectionsRouter from "./connections";
+import daylinksRouter from "./daylinks";
+import scheduledMessagesRouter from "./scheduled-messages";
+import globeRouter from "./globe";
+import memoryDropsRouter from "./memory-drops";
 
 const router: IRouter = Router();
 
@@ -24,5 +29,10 @@ router.use(calendarRouter);
 router.use(futureGiftsRouter);
 router.use(storageRouter);
 router.use(notificationsRouter);
+router.use(connectionsRouter);
+router.use(daylinksRouter);
+router.use(scheduledMessagesRouter);
+router.use(globeRouter);
+router.use(memoryDropsRouter);
 
 export default router;

@@ -19,6 +19,11 @@ export type SSEEventName =
   | "futureGift.unlocked"
   | "notification.created"
   | "person.updated"
+  | "connection.requested"
+  | "connection.accepted"
+  | "memoryDrop.created"
+  | "daylink.updated"
+  | "scheduledMessage.received"
   | "ping";
 
 export function emitToUser(userId: string, event: SSEEventName, data: unknown) {

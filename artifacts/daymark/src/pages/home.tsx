@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -7,7 +7,7 @@ import {
 } from "@workspace/api-client-react";
 import type { CalendarEvent, Notification } from "@workspace/api-client-react";
 import markyWaving from "@assets/generated_images/marky_waving.png";
-import { Gift, Bell, Camera, Mic, MapPin, Edit3, Plus, X, CheckCheck } from "lucide-react";
+import { Gift, Bell, Camera, Mic, MapPin, Edit3, Plus, X, CheckCheck, Globe2, Ribbon } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
 import { TapeStrip, GiftFromPastSkeleton, EmptyPastGiftState } from "@/components/scrapbook";
@@ -309,6 +309,74 @@ function NotificationsDrawer({
   );
 }
 
+// ── DayLink streak type ───────────────────────────────────────────────────
+interface DaylinkStreak {
+  id: number;
+  currentStreak: number;
+  longestStreak: number;
+  otherUser: { id: string; firstName: string | null; displayName: string | null; profileImageUrl: string | null } | null;
+}
+
+// ── DayLinks card ─────────────────────────────────────────────────────────
+function DaylinkCard({ streak }: { streak: DaylinkStreak }) {
+  const name = streak.otherUser?.displayName ?? streak.otherUser?.firstName ?? "Someone";
+  const avatar = streak.otherUser?.profileImageUrl;
+  const initials = (name[0] ?? "?").toUpperCase();
+
+  return (
+    <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-3 flex items-center gap-3 flex-shrink-0 w-[168px] snap-start">
+      {avatar ? (
+        <img src={avatar} alt={name} className="w-10 h-10 rounded-full object-cover" />
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-[#EAE3FF] flex items-center justify-center font-bold text-primary flex-shrink-0">
+          {initials}
+        </div>
+      )}
+      <div className="min-w-0">
+        <p className="font-bold text-xs truncate">{name}</p>
+        <div className="flex items-center gap-1 mt-0.5">
+          {/* Linked ribbon icon */}
+          <svg viewBox="0 0 20 12" className="w-4 h-4" fill="none">
+            <path d="M2 6 C2 3 5 1 8 3 L10 6 L12 9 C15 11 18 9 18 6" stroke="#6847F5" strokeWidth="2.2" strokeLinecap="round"/>
+            <path d="M18 6 C18 3 15 1 12 3 L10 6 L8 9 C5 11 2 9 2 6" stroke="#FF719D" strokeWidth="2.2" strokeLinecap="round"/>
+          </svg>
+          <span className="text-sm font-extrabold text-primary">{streak.currentStreak}</span>
+          <span className="text-[10px] text-muted-foreground font-medium">day{streak.currentStreak !== 1 ? "s" : ""}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Globe preview card ────────────────────────────────────────────────────
+function GlobePreviewCard({ memory }: { memory: { caption?: string | null; locationLabel?: string | null; displayName?: string } }) {
+  return (
+    <Link href="/globe" className="block outline-none">
+      <div className="mx-5 rounded-3xl overflow-hidden bg-[#0D0A1E] border border-white/10 shadow-lg p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#6847F5]/20 flex items-center justify-center flex-shrink-0">
+            <Globe2 className="w-5 h-5 text-[#6847F5]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-extrabold tracking-[0.12em] text-white/40 uppercase">Moment From Somewhere</p>
+            <p className="text-sm font-bold text-white mt-1 leading-snug line-clamp-2">{memory.caption ?? "A little moment from somewhere in the world."}</p>
+            {memory.locationLabel && (
+              <p className="text-xs text-white/40 mt-1 flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                {memory.locationLabel}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-xs text-white/30">{memory.displayName ?? "Anonymous"}</span>
+          <span className="text-xs text-[#6847F5] font-bold">Open Memory Globe →</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function HomePage() {
   const { user } = useAppAuth();
@@ -316,6 +384,22 @@ export default function HomePage() {
   const { data: people, isLoading: loadingPeople, isError: isPeopleError, refetch: refetchPeople } = useListPeople();
   const { data: notifications } = useListNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [daylinks, setDaylinks] = useState<DaylinkStreak[]>([]);
+  const [globePreview, setGlobePreview] = useState<{ caption?: string | null; locationLabel?: string | null; displayName?: string } | null>(null);
+
+  useEffect(() => {
+    // Load top daylinks for home card
+    fetch("/api/daylinks", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d?.daylinks?.length > 0) setDaylinks(d.daylinks.slice(0, 3)); })
+      .catch(() => {});
+
+    // Load one public globe memory as preview
+    fetch("/api/globe/memories?limit=1", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d?.memories?.[0]) setGlobePreview(d.memories[0]); })
+      .catch(() => {});
+  }, []);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -632,6 +716,39 @@ export default function HomePage() {
             </div>
           )}
         </section>
+
+        {/* ── Your Daylinks ✨ ────────────────────────────────────── */}
+        {daylinks.length > 0 && (
+          <section className="mt-10">
+            <div className="px-5 mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {/* Linked ribbon icon */}
+                <svg viewBox="0 0 20 12" className="w-4 h-4" fill="none">
+                  <path d="M2 6 C2 3 5 1 8 3 L10 6 L12 9 C15 11 18 9 18 6" stroke="#6847F5" strokeWidth="2.2" strokeLinecap="round"/>
+                  <path d="M18 6 C18 3 15 1 12 3 L10 6 L8 9 C5 11 2 9 2 6" stroke="#FF719D" strokeWidth="2.2" strokeLinecap="round"/>
+                </svg>
+                <span className="text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground uppercase">Your Daylinks ✨</span>
+              </div>
+              <Link href="/connections" className="text-xs font-bold text-primary">See all</Link>
+            </div>
+            <div className="flex gap-3 overflow-x-auto hide-scrollbar -mx-5 px-5 snap-x pb-2">
+              {daylinks.map((d) => (
+                <motion.div key={d.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                  <Link href="/connections">
+                    <DaylinkCard streak={d} />
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Moment From Somewhere ────────────────────────────────── */}
+        {globePreview && (
+          <section className="mt-10">
+            <GlobePreviewCard memory={globePreview} />
+          </section>
+        )}
       </main>
 
       {/* Notifications drawer */}

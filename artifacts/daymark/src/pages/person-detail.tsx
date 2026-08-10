@@ -1,10 +1,94 @@
 import { useRoute, Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import { useGetPerson } from "@workspace/api-client-react";
 import { ArrowLeft, Calendar, Gift } from "lucide-react";
 import { format } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
 import { TapeStrip, DateStamp, RibbonDivider, GiftTag, OnThisDayCard } from "@/components/scrapbook";
+
+// ── DayLink Streak Card ────────────────────────────────────────────────────
+interface DaylinkData {
+  currentStreak: number;
+  longestStreak: number;
+  todayQualified: boolean;
+  history: { date: string; qualified: boolean }[];
+}
+
+function DaylinkCard({ personUserId }: { personUserId: string }) {
+  const [streak, setStreak] = useState<DaylinkData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/daylinks/${personUserId}`, { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d?.streak) setStreak(d.streak); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [personUserId]);
+
+  if (loading) {
+    return <div className="h-28 bg-muted rounded-3xl animate-pulse" />;
+  }
+
+  if (!streak) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-3xl border border-border shadow-sm p-4"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          {/* Linked ribbon icon */}
+          <svg viewBox="0 0 20 12" className="w-5 h-5" fill="none">
+            <path d="M2 6 C2 3 5 1 8 3 L10 6 L12 9 C15 11 18 9 18 6" stroke="#6847F5" strokeWidth="2.2" strokeLinecap="round"/>
+            <path d="M18 6 C18 3 15 1 12 3 L10 6 L8 9 C5 11 2 9 2 6" stroke="#FF719D" strokeWidth="2.2" strokeLinecap="round"/>
+          </svg>
+          <span className="text-xs font-extrabold tracking-wider uppercase text-muted-foreground">DayLink</span>
+        </div>
+        {streak.todayQualified && (
+          <span className="text-[10px] text-green-600 bg-green-50 font-bold px-2 py-0.5 rounded-full">Today ✓</span>
+        )}
+      </div>
+
+      {/* Stats row */}
+      <div className="flex items-center gap-6 mb-4">
+        <div className="text-center">
+          <p className="text-2xl font-extrabold text-primary">{streak.currentStreak}</p>
+          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Current</p>
+        </div>
+        <div className="w-px h-8 bg-border" />
+        <div className="text-center">
+          <p className="text-2xl font-extrabold text-foreground">{streak.longestStreak}</p>
+          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Best</p>
+        </div>
+      </div>
+
+      {/* 7-day history strip */}
+      <div className="flex gap-1.5 items-end">
+        {streak.history.map((h, i) => {
+          const dayLabel = new Date(h.date).toLocaleDateString("en-US", { weekday: "short" })[0];
+          return (
+            <div key={h.date} className="flex-1 flex flex-col items-center gap-1">
+              <div
+                className={`w-full rounded-full transition-all ${
+                  h.qualified
+                    ? "bg-primary shadow-[0_0_8px_rgba(104,71,245,0.3)]"
+                    : "bg-muted"
+                }`}
+                style={{ height: h.qualified ? 20 : 8 }}
+              />
+              <span className="text-[9px] text-muted-foreground font-medium">{dayLabel}</span>
+            </div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
 
 export default function PersonDetailPage() {
   const [, params] = useRoute("/people/:id");
@@ -126,6 +210,13 @@ export default function PersonDetailPage() {
 
       <div className="px-5">
         <RibbonDivider />
+
+        {/* ── DayLink Streak ───────────────────────────────────── */}
+        {person.linkedUserId && (
+          <div className="mb-6">
+            <DaylinkCard personUserId={person.linkedUserId} />
+          </div>
+        )}
 
         {/* ── Our Story Timeline ───────────────────────────────── */}
         <h2 className="text-base font-extrabold uppercase tracking-widest text-muted-foreground mb-5 mt-4">

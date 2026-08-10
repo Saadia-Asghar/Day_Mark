@@ -158,17 +158,25 @@ export default function ProfilePage() {
     {
       title: "My Daymark",
       items: [
-        { label: "My Story",       icon: "📖", href: "/home" },
-        { label: "My People",      icon: "❤️", href: "/people" },
-        { label: "My Gifts",       icon: "🎁", href: "/gifts" },
-        { label: "Future Gifts",   icon: "🔒", href: "/future-gifts" },
+        { label: "My Story",          icon: "📖", href: "/home" },
+        { label: "My People",         icon: "❤️", href: "/people" },
+        { label: "My Gifts",          icon: "🎁", href: "/gifts" },
+        { label: "Future Gifts",      icon: "🔒", href: "/future-gifts" },
+        { label: "Memory Globe 🌍",   icon: "🌍", href: "/globe" },
+      ],
+    },
+    {
+      title: "Connect",
+      items: [
+        { label: "Connections",       icon: "💜", href: "/connections" },
+        { label: "Messages for Later",icon: "💌", href: "/messages" },
       ],
     },
     {
       title: "Settings",
       items: [
-        { label: "Privacy",        icon: "🛡️", href: null },
-        { label: "Notifications",  icon: "🔔", href: null },
+        { label: "Privacy",           icon: "🛡️", href: null },
+        { label: "Notifications",     icon: "🔔", href: null },
       ],
     },
   ];
@@ -206,6 +214,9 @@ export default function ProfilePage() {
               ? `${user.firstName} ${user.lastName}`
               : user.firstName ?? "Your Daymark"}
           </h1>
+          {(user as any).username && (
+            <p className="text-sm font-bold text-primary mt-0.5">@{(user as any).username}</p>
+          )}
           {user.email && (
             <p className="text-sm text-muted-foreground font-medium mt-1">{user.email}</p>
           )}
