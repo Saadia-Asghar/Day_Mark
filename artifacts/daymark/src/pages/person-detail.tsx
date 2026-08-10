@@ -1,11 +1,12 @@
 import { useRoute, Link, useLocation } from "wouter";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useGetPerson } from "@workspace/api-client-react";
-import { ArrowLeft, Calendar, Gift } from "lucide-react";
-import { format } from "date-fns";
+import { ArrowLeft, Calendar, Gift, Mail, X, ImageIcon, StickyNote, Loader2 } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
-import { TapeStrip, DateStamp, RibbonDivider, GiftTag, OnThisDayCard } from "@/components/scrapbook";
+import { TapeStrip, DateStamp, RibbonDivider, GiftTag } from "@/components/scrapbook";
+import { useToast } from "@/hooks/use-toast";
 
 // ── DayLink Streak Card ────────────────────────────────────────────────────
 interface DaylinkData {
@@ -90,12 +91,216 @@ function DaylinkCard({ personUserId }: { personUserId: string }) {
   );
 }
 
+// ── Memory Drop compose sheet ──────────────────────────────────────────────
+
+interface MemoryDrop {
+  id: number;
+  note: string | null;
+  photoUrl: string | null;
+  status: string;
+  reaction: string | null;
+  createdAt: string;
+  sender: { id: string; firstName: string | null; displayName: string | null; username: string | null; profileImageUrl: string | null } | null;
+}
+
+function DropComposeSheet({
+  recipientUserId,
+  recipientName,
+  onClose,
+  onSent,
+}: {
+  recipientUserId: string;
+  recipientName: string;
+  onClose: () => void;
+  onSent: () => void;
+}) {
+  const { toast } = useToast();
+  const [type, setType] = useState<"note" | "photo">("note");
+  const [note, setNote] = useState("");
+  const [sending, setSending] = useState(false);
+
+  async function send() {
+    if (type === "note" && !note.trim()) return;
+    setSending(true);
+    try {
+      const res = await fetch("/api/drops", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ recipientUserId, note: note.trim() || null }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast({ title: d.error ?? "Couldn't send", variant: "destructive" });
+      } else {
+        toast({ title: `Moment dropped to ${recipientName} 💜` });
+        onSent();
+        onClose();
+      }
+    } catch {
+      toast({ title: "Something went wrong", variant: "destructive" });
+    }
+    setSending(false);
+  }
+
+  return (
+    <>
+      <motion.div
+        key="drop-backdrop"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/30 z-50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <motion.div
+        key="drop-sheet"
+        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 28, stiffness: 300 }}
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-[#FFF9F5] rounded-t-[28px] shadow-2xl z-50"
+      >
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-border rounded-full" />
+        </div>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+          <div>
+            <h2 className="font-extrabold text-base">Drop a little moment 💌</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">For {recipientName}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+
+        <div className="px-5 py-5 space-y-4">
+          {/* Type selector */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setType("note")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border transition-all ${type === "note" ? "bg-primary text-white border-primary" : "bg-white border-border text-foreground"}`}
+            >
+              <StickyNote className="w-4 h-4" /> Short note
+            </button>
+            <button
+              onClick={() => setType("photo")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border transition-all ${type === "photo" ? "bg-primary text-white border-primary" : "bg-white border-border text-foreground"}`}
+            >
+              <ImageIcon className="w-4 h-4" /> Photo
+            </button>
+          </div>
+
+          {type === "note" && (
+            <textarea
+              autoFocus
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="A little thought, an inside joke, a tiny memory…"
+              rows={4}
+              maxLength={500}
+              className="w-full bg-white border border-border rounded-2xl px-4 py-3 text-sm font-medium resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            />
+          )}
+
+          {type === "photo" && (
+            <div className="bg-white border-2 border-dashed border-border rounded-2xl h-32 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+              <ImageIcon className="w-8 h-8" />
+              <p className="text-xs font-medium">Photo drops coming soon 📸</p>
+            </div>
+          )}
+
+          <button
+            onClick={send}
+            disabled={sending || (type === "note" && !note.trim())}
+            className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_16px_rgba(104,71,245,0.25)] disabled:opacity-50 transition-all"
+          >
+            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <>💌 Drop it</>}
+          </button>
+
+          <p className="text-center text-[11px] text-muted-foreground">
+            Not a chat. One little moment at a time.
+          </p>
+        </div>
+      </motion.div>
+    </>
+  );
+}
+
+// ── Received drop card ────────────────────────────────────────────────────
+
+function ReceivedDropCard({ drop, onReact }: { drop: MemoryDrop; onReact: (id: number, r: string) => void }) {
+  const [opened, setOpened] = useState(drop.status !== "delivered");
+  const REACTIONS = ["💜", "✨", "🥹", "😂"];
+
+  const handleOpen = async () => {
+    if (opened) return;
+    setOpened(true);
+    await fetch(`/api/drops/${drop.id}/open`, { method: "PATCH", credentials: "include" });
+  };
+
+  return (
+    <motion.div
+      layout
+      onClick={handleOpen}
+      className={`rounded-2xl border shadow-sm overflow-hidden cursor-pointer transition-all ${opened ? "bg-white border-border" : "bg-[#EAE3FF]/40 border-primary/20"}`}
+    >
+      <div className="p-3 flex items-center gap-3">
+        {/* Sealed envelope icon */}
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${opened ? "bg-muted" : "bg-primary"}`}>
+          <Mail className={`w-5 h-5 ${opened ? "text-muted-foreground" : "text-white"}`} />
+        </div>
+        <div className="flex-1 min-w-0">
+          {!opened ? (
+            <p className="text-sm font-bold">Tap to open 💜</p>
+          ) : (
+            <>
+              {drop.note && <p className="text-sm font-medium leading-snug line-clamp-2">{drop.note}</p>}
+            </>
+          )}
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            {formatDistanceToNow(new Date(drop.createdAt), { addSuffix: true })}
+          </p>
+        </div>
+        {opened && !drop.reaction && (
+          <div className="flex gap-1">
+            {REACTIONS.map((r) => (
+              <button
+                key={r}
+                onClick={(e) => { e.stopPropagation(); onReact(drop.id, r); }}
+                className="text-lg leading-none active:scale-125 transition-transform"
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        )}
+        {drop.reaction && <span className="text-2xl">{drop.reaction}</span>}
+      </div>
+    </motion.div>
+  );
+}
+
 export default function PersonDetailPage() {
   const [, params] = useRoute("/people/:id");
   const id = Number(params?.id);
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [dropSheetOpen, setDropSheetOpen] = useState(false);
+  const [drops, setDrops] = useState<MemoryDrop[]>([]);
+  const [dropsLoaded, setDropsLoaded] = useState(false);
 
   const { data: person, isLoading, isError, refetch } = useGetPerson(id || 0);
+
+  // Load drops from/to this person
+  useEffect(() => {
+    fetch("/api/drops", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : { drops: [] })
+      .then((d) => {
+        // Show drops where person is the sender (drops I received from them)
+        setDrops((d.drops ?? []).filter((dr: MemoryDrop) =>
+          person?.linkedUserId && dr.sender?.id === person.linkedUserId
+        ));
+        setDropsLoaded(true);
+      })
+      .catch(() => setDropsLoaded(true));
+  }, [person?.linkedUserId]);
 
   if (isError) {
     return (
@@ -213,8 +418,43 @@ export default function PersonDetailPage() {
 
         {/* ── DayLink Streak ───────────────────────────────────── */}
         {person.linkedUserId && (
-          <div className="mb-6">
+          <div className="mb-4">
             <DaylinkCard personUserId={person.linkedUserId} />
+          </div>
+        )}
+
+        {/* ── Drop a Moment ────────────────────────────────────── */}
+        {person.linkedUserId && (
+          <div className="mb-6 space-y-3">
+            <button
+              onClick={() => setDropSheetOpen(true)}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-[#EAE3FF] text-primary rounded-2xl font-bold text-sm border border-primary/20 active:scale-[0.98] transition-all shadow-sm"
+            >
+              <Mail className="w-4 h-4" />
+              Drop a little moment 💌
+            </button>
+
+            {/* Received drops from this person */}
+            {dropsLoaded && drops.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">From {person.name}</p>
+                {drops.slice(0, 3).map((drop) => (
+                  <ReceivedDropCard
+                    key={drop.id}
+                    drop={drop}
+                    onReact={async (id, reaction) => {
+                      await fetch(`/api/drops/${id}/react`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({ reaction }),
+                      });
+                      setDrops((prev) => prev.map((d) => d.id === id ? { ...d, reaction, status: "reacted" } : d));
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -309,6 +549,20 @@ export default function PersonDetailPage() {
           </div>
         )}
       </div>
+
+      {/* ── Memory Drop compose sheet ─────────────────────────────── */}
+      <AnimatePresence>
+        {dropSheetOpen && person.linkedUserId && (
+          <DropComposeSheet
+            recipientUserId={person.linkedUserId}
+            recipientName={person.name}
+            onClose={() => setDropSheetOpen(false)}
+            onSent={() => {
+              // Optimistically show sent state
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

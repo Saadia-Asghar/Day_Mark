@@ -28,6 +28,9 @@ import ProfilePage from '@/pages/profile';
 import ConnectionsPage from '@/pages/connections';
 import MessagesPage from '@/pages/messages';
 import GlobePage from '@/pages/globe';
+import PrivacySettingsPage from '@/pages/settings-privacy';
+import NotificationSettingsPage from '@/pages/settings-notifications';
+import SharedMemoryPage from '@/pages/shared-memory';
 import { type ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from '@clerk/react';
@@ -129,9 +132,18 @@ function useSSEUpdates(isAuthenticated: boolean) {
       es.addEventListener('memory.updated', () => invalidate(['listMemories', 'getMemory', 'getHomeSummary']));
       es.addEventListener('memory.deleted', () => invalidate(['listMemories', 'getHomeSummary']));
       es.addEventListener('futureGift.created', () => invalidate(['listFutureGifts']));
-      es.addEventListener('futureGift.unlocked', () => invalidate(['listFutureGifts', 'getFutureGift']));
+      es.addEventListener('futureGift.unlocked', () => invalidate(['listFutureGifts', 'getFutureGift', 'getHomeSummary']));
       es.addEventListener('person.updated', () => invalidate(['listPeople', 'getPerson']));
       es.addEventListener('notification.created', () => invalidate(['listNotifications']));
+      // Social events
+      es.addEventListener('connection.requested', () => invalidate(['/api/connections/pending', 'listNotifications']));
+      es.addEventListener('connection.accepted', () => invalidate(['/api/connections', 'listPeople', '/api/daylinks']));
+      es.addEventListener('memoryDrop.created', () => invalidate(['/api/drops', 'listNotifications']));
+      es.addEventListener('memoryDrop.reacted', () => invalidate(['/api/drops']));
+      es.addEventListener('daylink.updated', () => invalidate(['/api/daylinks', 'getHomeSummary']));
+      es.addEventListener('scheduledMessage.received', () => invalidate(['/api/messages', 'listNotifications']));
+      es.addEventListener('sharedMemory.updated', () => invalidate(['listMemories', 'getMemory']));
+      es.addEventListener('globe.reaction', () => invalidate(['/api/globe/memories']));
 
       es.addEventListener('open', () => {
         if (reconnectTimerRef.current) {
@@ -332,6 +344,15 @@ function Router() {
           <Route path="/globe">
             <ProtectedRoute component={GlobePage} />
           </Route>
+          <Route path="/settings/privacy">
+            <ProtectedRoute component={PrivacySettingsPage} />
+          </Route>
+          <Route path="/settings/notifications">
+            <ProtectedRoute component={NotificationSettingsPage} />
+          </Route>
+
+          {/* Public — no auth required */}
+          <Route path="/m/:token" component={SharedMemoryPage} />
 
           <Route component={NotFound} />
         </Switch>

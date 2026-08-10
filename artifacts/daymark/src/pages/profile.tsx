@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppAuth } from "@/App";
 import {
   useListMemories, useListPeople, useListFutureGifts,
 } from "@workspace/api-client-react";
-import { ChevronRight, LogOut, X, Check } from "lucide-react";
+import { ChevronRight, LogOut, X, Check, Camera, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useClerk, useUser } from "@clerk/react";
+import { useUpload } from "@workspace/object-storage-web";
 
 // ── Edit Profile Sheet ───────────────────────────────────────────────────
 function EditProfileSheet({ open, onClose, dbUser }: {
@@ -26,6 +27,15 @@ function EditProfileSheet({ open, onClose, dbUser }: {
   const [bio, setBio] = useState(dbUser?.bio ?? "");
   const [city, setCity] = useState(dbUser?.city ?? "");
   const [birthday, setBirthday] = useState(dbUser?.birthday ?? "");
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoObjectPath, setPhotoObjectPath] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { uploadFile, isUploading } = useUpload({
+    onSuccess: (response) => {
+      setPhotoObjectPath(response.objectPath);
+    },
+  });
 
   // Reset fields when sheet opens
   useEffect(() => {
@@ -55,7 +65,7 @@ function EditProfileSheet({ open, onClose, dbUser }: {
         lastName: lastName || undefined,
       });
 
-      // Update DB profile (username, bio, city, birthday)
+      // Update DB profile (username, bio, city, birthday, profileImageUrl)
       const res = await fetch("/api/auth/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -65,6 +75,7 @@ function EditProfileSheet({ open, onClose, dbUser }: {
           bio: bio || null,
           city: city || null,
           birthday: birthday || null,
+          ...(photoObjectPath ? { profileImageUrl: `/api/storage${photoObjectPath}` } : {}),
         }),
       });
       if (!res.ok) {
@@ -109,16 +120,48 @@ function EditProfileSheet({ open, onClose, dbUser }: {
             </div>
 
             <div className="overflow-y-auto flex-1 px-5 py-6 space-y-5">
-              {/* Avatar */}
+              {/* Avatar + photo upload */}
               <div className="flex flex-col items-center gap-3">
-                {clerkUser?.imageUrl ? (
-                  <img src={clerkUser.imageUrl} alt="You" className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg" />
-                ) : (
-                  <div className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center text-white font-bold text-2xl border-4 border-white shadow-lg">
-                    {((clerkUser?.firstName?.[0] ?? "") + (clerkUser?.lastName?.[0] ?? "")).toUpperCase() || "M"}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="relative group"
+                  disabled={isUploading}
+                >
+                  {photoPreview || clerkUser?.imageUrl ? (
+                    <img
+                      src={photoPreview ?? clerkUser!.imageUrl}
+                      alt="You"
+                      className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center text-white font-bold text-2xl border-4 border-white shadow-lg">
+                      {((clerkUser?.firstName?.[0] ?? "") + (clerkUser?.lastName?.[0] ?? "")).toUpperCase() || "M"}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    {isUploading ? (
+                      <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    ) : (
+                      <Camera className="w-5 h-5 text-white" />
+                    )}
                   </div>
-                )}
-                <p className="text-xs text-muted-foreground">Profile photo is managed by your sign-in provider</p>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const preview = URL.createObjectURL(file);
+                    setPhotoPreview(preview);
+                    await uploadFile(file);
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {isUploading ? "Uploading…" : "Tap to change photo"}
+                </p>
               </div>
 
               {/* Name */}
@@ -275,8 +318,8 @@ export default function ProfilePage() {
     {
       title: "Settings",
       items: [
-        { label: "Privacy",            icon: "🛡️", href: null },
-        { label: "Notifications",      icon: "🔔", href: null },
+        { label: "Privacy",            icon: "🛡️", href: "/settings/privacy" },
+        { label: "Notifications",      icon: "🔔", href: "/settings/notifications" },
       ],
     },
   ];

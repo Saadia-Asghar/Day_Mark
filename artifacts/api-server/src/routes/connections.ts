@@ -7,14 +7,17 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { eq, or, and, ne } from "drizzle-orm";
 import { db, connectionsTable, usersTable, notificationsTable } from "@workspace/db";
 import { emitToUser } from "./events";
+import { getAuth } from "@clerk/express";
 
 const router: IRouter = Router();
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
-function requireAuth(req: Request, res: Response): boolean {
-  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return false; }
-  return true;
+function requireAuth(req: Request, res: Response): string | null {
+  const auth = getAuth(req);
+  const userId = (auth?.sessionClaims?.userId as string | undefined) || auth?.userId;
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return null; }
+  return userId;
 }
 
 /** Returns the canonical connection row between two users (order-independent). */
@@ -31,8 +34,8 @@ async function getConnectionBetween(userA: string, userB: string) {
 // Returns all accepted connections for the current user
 
 router.get("/connections", async (req, res): Promise<void> => {
-  if (!requireAuth(req, res)) return;
-  const userId = req.user!.id;
+  const userId = requireAuth(req, res);
+  if (!userId) return;
 
   const rows = await db.query.connectionsTable.findMany({
     where: and(
@@ -61,8 +64,8 @@ router.get("/connections", async (req, res): Promise<void> => {
 // Returns pending incoming requests for the current user
 
 router.get("/connections/pending", async (req, res): Promise<void> => {
-  if (!requireAuth(req, res)) return;
-  const userId = req.user!.id;
+  const userId = requireAuth(req, res);
+  if (!userId) return;
 
   const rows = await db.query.connectionsTable.findMany({
     where: and(eq(connectionsTable.recipientUserId, userId), eq(connectionsTable.status, "pending")),
@@ -83,8 +86,8 @@ router.get("/connections/pending", async (req, res): Promise<void> => {
 // Send a connection request to another user
 
 router.post("/connections", async (req, res): Promise<void> => {
-  if (!requireAuth(req, res)) return;
-  const senderId = req.user!.id;
+  const senderId = requireAuth(req, res);
+  if (!senderId) return;
   const { recipientUserId } = req.body as { recipientUserId: string };
 
   if (!recipientUserId) { res.status(400).json({ error: "recipientUserId required" }); return; }
@@ -112,7 +115,7 @@ router.post("/connections", async (req, res): Promise<void> => {
     userId: recipientUserId,
     type: "connection_request",
     title: "New connection request",
-    message: `${req.user!.firstName ?? "Someone"} wants to connect on Daymark 💜`,
+    message: `${"Someone"} wants to connect on Daymark 💜`,
   });
   emitToUser(recipientUserId, "connection.requested", { id: conn.id });
 
@@ -122,8 +125,8 @@ router.post("/connections", async (req, res): Promise<void> => {
 // ── PATCH /api/connections/:id/accept ─────────────────────────────────────
 
 router.patch("/connections/:id/accept", async (req, res): Promise<void> => {
-  if (!requireAuth(req, res)) return;
-  const userId = req.user!.id;
+  const userId = requireAuth(req, res);
+  if (!userId) return;
   const connId = Number(req.params.id);
 
   const conn = await db.query.connectionsTable.findFirst({ where: eq(connectionsTable.id, connId) });
@@ -140,7 +143,7 @@ router.patch("/connections/:id/accept", async (req, res): Promise<void> => {
     userId: conn.requesterUserId,
     type: "connection_accepted",
     title: "Connection accepted",
-    message: `${req.user!.firstName ?? "Someone"} accepted your Daymark connection 💜`,
+    message: `${"Someone"} accepted your Daymark connection 💜`,
   });
   emitToUser(conn.requesterUserId, "connection.accepted", { id: conn.id });
 
@@ -150,8 +153,8 @@ router.patch("/connections/:id/accept", async (req, res): Promise<void> => {
 // ── PATCH /api/connections/:id/decline ────────────────────────────────────
 
 router.patch("/connections/:id/decline", async (req, res): Promise<void> => {
-  if (!requireAuth(req, res)) return;
-  const userId = req.user!.id;
+  const userId = requireAuth(req, res);
+  if (!userId) return;
   const connId = Number(req.params.id);
 
   const conn = await db.query.connectionsTable.findFirst({ where: eq(connectionsTable.id, connId) });
@@ -168,8 +171,8 @@ router.patch("/connections/:id/decline", async (req, res): Promise<void> => {
 // ── PATCH /api/connections/:id/block ──────────────────────────────────────
 
 router.patch("/connections/:id/block", async (req, res): Promise<void> => {
-  if (!requireAuth(req, res)) return;
-  const userId = req.user!.id;
+  const userId = requireAuth(req, res);
+  if (!userId) return;
   const connId = Number(req.params.id);
 
   const conn = await db.query.connectionsTable.findFirst({ where: eq(connectionsTable.id, connId) });
@@ -191,8 +194,8 @@ router.patch("/connections/:id/block", async (req, res): Promise<void> => {
 // ── DELETE /api/connections/:id ────────────────────────────────────────────
 
 router.delete("/connections/:id", async (req, res): Promise<void> => {
-  if (!requireAuth(req, res)) return;
-  const userId = req.user!.id;
+  const userId = requireAuth(req, res);
+  if (!userId) return;
   const connId = Number(req.params.id);
 
   const conn = await db.query.connectionsTable.findFirst({ where: eq(connectionsTable.id, connId) });
@@ -208,8 +211,8 @@ router.delete("/connections/:id", async (req, res): Promise<void> => {
 // Find a Daymark user by @username (no full directory)
 
 router.get("/users/search", async (req, res): Promise<void> => {
-  if (!requireAuth(req, res)) return;
-  const userId = req.user!.id;
+  const userId = requireAuth(req, res);
+  if (!userId) return;
   const q = String(req.query.q ?? "").toLowerCase().replace(/^@/, "").trim();
 
   if (!q || q.length < 2) { res.json({ users: [] }); return; }

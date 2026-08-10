@@ -1,0 +1,844 @@
+Audit the CURRENT Daymark repository first.
+
+Do NOT add another large feature category.
+
+The product now already has:
+
+- Clerk authentication
+- persistent onboarding
+- memories
+- persistent photo storage
+- My Gifts
+- Gift Detail
+- Future Gifts
+- Calendar
+- People
+- Profile
+- Connections
+- username discovery
+- Daylinks
+- Daily Prompts
+- Memory Drops API
+- Messages for Later
+- server-side scheduled delivery
+- notifications
+- shared-memory participant APIs
+- Memory Globe
+- WhatsApp/native sharing
+- SSE infrastructure
+
+This pass is about COMPLETION, DESIGN QUALITY, REAL-TIME BEHAVIOR,
+PRIVACY, and DEMO READINESS.
+
+==================================================
+1. COMPLETE ALL SOCIAL SSE WIRING
+==================================================
+
+The server now emits more event types than the frontend currently handles.
+
+Update the global SSE client to support:
+
+connection.requested
+connection.accepted
+memoryDrop.created
+memoryDrop.reacted
+daylink.updated
+scheduledMessage.received
+notification.created
+sharedMemory.updated
+futureGift.unlocked
+globe.reaction
+
+For each event, invalidate only the appropriate TanStack Query data.
+
+Examples:
+
+daylink.updated:
+- Daylinks
+- Home Daylinks
+- Person Detail relationship state
+
+connection.requested:
+- pending connections
+- notifications
+
+connection.accepted:
+- connections
+- people
+- Daylinks
+
+memoryDrop.created:
+- received drops
+- notification count
+
+scheduledMessage.received:
+- messages
+- notifications
+
+Do not reload the entire application.
+
+Do not create duplicate EventSource connections.
+
+==================================================
+2. MAKE DAYLINK A SIGNATURE UI EXPERIENCE
+==================================================
+
+The backend implementation is already strong.
+
+Do not rewrite its core logic.
+
+Improve the frontend.
+
+HOME
+
+Show:
+
+Your Daylinks ✨
+
+Maximum 3 people.
+
+Use original linked-ribbon visual rather than a flame.
+
+PERSON DETAIL
+
+Add:
+
+Our Daylink ✨
+
+27 days together
+
+Longest
+42 days
+
+Today:
+
+Today is saved 💜
+
+or:
+
+One little moment can keep today in your story.
+
+CTA:
+
+Add Today's Moment
+
+Show subtle 7-day history:
+
+M T W T F S S
+✨ ✨ ✨ ○ ✨ ✨ ✨
+
+Do not create a competitive leaderboard.
+
+==================================================
+3. COMPLETE MEMORY DROP UI
+==================================================
+
+The Memory Drop API already exists.
+
+Build the polished frontend.
+
+From Person Detail:
+
+Drop a Moment 💌
+
+Also allow a compact action from Home.
+
+Choices:
+
+Photo
+Short Note
+Existing Memory
+
+Recipient experience:
+
+[small sealed envelope/gift tag]
+
+Saadia dropped you a little moment.
+
+Tap to open.
+
+After opening:
+
+💜
+✨
+🥹
+😂
+
+Do not make this a messaging app.
+
+No chat thread.
+No online status.
+No typing indicators.
+
+A meaningful open/reaction may qualify Daylink according to existing backend rules.
+
+==================================================
+4. REDESIGN MEMORY GLOBE
+==================================================
+
+The current Globe works but visually feels separate from Daymark.
+
+Do not keep the current dark near-black screen as the final design.
+
+Rebuild the Globe presentation around Daymark's Memory Shelf identity.
+
+Use:
+
+cream/lavender atmosphere
+deep Daymark purple
+soft gradient sky
+tiny glowing memory stars/gift points
+warm photographic previews
+subtle clouds/sparkles
+soft depth
+
+The Globe should feel magical, not technical.
+
+Create an interactive spherical or high-quality map illusion.
+
+If using an actual 3D globe library would hurt performance, build a polished
+2.5D globe.
+
+Requirements:
+
+- drag/rotate or pan
+- zoom
+- clustered memories
+- animated but subtle points
+- selected-memory preview
+- Today Around the World
+- loading skeleton
+- empty state
+- report action
+- privacy preserved
+
+Do not use crude geometric continent shapes as final presentation.
+
+==================================================
+5. GLOBE DISCOVERY CARD
+==================================================
+
+Home:
+
+Moment From Somewhere 🌍
+
+One beautiful card only.
+
+Example:
+
+A little moment from Kyoto...
+
+[photo]
+
+“Rain started just as we found this café.”
+
+Kyoto, Japan
+
+CTA:
+
+Travel the Globe
+
+Keep Home concise.
+
+==================================================
+6. FIX COPY LINK SHARING
+==================================================
+
+DO NOT copy the authenticated /gifts/:id URL as the public sharing solution.
+
+Create secure share links.
+
+Create:
+
+memoryShareLinks
+
+Fields:
+
+id
+memoryId
+ownerUserId
+token
+expiresAt
+revokedAt
+createdAt
+
+Expiry:
+
+1 hour
+24 hours
+7 days
+Never
+
+Default:
+
+24 hours
+
+Create a public route such as:
+
+/m/:token
+
+Public response must include ONLY fields the owner approved.
+
+Never expose:
+
+owner email
+internal user IDs
+private participants
+private comments
+hidden location
+scheduled messages
+other private memories
+
+Allow:
+
+Revoke Link
+
+==================================================
+7. INSTAGRAM STORY SHARE CARDS
+==================================================
+
+Build real Daymark social cards.
+
+Templates:
+
+LITTLE GIFT
+POLAROID MEMORY
+ON THIS DAY
+
+Formats:
+
+Story 1080 × 1920
+Portrait 1080 × 1350
+Square 1080 × 1080
+
+Generate a real image/canvas asset from the memory.
+
+Include optional:
+
+photo
+title
+date
+short quote
+approximate location
+Daymark logo
+small ribbon/tape detail
+
+Privacy defaults:
+
+People OFF
+Location OFF
+Full story OFF
+
+Share using Web Share API where supported.
+
+Fallback:
+
+Save/share generated image.
+
+Do not claim direct Instagram publishing when unavailable.
+
+==================================================
+8. WHATSAPP SHARING REFINEMENT
+==================================================
+
+Keep the current WhatsApp implementation.
+
+If the owner has explicitly created a public memory link, include it.
+
+Otherwise share only:
+
+generated image
+text
+
+Never leak the private /gifts/:id URL.
+
+==================================================
+9. REAL PRIVACY SETTINGS
+==================================================
+
+Profile currently shows Privacy but it needs to become functional.
+
+Create:
+
+/settings/privacy
+
+Controls:
+
+Find me by username
+Find me by email
+Allow connection requests
+Birthday visibility
+Default memory visibility
+Default Globe identity
+Default Globe location precision
+Default share-card fields
+
+Birthday visibility:
+
+Nobody
+Connections
+Selected people
+
+Defaults should favor privacy.
+
+==================================================
+10. NOTIFICATION SETTINGS
+==================================================
+
+Create:
+
+/settings/notifications
+
+Allow toggles for:
+
+Daylink reminder
+Birthday reminder
+Memory anniversaries
+Future Gift ready
+Messages for Later
+Connection requests
+Memory Drop
+Globe reactions
+
+Avoid notification spam.
+
+Maximum one Daylink reminder per relationship per relevant day.
+
+==================================================
+11. BLOCKING
+==================================================
+
+Complete blocking if not already fully functional.
+
+Blocked users cannot:
+
+connect
+Memory Drop
+schedule messages
+invite to shared memories
+access private shared content
+
+At delivery time, scheduled messages MUST re-check:
+
+recipient exists
+connection still accepted
+neither user has blocked the other
+
+If not valid:
+
+cancel/fail safely
+do not deliver
+
+==================================================
+12. FIX SCHEDULED MESSAGE DELIVERY SAFETY
+==================================================
+
+Current scheduler already runs server-side.
+
+Preserve it.
+
+Improve the delivery transaction.
+
+Do not permanently mark a message as sent BEFORE successful delivery processing.
+
+Recommended statuses:
+
+scheduled
+processing
+sent
+cancelled
+failed
+
+Atomically claim:
+
+scheduled → processing
+
+Then:
+
+verify recipient
+verify connection
+verify blocking
+create notification
+persist sentAt
+
+Finally:
+
+processing → sent
+
+If processing fails:
+
+processing → failed
+
+Ensure duplicate workers cannot deliver the same message twice.
+
+==================================================
+13. TIMEZONE-CORRECT BIRTHDAYS
+==================================================
+
+Use the recipient/sender selected timezone correctly.
+
+Store timestamps in UTC.
+
+For yearly birthday messages:
+
+recompute next year's local birthday delivery using:
+
+month
+day
+selected local clock time
+timezone
+
+Then convert to UTC.
+
+Do not simply add one year to a UTC timestamp.
+
+==================================================
+14. PROFILE IMAGE
+==================================================
+
+Allow Daymark users to choose an app-specific profile picture.
+
+Do not force the Clerk/Google image to be the only profile image.
+
+Use existing Object Storage.
+
+Options:
+
+Use Google photo
+Upload Daymark photo
+Remove custom photo
+
+==================================================
+15. PEOPLE LINKING
+==================================================
+
+Complete local Person → Daymark user linking UX.
+
+When a connection is accepted:
+
+Is this someone already in My People?
+
+Show likely local people.
+
+Allow:
+
+Link to Sarah
+
+Once linked:
+
+preserve existing memories
+birthday
+relationship
+notes
+avatar if preferred
+
+Do not create duplicates.
+
+==================================================
+16. SHARED MEMORY FRONTEND
+==================================================
+
+The participant backend exists.
+
+Finish the UI.
+
+Gift Detail:
+
+Shared with
+
+avatars
+
+Manage Sharing
+
+Owner can:
+
+Invite connection
+Viewer
+Contributor
+Remove
+
+Recipient:
+
+Accept
+Decline
+
+Contributor can add permitted content.
+
+Viewer cannot modify memory.
+
+==================================================
+17. DAILY PROMPT POLISH
+==================================================
+
+The Daily Prompt API already exists.
+
+Make Today's Little Question a compact signature Home interaction.
+
+Use one question per day.
+
+User can:
+
+Keep for myself
+Answer with someone
+Skip
+
+Do not make this feel like a survey/form.
+
+Use a small folded-note visual.
+
+==================================================
+18. DESIGN CONNECTIONS + MESSAGES BETTER
+==================================================
+
+Connections and Messages currently work but look too much like standard
+white-card utility screens.
+
+Apply Memory Shelf treatment.
+
+CONNECTIONS
+
+People should feel like scrapbook portraits.
+
+Pending request:
+
+small invitation card / note.
+
+MESSAGES FOR LATER
+
+Received:
+
+sealed letter
+
+Scheduled:
+
+postcard/gift tag with countdown
+
+Sent:
+
+stamped letter
+
+Keep usability clean.
+
+Do not overdecorate.
+
+==================================================
+19. PHYSICAL GIFT ANIMATION
+==================================================
+
+If no reusable PhysicalGiftAnimation component exists yet, create it.
+
+Wrap:
+
+photo moves into box
+lid closes
+horizontal ribbon
+vertical ribbon
+bow
+tag
+Marky presents it
+
+Unwrap:
+
+ribbon loosens
+lid rises
+photo emerges
+
+0.8–1.4 seconds.
+
+Respect prefers-reduced-motion.
+
+==================================================
+20. MONTHLY MEMORY CAPSULE
+==================================================
+
+Only after the above is stable, implement one small recap feature:
+
+Your Month in Little Things
+
+Use only real data:
+
+memories saved
+people
+places
+top mood
+favorite/kept-close memory
+longest Daylink
+
+Make it shareable with the same social card renderer.
+
+Do not build a complex analytics system.
+
+==================================================
+21. GLOBE PERFORMANCE
+==================================================
+
+Do not fetch only one giant static list forever.
+
+Add:
+
+cursor pagination
+viewport/bounds filtering
+clustering
+lazy image loading
+
+Keep the demo smooth at 50 memories but architecture ready for more.
+
+==================================================
+22. CLERK AUTH QA
+==================================================
+
+Clerk is now the real auth provider.
+
+Do not reintroduce Replit Auth.
+
+Verify:
+
+Google sign-in
+sign-up
+logout
+refresh persistence
+authenticated redirect
+onboarding redirect
+account switching
+query cache clearing
+
+Signed-in user opening `/` should go to `/home`.
+
+==================================================
+23. THREE-USER SECURITY TEST
+==================================================
+
+USER A + USER B connected.
+
+USER C unrelated.
+
+Verify C cannot access:
+
+A/B memories
+private images
+Daylinks
+Memory Drops
+scheduled messages
+Future Gifts
+private people
+shared participants
+
+C can only access A/B content explicitly published through:
+
+Memory Globe
+valid public share token
+
+Test revoked token.
+
+Test expired token.
+
+Test blocking.
+
+==================================================
+24. REAL-TIME TEST
+==================================================
+
+Use two tabs/accounts.
+
+Without refresh:
+
+A sends connection request → B sees it
+
+B accepts → A updates
+
+A sends Memory Drop → B receives notification
+
+B reacts → Daylink updates
+
+Scheduled message arrives → B inbox updates
+
+Future Gift unlock → UI updates
+
+No manual refresh should be required.
+
+==================================================
+25. VISUAL QA
+==================================================
+
+Review every screen at:
+
+375 × 812
+390 × 844
+430 × 932
+
+Pay special attention to:
+
+Globe
+Connections
+Messages
+Profile
+Gift Detail
+People
+Person Detail
+
+Ensure:
+
+no horizontal overflow
+44px tap targets
+safe areas
+no nav overlap
+consistent typography
+consistent cream/purple palette
+real photos stay visually dominant
+
+==================================================
+26. FINAL DEMO PRIORITIES
+==================================================
+
+The strongest Designathon demo sequence should be:
+
+1. This Day
+2. Wrap a Memory
+3. Physical gift closing
+4. My Gifts
+5. Unwrap
+6. Daylink
+7. Memory Drop
+8. Birthday Message for Later
+9. Memory Globe
+10. Instagram/WhatsApp share card
+
+Make these ten moments excellent.
+
+Do not add unrelated features.
+
+==================================================
+FINAL CHECK
+==================================================
+
+Run:
+
+database migration
+typecheck
+production build
+lint if configured
+
+Then report:
+
+1. Social SSE events completed
+2. Daylink frontend completed
+3. Memory Drop UI completed
+4. Globe redesign completed
+5. Secure share links completed
+6. Instagram cards completed
+7. WhatsApp privacy fix completed
+8. Privacy settings completed
+9. Notification settings completed
+10. Blocking check completed
+11. Scheduler safety completed
+12. Timezone birthday logic completed
+13. Profile image upload completed
+14. Person linking completed
+15. Shared memory UI completed
+16. Physical animation completed
+17. Three-user security result
+18. Two-tab real-time result
+19. Typecheck
+20. Production build
+
+Do not create another broad feature category after this pass.

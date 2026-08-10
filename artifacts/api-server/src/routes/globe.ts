@@ -9,8 +9,14 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { eq, and, ne } from "drizzle-orm";
 import { db, memoriesTable, usersTable, connectionsTable, notificationsTable } from "@workspace/db";
 import crypto from "crypto";
+import { getAuth } from "@clerk/express";
 
 const router: IRouter = Router();
+
+function getAuthUserId(req: Request): string | null {
+  const auth = getAuth(req);
+  return (auth?.sessionClaims?.userId as string | undefined) || auth?.userId || null;
+}
 
 // ── Public DTO builder ─────────────────────────────────────────────────────
 function toPublicDTO(memory: typeof memoriesTable.$inferSelect, ownerUsername?: string | null, ownerDisplayName?: string | null) {
@@ -53,8 +59,9 @@ router.get("/globe/memories", async (req, res): Promise<void> => {
   if (since) publicMemories = publicMemories.filter((m) => m.globePublishedAt && m.globePublishedAt > since);
 
   // If authenticated, filter out blocked users
-  if (req.isAuthenticated()) {
-    const myId = req.user!.id;
+  const authUserId = getAuthUserId(req);
+  if (authUserId) {
+    const myId = authUserId;
     const blocked = await db.query.connectionsTable.findMany({
       where: and(
         eq(connectionsTable.status, "blocked"),
@@ -87,8 +94,8 @@ router.get("/globe/memories", async (req, res): Promise<void> => {
 // ── POST /api/memories/:id/publish-globe ──────────────────────────────────
 
 router.post("/memories/:id/publish-globe", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const userId = req.user!.id;
+  const userId = getAuthUserId(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
   const memoryId = Number(req.params.id);
 
   const memory = await db.query.memoriesTable.findFirst({ where: eq(memoriesTable.id, memoryId) });
@@ -136,8 +143,8 @@ router.post("/memories/:id/publish-globe", async (req, res): Promise<void> => {
 // ── PATCH /api/memories/:id/globe-settings ────────────────────────────────
 
 router.patch("/memories/:id/globe-settings", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const userId = req.user!.id;
+  const userId = getAuthUserId(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
   const memoryId = Number(req.params.id);
 
   const memory = await db.query.memoriesTable.findFirst({ where: eq(memoriesTable.id, memoryId) });
@@ -161,8 +168,8 @@ router.patch("/memories/:id/globe-settings", async (req, res): Promise<void> => 
 // ── DELETE /api/memories/:id/globe ────────────────────────────────────────
 
 router.delete("/memories/:id/globe", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const userId = req.user!.id;
+  const userId = getAuthUserId(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
   const memoryId = Number(req.params.id);
 
   const memory = await db.query.memoriesTable.findFirst({ where: eq(memoriesTable.id, memoryId) });

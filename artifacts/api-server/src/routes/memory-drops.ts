@@ -7,12 +7,15 @@ import { eq, and, or } from "drizzle-orm";
 import { db, memoryDropsTable, usersTable, connectionsTable, notificationsTable } from "@workspace/db";
 import { emitToUser } from "./events";
 import { recordDaylinkActivity } from "./daylinks";
+import { getAuth } from "@clerk/express";
 
 const router: IRouter = Router();
 
-function requireAuth(req: Request, res: Response): boolean {
-  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return false; }
-  return true;
+function requireAuth(req: Request, res: Response): string | null {
+  const auth = getAuth(req);
+  const userId = (auth?.sessionClaims?.userId as string | undefined) || auth?.userId;
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return null; }
+  return userId;
 }
 
 async function isConnected(userA: string, userB: string): Promise<boolean> {
@@ -31,8 +34,8 @@ async function isConnected(userA: string, userB: string): Promise<boolean> {
 // ── GET /api/drops ─────────────────────────────────────────────────────────
 
 router.get("/drops", async (req, res): Promise<void> => {
-  if (!requireAuth(req, res)) return;
-  const userId = req.user!.id;
+  const userId = requireAuth(req, res);
+  if (!userId) return;
 
   const received = await db.query.memoryDropsTable.findMany({
     where: eq(memoryDropsTable.recipientUserId, userId),
@@ -51,8 +54,8 @@ router.get("/drops", async (req, res): Promise<void> => {
 // ── POST /api/drops ────────────────────────────────────────────────────────
 
 router.post("/drops", async (req, res): Promise<void> => {
-  if (!requireAuth(req, res)) return;
-  const senderId = req.user!.id;
+  const senderId = requireAuth(req, res);
+  if (!senderId) return;
 
   const { recipientUserId, note, photoUrl, linkedMemoryId } = req.body as {
     recipientUserId: string;
@@ -81,7 +84,7 @@ router.post("/drops", async (req, res): Promise<void> => {
     userId: recipientUserId,
     type: "memory_drop",
     title: "A little moment arrived 💌",
-    message: `${req.user!.firstName ?? "Someone"} dropped you a little moment 💜`,
+    message: `${"Someone"} dropped you a little moment 💜`,
   });
   emitToUser(recipientUserId, "memoryDrop.created", { id: drop.id });
 
@@ -91,8 +94,8 @@ router.post("/drops", async (req, res): Promise<void> => {
 // ── PATCH /api/drops/:id/react ─────────────────────────────────────────────
 
 router.patch("/drops/:id/react", async (req, res): Promise<void> => {
-  if (!requireAuth(req, res)) return;
-  const userId = req.user!.id;
+  const userId = requireAuth(req, res);
+  if (!userId) return;
   const dropId = Number(req.params.id);
   const { reaction } = req.body as { reaction: string };
 
@@ -117,7 +120,7 @@ router.patch("/drops/:id/react", async (req, res): Promise<void> => {
     userId: drop.senderUserId,
     type: "memory_drop",
     title: "Someone reacted to your moment",
-    message: `${req.user!.firstName ?? "Someone"} reacted ${reaction} to your memory drop`,
+    message: `${"Someone"} reacted ${reaction} to your memory drop`,
   });
   emitToUser(drop.senderUserId, "memoryDrop.created", { id: drop.id });
 
@@ -127,8 +130,8 @@ router.patch("/drops/:id/react", async (req, res): Promise<void> => {
 // ── PATCH /api/drops/:id/open ─────────────────────────────────────────────
 
 router.patch("/drops/:id/open", async (req, res): Promise<void> => {
-  if (!requireAuth(req, res)) return;
-  const userId = req.user!.id;
+  const userId = requireAuth(req, res);
+  if (!userId) return;
   const dropId = Number(req.params.id);
 
   const drop = await db.query.memoryDropsTable.findFirst({ where: eq(memoryDropsTable.id, dropId) });

@@ -16,6 +16,7 @@ import scheduledMessagesRouter from "./scheduled-messages";
 import globeRouter from "./globe";
 import memoryDropsRouter from "./memory-drops";
 import dailyPromptsRouter from "./daily-prompts";
+import shareLinksRouter from "./share-links";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(scheduledMessagesRouter);
 router.use(globeRouter);
 router.use(memoryDropsRouter);
 router.use(dailyPromptsRouter);
+router.use(shareLinksRouter);
 
 export default router;

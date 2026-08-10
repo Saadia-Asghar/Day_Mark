@@ -3,7 +3,9 @@ import { useRoute, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGetMemory, useKeepMemoryClose, useListMemories } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { ArrowLeft, Heart, MapPin, Calendar, Share, Loader2, Image as ImageIcon, Globe2, X, Check, Copy } from "lucide-react";
+import { ArrowLeft, Heart, MapPin, Calendar, Share, Loader2, Image as ImageIcon, Globe2, X, Check, Copy, StickerIcon } from "lucide-react";
+import { AnimatePresence as AP2, motion as m2 } from "framer-motion";
+import { ShareCardRenderer } from "@/components/share-card-renderer";
 import { DmCategoryTag, DmErrorState } from "@/components/daymark";
 import { TapeStrip, DateStamp, LocationStamp, GiftTag, MoodSticker, StoryLetter, RibbonDivider, OnThisDayCard } from "@/components/scrapbook";
 import { useToast } from "@/hooks/use-toast";
@@ -80,6 +82,7 @@ export default function GiftDetailPage() {
   const handleKeepClose = () => keepClose.mutate({ id });
 
   const [showShareSheet, setShowShareSheet] = useState(false);
+  const [showCardSheet, setShowCardSheet] = useState(false);
   const [showGlobeSheet, setShowGlobeSheet] = useState(false);
   const [globeCaption, setGlobeCaption] = useState(memory.story?.slice(0, 120) ?? "");
   const [globeAnonymous, setGlobeAnonymous] = useState(false);
@@ -110,8 +113,23 @@ export default function GiftDetailPage() {
   const handleCopyLink = async () => {
     setShowShareSheet(false);
     try {
-      await navigator.clipboard.writeText(window.location.href);
-      toast({ title: "Link copied ✓", description: "Share it with someone special." });
+      // Create a secure 24-hour share token instead of copying the private URL
+      const res = await fetch(`/api/memories/${id}/share-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ expiryHours: 24 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const shareUrl = `${window.location.origin}${data.url}`;
+        await navigator.clipboard.writeText(shareUrl);
+        toast({ title: "Secure link copied ✓", description: "Valid for 24 hours." });
+      } else {
+        // Fallback: copy current URL
+        await navigator.clipboard.writeText(window.location.href);
+        toast({ title: "Link copied ✓" });
+      }
     } catch {
       toast({ title: "Couldn't copy link", variant: "destructive" });
     }
@@ -469,6 +487,18 @@ export default function GiftDetailPage() {
                   </div>
                 </button>
                 <button
+                  onClick={() => { setShowShareSheet(false); setShowCardSheet(true); }}
+                  className="w-full flex items-center gap-4 px-4 py-4 bg-white rounded-2xl border border-border shadow-sm active:scale-[0.98] transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FFE4B5] to-[#FF7BA9] flex items-center justify-center">
+                    <span className="text-xl">📸</span>
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-sm">Create Share Card</p>
+                    <p className="text-xs text-muted-foreground">Story, Portrait, Square for Instagram</p>
+                  </div>
+                </button>
+                <button
                   onClick={() => { setShowShareSheet(false); setShowGlobeSheet(true); }}
                   className="w-full flex items-center gap-4 px-4 py-4 bg-white rounded-2xl border border-border shadow-sm active:scale-[0.98] transition-all"
                 >
@@ -485,6 +515,23 @@ export default function GiftDetailPage() {
               <div className="h-6" />
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Share Card Sheet ─────────────────────────────────────── */}
+      <AnimatePresence>
+        {showCardSheet && (
+          <ShareCardRenderer
+            memory={{
+              title: memory.title,
+              date: memory.date,
+              story: (memory as any).story ?? null,
+              category: memory.category,
+              giftColor: (memory as any).giftColor ?? undefined,
+              photoUrls: (memory as any).photoUrls ?? [],
+            }}
+            onClose={() => setShowCardSheet(false)}
+          />
         )}
       </AnimatePresence>
 
