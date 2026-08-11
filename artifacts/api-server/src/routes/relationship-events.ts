@@ -12,20 +12,14 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { eq, and, sql } from "drizzle-orm";
 import { db, relationshipEventsTable, birthdayWishesTable, usersTable, notificationsTable } from "@workspace/db";
-import { getAuth } from "@clerk/express";
+import { requireAuth } from '../middlewares/requireAuth';
 import { emitToUser } from "./events";
 
 const router: IRouter = Router();
 
-function getAuthUserId(req: Request): string | null {
-  const auth = getAuth(req);
-  return (auth?.sessionClaims?.userId as string | undefined) || auth?.userId || null;
-}
-
 // ── GET /api/relationship-events ─────────────────────────────────────────
-router.get("/relationship-events", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.get("/relationship-events", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const events = await db.query.relationshipEventsTable.findMany({
     where: eq(relationshipEventsTable.ownerUserId, userId),
@@ -35,9 +29,8 @@ router.get("/relationship-events", async (req, res): Promise<void> => {
 });
 
 // ── GET /api/relationship-events/upcoming ────────────────────────────────
-router.get("/relationship-events/upcoming", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.get("/relationship-events/upcoming", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const days = Math.min(Number(req.query.days ?? 30), 90);
   const now = new Date();
@@ -63,9 +56,8 @@ router.get("/relationship-events/upcoming", async (req, res): Promise<void> => {
 });
 
 // ── POST /api/relationship-events ────────────────────────────────────────
-router.post("/relationship-events", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.post("/relationship-events", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const { personId, linkedUserId, type, title, eventMonth, eventDay, eventYear, timezone, isRecurring, visibility, reminderDays } = req.body as {
     personId?: number;
@@ -105,9 +97,8 @@ router.post("/relationship-events", async (req, res): Promise<void> => {
 });
 
 // ── PATCH /api/relationship-events/:id ──────────────────────────────────
-router.patch("/relationship-events/:id", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.patch("/relationship-events/:id", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const eventId = Number(req.params.id);
   const existing = await db.query.relationshipEventsTable.findFirst({
@@ -135,9 +126,8 @@ router.patch("/relationship-events/:id", async (req, res): Promise<void> => {
 });
 
 // ── DELETE /api/relationship-events/:id ─────────────────────────────────
-router.delete("/relationship-events/:id", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.delete("/relationship-events/:id", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const eventId = Number(req.params.id);
   const existing = await db.query.relationshipEventsTable.findFirst({
@@ -151,11 +141,9 @@ router.delete("/relationship-events/:id", async (req, res): Promise<void> => {
 
 // ── GET /api/birthday-wishes/:userId ────────────────────────────────────
 // Returns wishes sent to a user today (for the birthday wall)
-router.get("/birthday-wishes/:userId", async (req, res): Promise<void> => {
-  const callerId = getAuthUserId(req);
-  if (!callerId) { res.status(401).json({ error: "Unauthorized" }); return; }
-
-  const targetUserId = req.params.userId;
+router.get("/birthday-wishes/:userId", requireAuth, async (req, res): Promise<void> => {
+  const callerId = req.dbUser.id;
+  const targetUserId = String(req.params.userId);
 
   const wishes = await db.query.birthdayWishesTable.findMany({
     where: eq(birthdayWishesTable.recipientUserId, targetUserId),
@@ -188,9 +176,8 @@ router.get("/birthday-wishes/:userId", async (req, res): Promise<void> => {
 });
 
 // ── POST /api/birthday-wishes ────────────────────────────────────────────
-router.post("/birthday-wishes", async (req, res): Promise<void> => {
-  const senderId = getAuthUserId(req);
-  if (!senderId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.post("/birthday-wishes", requireAuth, async (req, res): Promise<void> => {
+  const senderId = req.dbUser.id;
 
   const { recipientUserId, eventId, wishText, type = "text" } = req.body as {
     recipientUserId: string;

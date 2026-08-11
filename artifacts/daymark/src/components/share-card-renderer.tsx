@@ -44,10 +44,10 @@ const DIMS: Record<CardFormat, { w: number; h: number; label: string }> = {
 async function renderCard(
   memory: MemoryData,
   template: CardTemplate,
-  format: CardFormat,
+  cardFmt: CardFormat,
   canvas: HTMLCanvasElement,
 ): Promise<void> {
-  const { w, h } = DIMS[format];
+  const { w, h } = DIMS[cardFmt];
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d")!;
@@ -79,7 +79,7 @@ async function renderCard(
     try {
       const img = await loadImage(photoUrl);
       const photoW = w - pad * 2;
-      photoH = template === "story" ? h * 0.42 : h * 0.45;
+      photoH = cardFmt === "story" ? h * 0.42 : h * 0.45;
       const photoY = template === "polaroid" ? pad * 1.8 : pad;
 
       // White polaroid frame
@@ -156,7 +156,7 @@ async function renderCard(
 
   // Story quote (if space allows)
   if (memory.story && template !== "gift") {
-    const maxChars = format === "story" ? 140 : 90;
+    const maxChars = cardFmt === "story" ? 140 : 90;
     const excerpt = memory.story.length > maxChars ? memory.story.slice(0, maxChars) + "…" : memory.story;
     ctx.font = `500 italic ${w * 0.034}px Georgia, serif`;
     ctx.fillStyle = "#5A4870";

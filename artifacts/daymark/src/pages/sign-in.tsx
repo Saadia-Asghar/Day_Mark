@@ -1,40 +1,29 @@
 /**
- * /sign-in — Localised Daymark sign-in. Email + password only; no OAuth.
+ * /sign-in — Daymark sign-in with Supabase Auth. Email + password only.
  */
-import { useSignIn } from "@clerk/react";
-import { useClerk } from "@clerk/react";
+import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { DaymarkCharacter } from "@/components/daymark-character";
 
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-
 const REMEMBER_EMAIL_KEY = "daymark_remembered_email";
 
-function friendlyError(code: string | undefined, msg: string): string {
-  if (!code) return msg || "Something went wrong.";
-  if (
-    code.includes("password_incorrect") ||
-    code.includes("invalid_credentials") ||
-    code.includes("form_password_incorrect")
-  ) return "That password doesn't match. Try again or reset it.";
-  if (
-    code.includes("not_found") ||
-    code.includes("no_user") ||
-    code.includes("identifier_not_found")
-  ) return "We couldn't find a Daymark with that email.";
-  if (code.includes("too_many")) return "Too many attempts. Please wait a moment and try again.";
-  if (code.includes("unverified")) return "Your email isn't verified yet. Check your inbox.";
-  if (code.includes("strategy") || code.includes("verification_strategy"))
-    return "Sign-in failed. If you just registered, please check your email for a verification link and try again.";
-  return msg || "Something went wrong. Please try again.";
+function friendlyError(message: string): string {
+  const m = message?.toLowerCase() ?? "";
+  if (m.includes("invalid login") || m.includes("invalid credentials") || m.includes("wrong password"))
+    return "That password doesn't match. Try again or reset it.";
+  if (m.includes("user not found") || m.includes("no user"))
+    return "We couldn't find a Daymark with that email.";
+  if (m.includes("too many") || m.includes("rate limit"))
+    return "Too many attempts. Please wait a moment and try again.";
+  if (m.includes("email not confirmed"))
+    return "Please verify your email first — check your inbox for a confirmation link.";
+  return message || "Something went wrong. Please try again.";
 }
 
 export default function SignInPage() {
-  const { signIn } = useSignIn();
-  const { setActive } = useClerk();
   const [, setLocation] = useLocation();
 
   const savedEmail = typeof localStorage !== "undefined"
@@ -49,40 +38,26 @@ export default function SignInPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signIn) return;
     setError(null);
     setLoading(true);
     try {
-      // Step 1: identify the user
-      let result = await signIn.create({
-        identifier: email.trim(),
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
         password,
       });
 
-      // Step 2: if Clerk still needs the password as a first factor, supply it.
-      // Use result.attemptFirstFactor (on the returned resource), NOT signIn.attemptFirstFactor
-      // (the hook's signIn is a reactive snapshot and may not have all methods).
-      if (result.status === "needs_first_factor") {
-        result = await result.attemptFirstFactor({
-          strategy: "password",
-          password,
-        });
-      }
-
-      if (result.status === "complete") {
+      if (signInError) {
+        setError(friendlyError(signInError.message));
+      } else {
         if (rememberMe) {
           localStorage.setItem(REMEMBER_EMAIL_KEY, email.trim());
         } else {
           localStorage.removeItem(REMEMBER_EMAIL_KEY);
         }
-        await setActive({ session: result.createdSessionId });
         setLocation("/home");
-      } else {
-        setError("Sign-in incomplete — please try again.");
       }
-    } catch (err: any) {
-      const e0 = err?.errors?.[0] ?? err;
-      setError(friendlyError(e0?.code, e0?.longMessage ?? e0?.message ?? "Sign in failed."));
+    } catch {
+      setError("Something went wrong. Please try again.");
     }
     setLoading(false);
   };

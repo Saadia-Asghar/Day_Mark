@@ -23,8 +23,13 @@ export type SSEEventName =
   | "connection.requested"
   | "connection.accepted"
   | "memoryDrop.created"
+  | "memoryDrop.reacted"
   | "daylink.updated"
   | "scheduledMessage.received"
+  | "globe.reaction"
+  | "reminder.birthday"
+  | "monthlyCapsule.ready"
+  | "birthdayWish.created"
   | "ping";
 
 export function emitToUser(userId: string, event: SSEEventName, data: unknown) {

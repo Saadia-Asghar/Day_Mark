@@ -115,7 +115,7 @@ router.post("/prompts/:id/respond", requireAuth, async (req, res): Promise<void>
   // If shared with a connection, notify them (qualifies for Daylink via shared prompt answer)
   if (mode === "shared" && sharedWithUserId) {
     try {
-      await emitToUser(sharedWithUserId, { type: "notification.created", data: { type: "prompt_shared" } });
+      await emitToUser(sharedWithUserId, "notification.created", { type: "prompt_shared" });
     } catch (_) {}
   }
 

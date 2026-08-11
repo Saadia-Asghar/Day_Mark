@@ -5,20 +5,17 @@ import { defineConfig } from 'vite';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
+// PORT is only required when running the dev/preview server.
+// Production builds (`vite build`) do not need a port — they produce static files.
 const rawPort = process.env.PORT;
+const port = rawPort ? Number(rawPort) : undefined;
 
-if (!rawPort) {
-  throw new Error(
-    'PORT environment variable is required but was not provided.',
-  );
-}
-
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
+if (rawPort !== undefined && (Number.isNaN(port) || (port !== undefined && port <= 0))) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
+// BASE_PATH is required at build time because it determines the `base` URL
+// prefix embedded into the compiled JS/CSS asset paths.
 const basePath = process.env.BASE_PATH;
 
 if (!basePath) {

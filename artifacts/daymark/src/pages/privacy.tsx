@@ -86,7 +86,7 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="Third-party services">
-        <p>We use Clerk for authentication. Clerk handles your sign-in credentials and sessions. See Clerk's privacy policy for details on how they process authentication data.</p>
+        <p>We use Supabase for authentication. Supabase handles your sign-in credentials and sessions. See <a href="https://supabase.com/privacy" className="text-primary font-semibold underline-offset-2 hover:underline" target="_blank" rel="noopener noreferrer">Supabase's privacy policy</a> for details on how they process authentication data.</p>
         <p>We do not sell your data to advertisers or third parties.</p>
       </Section>
 

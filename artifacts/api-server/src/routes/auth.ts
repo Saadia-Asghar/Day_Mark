@@ -1,4 +1,4 @@
-import { getAuth, clerkClient } from '@clerk/express';
+import { createClient } from '@supabase/supabase-js';
 import { eq, and, or } from 'drizzle-orm';
 import {
   db, usersTable,
@@ -8,32 +8,28 @@ import {
   birthdayWishesTable, invitesTable, monthlyCapsulesTable,
 } from '@workspace/db';
 import { Router, type IRouter, type Request, type Response } from 'express';
-import { requireAuth } from '../middlewares/requireAuth';
+import { requireAuth, optionalAuth } from '../middlewares/requireAuth';
 
 const router: IRouter = Router();
+
+// Supabase admin client (service role — backend only, never exposed to browser)
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } },
+);
 
 /**
  * GET /auth/user
  *
- * Returns the local DB user row for the currently signed-in Clerk user.
- * Used by the frontend to fetch app-specific data (onboardingCompleted).
+ * Returns the local DB user row for the currently signed-in user.
+ * Goes through optionalAuth so the same supabaseId-based provisioning/bridge
+ * logic runs on first visit — legacy users get their supabase_id stamped on
+ * their existing row (no PK change) and return all their existing data.
  * Returns { user: null } for unauthenticated requests.
  */
-router.get('/auth/user', async (req: Request, res: Response) => {
-  const auth = getAuth(req);
-  const userId =
-    (auth?.sessionClaims?.userId as string | undefined) || auth?.userId;
-
-  if (!userId) {
-    res.json({ user: null });
-    return;
-  }
-
-  const dbUser = await db.query.usersTable.findFirst({
-    where: eq(usersTable.id, userId),
-  });
-
-  res.json({ user: dbUser ?? null });
+router.get('/auth/user', optionalAuth, async (req: Request, res: Response) => {
+  res.json({ user: req.dbUser ?? null });
 });
 
 /**
@@ -217,11 +213,18 @@ router.delete(
       await db.delete(memoriesTable).where(eq(memoriesTable.userId, userId));
       await db.delete(usersTable).where(eq(usersTable.id, userId));
 
-      // Delete Clerk user after DB records (don't rollback on Clerk failure)
-      try {
-        await clerkClient.users.deleteUser(userId);
-      } catch (clerkErr) {
-        console.error('[auth/delete] Clerk user deletion failed:', clerkErr);
+      // Delete Supabase auth user using the external supabaseId (not the internal DB id).
+      // For bridged legacy users these differ — using the wrong id silently fails.
+      // If supabaseId is absent the local data is already gone; log and continue.
+      const supabaseAuthId = req.dbUser.supabaseId;
+      if (!supabaseAuthId) {
+        console.warn('[auth/delete] supabaseId missing — local data deleted but Supabase account may remain');
+      } else {
+        try {
+          await supabaseAdmin.auth.admin.deleteUser(supabaseAuthId);
+        } catch (supabaseErr) {
+          console.error('[auth/delete] Supabase user deletion failed:', supabaseErr);
+        }
       }
 
       res.json({ deleted: true });

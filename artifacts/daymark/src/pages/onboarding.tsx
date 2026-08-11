@@ -2,8 +2,8 @@
  * Onboarding — shown to new users after email verification.
  * Screens: 4 intro slides → personal setup → /home
  *
- * Username is collected during sign-up for email users.
- * If the DB user has no username yet (Google sign-up), the username step is shown.
+ * Username is collected during sign-up. If somehow missing (e.g. the sign-up
+ * redirect was skipped), the username step is shown before completing setup.
  */
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
@@ -51,7 +51,7 @@ const WELCOME_STEPS = [
   },
 ];
 
-// ── Username validation (for Google users) ─────────────────────────────────
+// ── Username validation ────────────────────────────────────────────────────
 function isValidUsername(u: string) {
   return /^[a-z0-9_]{3,24}$/.test(u);
 }
@@ -263,7 +263,7 @@ export default function OnboardingPage() {
   const completeOnboarding = useCompleteOnboarding();
   const qc = useQueryClient();
 
-  // Detect if user already has a username (email sign-up), or needs one (Google sign-up)
+  // Detect if user already has a username; show the username step if not
   useEffect(() => {
     fetch(`${basePath}/api/auth/user`, { credentials: "include" })
       .then(r => r.ok ? r.json() : null)

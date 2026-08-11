@@ -127,6 +127,15 @@ export async function runMigrations(): Promise<void> {
     await client.query(`CREATE INDEX IF NOT EXISTS rer_scheduled ON relationship_event_reminders(scheduled_for, status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS rer_user ON relationship_event_reminders(user_id)`);
 
+    // ── users: supabase_id — external Supabase Auth UUID ────────────────
+    // Separate from the stable internal id PK so FK constraints stay intact.
+    await client.query(
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS supabase_id VARCHAR`,
+    );
+    await client.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS users_supabase_id_idx ON users(supabase_id) WHERE supabase_id IS NOT NULL`,
+    );
+
     // ── users: privacy + notification preference columns ─────────────────
     for (const stmt of [
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS allow_connection_requests BOOLEAN NOT NULL DEFAULT true`,

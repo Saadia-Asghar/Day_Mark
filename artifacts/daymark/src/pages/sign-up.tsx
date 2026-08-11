@@ -1,11 +1,11 @@
 /**
- * /sign-up — Localised Daymark sign-up. Email + password only; no OAuth.
- * Steps: form (email + username + password) → email verification → /onboarding
+ * /sign-up — Daymark sign-up with Supabase Auth. Email + password only.
+ * After form submission Supabase sends a magic verification link.
+ * The user clicks the link → redirected to /auth/callback → /onboarding.
  */
-import { useSignUp } from "@clerk/react";
-import { useClerk } from "@clerk/react";
+import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { Eye, EyeOff, Check, X, ArrowLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { DaymarkCharacter } from "@/components/daymark-character";
@@ -16,16 +16,15 @@ function isValidUsername(u: string) {
   return /^[a-z0-9_]{3,24}$/.test(u);
 }
 
-function friendlyError(code: string | undefined, msg: string): string {
-  if (!code) return msg || "Something went wrong.";
-  if (code.includes("email_address_taken") || code.includes("already_exists") || code.includes("form_identifier_exists")) {
+function friendlyError(message: string): string {
+  const m = message?.toLowerCase() ?? "";
+  if (m.includes("already registered") || m.includes("already exists") || m.includes("user already"))
     return "That email already has a Daymark.";
-  }
-  if (code.includes("username_taken")) return "That username is already part of someone's story.";
-  if (code.includes("password_too_short") || code.includes("pwned")) return "Please choose a stronger password.";
-  if (code.includes("incorrect_code") || code.includes("form_code_incorrect")) return "That code didn't work. Check it and try again.";
-  if (code.includes("code_expired") || code.includes("verification_expired")) return "That code expired. Resend a new one.";
-  return msg || "Something went wrong. Please try again.";
+  if (m.includes("password") && m.includes("short"))
+    return "Please choose a stronger password (at least 8 characters).";
+  if (m.includes("valid email"))
+    return "Please enter a valid email address.";
+  return message || "Something went wrong. Please try again.";
 }
 
 function PasswordStrength({ pw }: { pw: string }) {
@@ -48,14 +47,10 @@ function PasswordStrength({ pw }: { pw: string }) {
   );
 }
 
-type FormStep = "form" | "verify";
+type Step = "form" | "check-email";
 
 export default function SignUpPage() {
-  const { signUp } = useSignUp();
-  const { setActive } = useClerk();
-  const [, setLocation] = useLocation();
-  const [step, setStep] = useState<FormStep>("form");
-
+  const [step, setStep] = useState<Step>("form");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -65,9 +60,6 @@ export default function SignUpPage() {
   const [usernameAvail, setUsernameAvail] = useState<boolean | null>(null);
   const [usernameChecking, setUsernameChecking] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [code, setCode] = useState("");
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,7 +69,7 @@ export default function SignUpPage() {
     setUsernameChecking(true);
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`${basePath}/api/users/search?q=${encodeURIComponent(username)}`, { credentials: "include" });
+        const res = await fetch(`${basePath}/api/users/search?q=${encodeURIComponent(username)}`);
         if (res.ok) {
           const d = await res.json();
           const taken = (d.users ?? []).some((u: { username?: string }) => u.username?.toLowerCase() === username.toLowerCase());
@@ -88,93 +80,52 @@ export default function SignUpPage() {
     }, 500);
   }, [username]);
 
-  const startCooldown = () => {
-    setResendCooldown(60);
-    if (cooldownRef.current) clearInterval(cooldownRef.current);
-    cooldownRef.current = setInterval(() => {
-      setResendCooldown(v => { if (v <= 1) { clearInterval(cooldownRef.current!); return 0; } return v - 1; });
-    }, 1000);
-  };
-
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signUp) return;
     setError(null);
     if (password !== confirmPassword) { setError("Passwords don't match."); return; }
     if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
     if (isValidUsername(username) && usernameAvail === false) { setError("That username is already taken. Try another."); return; }
     setLoading(true);
-    try {
-      // signUp.create is the correct Clerk custom-flow API
-      await signUp.create({ emailAddress: email.trim(), password });
-      // Send email verification code
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-      setStep("verify");
-      startCooldown();
-    } catch (err: any) {
-      const e0 = err?.errors?.[0] ?? err;
-      setError(friendlyError(e0?.code, e0?.longMessage ?? e0?.message ?? "Sign up failed."));
-    }
-    setLoading(false);
-  };
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!signUp) return;
-    setError(null);
-    setLoading(true);
     try {
-      const result = await signUp.attemptEmailAddressVerification({ code: code.trim() });
-      if (result.status !== "complete") {
-        setError("Verification incomplete. Please try again.");
-        setLoading(false);
-        return;
-      }
-      if (result.createdSessionId) {
-        if (isValidUsername(username)) {
-          try {
-            await fetch(`${basePath}/api/auth/profile`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify({ username }),
-            });
-          } catch { /* best effort */ }
-        }
-        await setActive({ session: result.createdSessionId });
-        setLocation("/onboarding");
+      // Build the redirect URL so Supabase knows where to send the user after email confirmation
+      const redirectTo = `${window.location.origin}${basePath}/auth/callback?username=${encodeURIComponent(username)}`;
+
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: redirectTo,
+          data: {
+            // Store username in user_metadata so auth-callback can save it
+            username: isValidUsername(username) ? username : undefined,
+          },
+        },
+      });
+
+      if (signUpError) {
+        setError(friendlyError(signUpError.message));
       } else {
-        setError("Sign-up complete but no session — please try signing in.");
+        setStep("check-email");
       }
-    } catch (err: any) {
-      const e0 = err?.errors?.[0] ?? err;
-      setError(friendlyError(e0?.code, e0?.longMessage ?? e0?.message ?? "Verification failed."));
+    } catch {
+      setError("Something went wrong. Please try again.");
     }
     setLoading(false);
-  };
-
-  const handleResend = async () => {
-    if (resendCooldown > 0 || !signUp) return;
-    setError(null);
-    try {
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-      startCooldown();
-    } catch { setError("Couldn't resend. Try again."); }
   };
 
   return (
     <div className="min-h-[100dvh] bg-[#FFF9F5] flex flex-col px-6 pt-14 pb-10 overflow-x-hidden">
-      <Link href="/auth">
-        <button className="w-9 h-9 rounded-full bg-white border border-border shadow-sm flex items-center justify-center mb-5 active:scale-95 transition-all">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-      </Link>
-
       <AnimatePresence mode="wait">
         {step === "form" && (
           <motion.div key="form" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
-            {/* Clerk CAPTCHA anchor (invisible bot protection) */}
-            <div id="clerk-captcha" />
+            <Link href="/auth">
+              <button className="w-9 h-9 rounded-full bg-white border border-border shadow-sm flex items-center justify-center mb-5 active:scale-95 transition-all">
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            </Link>
+
             <div className="flex items-end gap-3 mb-6">
               <DaymarkCharacter character="marky" pose="holdingGift" size="sm" animation="float" />
               <div>
@@ -183,7 +134,7 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            <form onSubmit={handleFormSubmit} className="flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div>
                 <label className="text-sm font-bold block mb-1.5">Email address</label>
                 <input type="email" autoComplete="email" value={email}
@@ -268,53 +219,32 @@ export default function SignUpPage() {
           </motion.div>
         )}
 
-        {step === "verify" && (
-          <motion.div key="verify" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
-            <div className="flex items-end gap-3 mb-6">
-              <DaymarkCharacter character="marky" pose="envelope" size="sm" animation="float" />
-              <div>
-                <h1 className="text-2xl font-extrabold">Verify your email 💌</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  We sent a code to <span className="font-bold text-foreground">{email}</span>
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleVerify} className="flex flex-col gap-4">
-              <div>
-                <label className="text-sm font-bold block mb-1.5">6-digit verification code</label>
-                <input type="text" inputMode="numeric" maxLength={6} value={code}
-                  onChange={e => { setCode(e.target.value.replace(/\D/g, "").slice(0, 6)); setError(null); }}
-                  placeholder="123456" autoFocus
-                  className="w-full px-4 py-4 bg-white border-2 border-border rounded-2xl text-xl font-bold tracking-[0.25em] text-center outline-none focus:border-primary transition-colors" />
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-sm text-red-600 font-medium">{error}</div>
-              )}
-
-              <button type="submit" disabled={loading || code.length < 6}
-                className="w-full h-[52px] bg-primary text-white rounded-full font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] flex items-center justify-center gap-2 active:scale-[0.97] disabled:opacity-60 transition-all">
-                {loading ? <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : "Verify Email"}
-              </button>
-
-              <div className="flex items-center justify-center gap-4 text-sm">
-                <button type="button" onClick={handleResend} disabled={resendCooldown > 0}
-                  className={`font-bold ${resendCooldown > 0 ? "text-muted-foreground" : "text-primary"}`}>
-                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
-                </button>
-                <span className="text-border">·</span>
-                <button type="button" onClick={() => { setStep("form"); setCode(""); setError(null); }}
-                  className="text-muted-foreground font-medium">Change email</button>
-              </div>
-            </form>
-
-            <p className="text-center text-xs text-muted-foreground mt-5 leading-relaxed">
-              By continuing, you agree to our{" "}
-              <Link href="/terms"><span className="text-primary font-semibold underline-offset-2 hover:underline cursor-pointer">Terms</span></Link>
-              {" "}and{" "}
-              <Link href="/privacy"><span className="text-primary font-semibold underline-offset-2 hover:underline cursor-pointer">Privacy Policy</span></Link>.
+        {step === "check-email" && (
+          <motion.div key="check-email" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
+            className="flex flex-col items-center text-center pt-16 px-2">
+            <DaymarkCharacter character="marky" pose="envelope" size="lg" animation="float" className="mb-6" />
+            <h1 className="text-2xl font-extrabold mb-2">Check your inbox 💌</h1>
+            <p className="text-sm text-muted-foreground mb-2">
+              We sent a verification link to
             </p>
+            <p className="font-bold text-foreground mb-6">{email}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-[280px]">
+              Click the link in the email to confirm your account and start your Daymark.
+              The link expires in 24 hours.
+            </p>
+            <div className="mt-8 w-full max-w-sm space-y-3">
+              <button
+                onClick={() => setStep("form")}
+                className="w-full h-12 border-2 border-border rounded-full font-bold text-sm text-foreground bg-white active:scale-[0.97] transition-all"
+              >
+                Use a different email
+              </button>
+              <Link href="/sign-in">
+                <button className="w-full h-12 text-primary font-bold text-sm active:scale-[0.97] transition-all">
+                  Already verified? Sign in
+                </button>
+              </Link>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

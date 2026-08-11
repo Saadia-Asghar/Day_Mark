@@ -35,35 +35,53 @@ import CapsulePage from '@/pages/capsule';
 import InvitePage from '@/pages/invite';
 import PrivacyPage from '@/pages/privacy';
 import TermsPage from '@/pages/terms';
-import { type ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
-import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ClerkProvider, useAuth, useClerk, useUser } from '@clerk/react';
 import AuthPage from '@/pages/auth';
 import SignInPage from '@/pages/sign-in';
 import SignUpPage from '@/pages/sign-up';
 import ForgotPasswordPage from '@/pages/forgot-password';
-import { publishableKeyFromHost } from '@clerk/react/internal';
-import { shadcn } from '@clerk/themes';
+import AuthCallbackPage from '@/pages/auth-callback';
+import ResetPasswordPage from '@/pages/reset-password';
+
+import { type ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase, syncAuthCookie } from '@/lib/supabase';
+import { setAuthTokenGetter } from '@workspace/api-client-react';
+import type { Session } from '@supabase/supabase-js';
 
 const queryClient = new QueryClient();
+
+// Wire api-client-react hooks to use the Supabase Bearer token
+setAuthTokenGetter(async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
+});
 
 // Routes where BottomNav is visible
 const BOTTOM_NAV_ROUTES = ['/home', '/calendar', '/gifts', '/people'];
 
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
+interface AppUser {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  onboardingCompleted: boolean;
+}
+
 interface AuthContextValue {
   user: AppUser | null;
+  session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
+  session: null,
   isLoading: true,
   isAuthenticated: false,
+  signOut: async () => {},
 });
 
 export function useAppAuth() {
@@ -71,39 +89,66 @@ export function useAppAuth() {
 }
 
 function AuthProvider({ children }: { children: ReactNode }) {
-  const { isLoaded, isSignedIn } = useAuth();
-  const { user: clerkUser } = useUser();
+  const [session, setSession] = useState<Session | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const qc = useQueryClient();
 
-  // Fetch app-specific data (onboardingCompleted) from server, gated on Clerk being loaded
+  useEffect(() => {
+    // Initialise from whatever is already stored
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+      syncAuthCookie(s?.access_token ?? null, s?.expires_in);
+      setSessionLoading(false);
+    });
+
+    // Keep session + cookie in sync on every auth event (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      syncAuthCookie(s?.access_token ?? null, s?.expires_in);
+      if (!s) {
+        // Clear all cached queries on sign-out
+        qc.clear();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [qc]);
+
+  // Fetch DB user row (onboardingCompleted, firstName, lastName, profileImageUrl, etc.)
   const { data: serverUser, isLoading: serverLoading } = useQuery({
     queryKey: ['/api/auth/user'],
     queryFn: async () => {
       const res = await fetch(`${basePath}/api/auth/user`, { credentials: 'include' });
       if (!res.ok) return null;
-      const data = await res.json() as { user: { onboardingCompleted: boolean } | null };
+      const data = await res.json() as { user: Record<string, unknown> | null };
       return data.user;
     },
-    enabled: isLoaded && !!isSignedIn,
+    enabled: !!session,
     staleTime: 30_000,
   });
 
-  const user: AppUser | null =
-    isLoaded && isSignedIn && clerkUser
-      ? {
-          id: clerkUser.externalId ?? clerkUser.id,
-          email: clerkUser.primaryEmailAddress?.emailAddress ?? null,
-          firstName: clerkUser.firstName ?? null,
-          lastName: clerkUser.lastName ?? null,
-          profileImageUrl: clerkUser.imageUrl ?? null,
-          onboardingCompleted: serverUser?.onboardingCompleted ?? false,
-        }
-      : null;
+  const user: AppUser | null = session
+    ? {
+        id: session.user.id,
+        email: session.user.email ?? null,
+        firstName: (serverUser?.firstName as string | null) ?? null,
+        lastName: (serverUser?.lastName as string | null) ?? null,
+        profileImageUrl: (serverUser?.profileImageUrl as string | null) ?? null,
+        onboardingCompleted: (serverUser?.onboardingCompleted as boolean) ?? false,
+      }
+    : null;
 
-  const isLoading = !isLoaded || (!!isSignedIn && serverLoading && !serverUser);
-  const isAuthenticated = isLoaded && !!isSignedIn && !!user;
+  const isLoading = sessionLoading || (!!session && serverLoading && !serverUser);
+  const isAuthenticated = !!session;
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    syncAuthCookie(null);
+    qc.clear();
+  };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, session, isLoading, isAuthenticated, signOut }}>
       {children}
     </AuthContext.Provider>
   );
@@ -114,23 +159,19 @@ type SSEStatus = 'connected' | 'reconnecting' | 'restored';
 
 function useSSEUpdates(isAuthenticated: boolean) {
   const qc = useQueryClient();
-  const esRef = useRef<EventSource | null>(null);
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [status, setStatus] = useState<SSEStatus>('connected');
 
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const base = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
+    let es: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
     function connect() {
-      if (esRef.current) {
-        esRef.current.close();
-        esRef.current = null;
-      }
+      if (es) { es.close(); es = null; }
 
-      const es = new EventSource(`${base}/api/events`, { withCredentials: true });
-      esRef.current = es;
+      es = new EventSource(`${base}/api/events`, { withCredentials: true });
 
       const invalidate = (keys: string[]) => {
         keys.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
@@ -143,7 +184,6 @@ function useSSEUpdates(isAuthenticated: boolean) {
       es.addEventListener('futureGift.unlocked', () => invalidate(['listFutureGifts', 'getFutureGift', 'getHomeSummary']));
       es.addEventListener('person.updated', () => invalidate(['listPeople', 'getPerson']));
       es.addEventListener('notification.created', () => invalidate(['listNotifications']));
-      // Social events
       es.addEventListener('connection.requested', () => invalidate(['/api/connections/pending', 'listNotifications']));
       es.addEventListener('connection.accepted', () => invalidate(['/api/connections', 'listPeople', '/api/daylinks']));
       es.addEventListener('memoryDrop.created', () => invalidate(['/api/drops', 'listNotifications']));
@@ -154,22 +194,18 @@ function useSSEUpdates(isAuthenticated: boolean) {
       es.addEventListener('globe.reaction', () => invalidate(['/api/globe/memories']));
 
       es.addEventListener('open', () => {
-        if (reconnectTimerRef.current) {
+        if (reconnectTimer) {
           setStatus('restored');
           setTimeout(() => setStatus('connected'), 2500);
           qc.invalidateQueries();
-        }
-        if (reconnectTimerRef.current) {
-          clearTimeout(reconnectTimerRef.current);
-          reconnectTimerRef.current = null;
+          clearTimeout(reconnectTimer);
+          reconnectTimer = null;
         }
       });
 
       es.addEventListener('error', () => {
-        if (!reconnectTimerRef.current) {
-          reconnectTimerRef.current = setTimeout(() => {
-            setStatus('reconnecting');
-          }, 3000);
+        if (!reconnectTimer) {
+          reconnectTimer = setTimeout(() => setStatus('reconnecting'), 3000);
         }
       });
     }
@@ -177,14 +213,8 @@ function useSSEUpdates(isAuthenticated: boolean) {
     connect();
 
     return () => {
-      if (esRef.current) {
-        esRef.current.close();
-        esRef.current = null;
-      }
-      if (reconnectTimerRef.current) {
-        clearTimeout(reconnectTimerRef.current);
-        reconnectTimerRef.current = null;
-      }
+      es?.close();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
     };
   }, [isAuthenticated, qc]);
 
@@ -295,15 +325,20 @@ function Router() {
           <Route path="/auth">
             {isAuthenticated ? <Redirect to="/home" /> : <AuthPage />}
           </Route>
-          <Route path="/sign-in/*?">
+          <Route path="/sign-in">
             {isAuthenticated ? <Redirect to="/home" /> : <SignInPage />}
           </Route>
-          <Route path="/sign-up/*?">
+          <Route path="/sign-up">
             {isAuthenticated ? <Redirect to="/home" /> : <SignUpPage />}
           </Route>
           <Route path="/forgot-password">
             {isAuthenticated ? <Redirect to="/home" /> : <ForgotPasswordPage />}
           </Route>
+
+          {/* Auth callbacks — always accessible */}
+          <Route path="/auth/callback" component={AuthCallbackPage} />
+          <Route path="/reset-password" component={ResetPasswordPage} />
+
           {/* Protected */}
           <Route path="/onboarding">
             <ProtectedRoute component={OnboardingPage} requireOnboarding={false} />
@@ -353,26 +388,20 @@ function Router() {
           <Route path="/settings/notifications">
             <ProtectedRoute component={NotificationSettingsPage} />
           </Route>
-
-          {/* Capsule */}
           <Route path="/capsule">
             <ProtectedRoute component={CapsulePage} />
           </Route>
           <Route path="/capsule/:year/:month">
             <ProtectedRoute component={CapsulePage} />
           </Route>
-
-          {/* Invite / Join */}
           <Route path="/invite">
             <ProtectedRoute component={InvitePage} />
           </Route>
           <Route path="/join/:slug" component={InvitePage} />
 
           {/* Public — no auth required */}
-          {/* Legal — public, no auth required */}
           <Route path="/privacy" component={PrivacyPage} />
           <Route path="/terms" component={TermsPage} />
-
           <Route path="/m/:token" component={SharedMemoryPage} />
 
           <Route component={NotFound} />
@@ -384,51 +413,25 @@ function Router() {
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
+  // Use React's built-in key prop to reset error boundary on navigation
+  return <ErrorBoundary key={location}>{children}</ErrorBoundary>;
 }
 
-function ClerkProviderWithRoutes() {
-  const [, setLocation] = useLocation();
-
+function AppWithProviders() {
   return (
-    <ClerkProvider
-      publishableKey={clerkPubKey}
-      proxyUrl={clerkProxyUrl}
-      appearance={clerkAppearance}
-      signInUrl={`${basePath}/sign-in`}
-      signUpUrl={`${basePath}/sign-up`}
-      termsUrl={`${basePath}/terms`}
-      privacyPolicyUrl={`${basePath}/privacy`}
-      localization={{
-        signIn: {
-          start: {
-            title: 'Welcome back to Daymark',
-            subtitle: 'Sign in to your memory space',
-          },
-        },
-        signUp: {
-          start: {
-            title: 'Start your Daymark',
-            subtitle: 'Keep the little gifts life gives you',
-          },
-        },
-      }}
-      routerPush={(to) => setLocation(stripBase(to))}
-      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
-    >
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Router />
-        </AuthProvider>
-      </QueryClientProvider>
-    </ClerkProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Router />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
+
 function App() {
   return (
     <TooltipProvider>
       <WouterRouter base={basePath}>
-        <ClerkProviderWithRoutes />
+        <AppWithProviders />
       </WouterRouter>
       <Toaster />
     </TooltipProvider>
@@ -438,70 +441,3 @@ function App() {
 export default App;
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
-
-interface AppUser {
-  id: string;
-  email: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  profileImageUrl: string | null;
-  onboardingCompleted: boolean;
-}
-
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
-
-const clerkAppearance = {
-  theme: shadcn,
-  cssLayerName: 'clerk',
-  options: {
-    logoPlacement: 'inside' as const,
-    logoLinkUrl: basePath || '/',
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
-  },
-  variables: {
-    colorPrimary: '#6847F5',
-    colorForeground: '#1a1523',
-    colorMutedForeground: '#7c6d8a',
-    colorDanger: '#e53e3e',
-    colorBackground: '#FFF9F5',
-    colorInput: '#ffffff',
-    colorInputForeground: '#1a1523',
-    colorNeutral: '#e5e0f0',
-    fontFamily: '"Plus Jakarta Sans", sans-serif',
-    borderRadius: '0.75rem',
-  },
-  elements: {
-    rootBox: 'w-full flex justify-center',
-    cardBox: 'bg-[#FFF9F5] rounded-2xl w-[440px] max-w-full overflow-hidden shadow-[0_0_40px_rgba(104,71,245,0.12)]',
-    card: '!shadow-none !border-0 !bg-transparent !rounded-none',
-    footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
-    headerTitle: 'text-[#1a1523] font-extrabold',
-    headerSubtitle: 'text-[#7c6d8a]',
-    socialButtonsBlockButtonText: 'text-[#1a1523] font-semibold',
-    formFieldLabel: 'text-[#1a1523] font-semibold',
-    footerActionLink: 'text-[#6847F5] font-bold hover:text-[#5a38e8]',
-    footerActionText: 'text-[#7c6d8a]',
-    dividerText: 'text-[#7c6d8a]',
-    identityPreviewEditButton: 'text-[#6847F5]',
-    formFieldSuccessText: 'text-emerald-600',
-    alertText: 'text-[#1a1523]',
-    logoBox: 'flex justify-center',
-    logoImage: 'w-10 h-10',
-    socialButtonsBlockButton: 'border border-[#e5e0f0] bg-white hover:bg-[#EAE3FF]/30 transition-colors',
-    formButtonPrimary: 'bg-[#6847F5] hover:bg-[#5a38e8] text-white font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)]',
-    formFieldInput: 'border-[#e5e0f0] bg-white text-[#1a1523] focus:ring-2 focus:ring-[#6847F5]/30 focus:border-[#6847F5]',
-    footerAction: 'bg-transparent',
-    dividerLine: 'bg-[#e5e0f0]',
-    alert: 'border border-red-200 bg-red-50',
-    otpCodeFieldInput: 'border-[#e5e0f0] bg-white',
-    formFieldRow: '',
-    main: '',
-  },
-};
-
-function stripBase(path: string): string {
-  return basePath && path.startsWith(basePath)
-    ? path.slice(basePath.length) || '/'
-    : path;
-}
-

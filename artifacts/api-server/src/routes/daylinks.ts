@@ -11,16 +11,9 @@ import {
   connectionsTable, usersTable, notificationsTable,
 } from "@workspace/db";
 import { emitToUser } from "./events";
-import { getAuth } from "@clerk/express";
+import { requireAuth } from '../middlewares/requireAuth';
 
 const router: IRouter = Router();
-
-function requireAuth(req: Request, res: Response): string | null {
-  const auth = getAuth(req);
-  const userId = (auth?.sessionClaims?.userId as string | undefined) || auth?.userId;
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return null; }
-  return userId;
-}
 
 /** Canonical pair: alphabetically lower userId → userAId */
 function canonicalPair(a: string, b: string): [string, string] {
@@ -146,9 +139,8 @@ export async function recordDaylinkActivity(
 // ── GET /api/daylinks ──────────────────────────────────────────────────────
 // Top streaks for the current user (for Home section)
 
-router.get("/daylinks", async (req, res): Promise<void> => {
-  const userId = requireAuth(req, res);
-  if (!userId) return;
+router.get("/daylinks", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const streaks = await db.query.relationshipStreaksTable.findMany({
     where: or(
@@ -180,10 +172,9 @@ router.get("/daylinks", async (req, res): Promise<void> => {
 // ── GET /api/daylinks/:userId ──────────────────────────────────────────────
 // Streak between current user and a specific other user
 
-router.get("/daylinks/:userId", async (req, res): Promise<void> => {
-  const myId = requireAuth(req, res);
-  if (!myId) return;
-  const otherId = req.params.userId;
+router.get("/daylinks/:userId", requireAuth, async (req, res): Promise<void> => {
+  const myId = req.dbUser.id;
+  const otherId = String(req.params.userId);
 
   const [userAId, userBId] = canonicalPair(myId, otherId);
   const streak = await db.query.relationshipStreaksTable.findFirst({

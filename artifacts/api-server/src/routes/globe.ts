@@ -6,17 +6,11 @@
  * Blocking is enforced for authenticated requests.
  */
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db, memoriesTable, usersTable, connectionsTable, notificationsTable } from "@workspace/db";
-import crypto from "crypto";
-import { getAuth } from "@clerk/express";
+import { requireAuth, optionalAuth } from '../middlewares/requireAuth';
 
 const router: IRouter = Router();
-
-function getAuthUserId(req: Request): string | null {
-  const auth = getAuth(req);
-  return (auth?.sessionClaims?.userId as string | undefined) || auth?.userId || null;
-}
 
 // ── Public DTO builder ─────────────────────────────────────────────────────
 function toPublicDTO(memory: typeof memoriesTable.$inferSelect, ownerUsername?: string | null, ownerDisplayName?: string | null) {
@@ -40,8 +34,9 @@ function toPublicDTO(memory: typeof memoriesTable.$inferSelect, ownerUsername?: 
 }
 
 // ── GET /api/globe/memories ────────────────────────────────────────────────
+// Public endpoint; if authenticated, blocked-user memories are filtered out.
 
-router.get("/globe/memories", async (req, res): Promise<void> => {
+router.get("/globe/memories", optionalAuth, async (req, res): Promise<void> => {
   const limit = Math.min(Number(req.query.limit ?? 50), 100);
   const since = req.query.since ? new Date(String(req.query.since)) : undefined;
   const category = req.query.category ? String(req.query.category) : undefined;
@@ -59,13 +54,11 @@ router.get("/globe/memories", async (req, res): Promise<void> => {
   if (since) publicMemories = publicMemories.filter((m) => m.globePublishedAt && m.globePublishedAt > since);
 
   // If authenticated, filter out blocked users
-  const authUserId = getAuthUserId(req);
-  if (authUserId) {
-    const myId = authUserId;
+  if (req.dbUser) {
+    const myId = req.dbUser.id;
     const blocked = await db.query.connectionsTable.findMany({
       where: and(
         eq(connectionsTable.status, "blocked"),
-        // any connection involving me
       ),
     });
     const blockedIds = blocked
@@ -93,9 +86,8 @@ router.get("/globe/memories", async (req, res): Promise<void> => {
 
 // ── POST /api/memories/:id/publish-globe ──────────────────────────────────
 
-router.post("/memories/:id/publish-globe", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.post("/memories/:id/publish-globe", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
   const memoryId = Number(req.params.id);
 
   const memory = await db.query.memoriesTable.findFirst({ where: eq(memoriesTable.id, memoryId) });
@@ -142,9 +134,8 @@ router.post("/memories/:id/publish-globe", async (req, res): Promise<void> => {
 
 // ── PATCH /api/memories/:id/globe-settings ────────────────────────────────
 
-router.patch("/memories/:id/globe-settings", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.patch("/memories/:id/globe-settings", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
   const memoryId = Number(req.params.id);
 
   const memory = await db.query.memoriesTable.findFirst({ where: eq(memoriesTable.id, memoryId) });
@@ -167,9 +158,8 @@ router.patch("/memories/:id/globe-settings", async (req, res): Promise<void> => 
 
 // ── DELETE /api/memories/:id/globe ────────────────────────────────────────
 
-router.delete("/memories/:id/globe", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.delete("/memories/:id/globe", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
   const memoryId = Number(req.params.id);
 
   const memory = await db.query.memoriesTable.findFirst({ where: eq(memoriesTable.id, memoryId) });

@@ -1,0 +1,620 @@
+Continue the CURRENT Supabase Auth migration. Do not start a new feature task.
+
+The latest code review identified two remaining concrete blockers:
+
+1. Account deletion must correctly use the Supabase auth identity (`supabaseId`)
+2. The required database DDL/migration must run BEFORE the API begins accepting requests
+
+Fix these properly, then perform a complete authentication migration audit.
+
+IMPORTANT
+
+Do not rewrite authentication again.
+Do not introduce Clerk again.
+Do not add Google OAuth.
+Do not change the stable internal Daymark user primary keys.
+
+FINAL ARCHITECTURE MUST REMAIN:
+
+Supabase Auth
+→ authentication identity
+
+users.supabaseId
+→ maps Supabase identity to Daymark user
+
+users.id
+→ stable internal Daymark identity used by existing product foreign keys
+
+Drizzle/Postgres
+→ product data
+
+Express
+→ protected API
+
+==================================================
+1. FIX ACCOUNT DELETION
+==================================================
+
+Audit the complete Delete My Daymark flow.
+
+The Supabase Auth account must be deleted using the authenticated user's
+`supabaseId`, NOT the internal Daymark `users.id`.
+
+Correct conceptual flow:
+
+authenticated Supabase user
+→ resolve Daymark user through users.supabaseId
+→ authorize deletion
+→ clean/revoke Daymark data according to deletion policy
+→ remove public/share resources
+→ delete Supabase Auth identity using server-side admin API
+→ invalidate session
+→ return success
+
+Do not send the service-role key to the browser.
+
+The Supabase Auth admin deletion operation must happen server-side.
+
+Never allow:
+
+DELETE /account/:arbitraryUserId
+
+to delete another user's auth identity.
+
+The user being deleted must come from verified authentication context.
+
+==================================================
+2. DATABASE MIGRATION MUST PRECEDE SERVER START
+==================================================
+
+The application now depends on:
+
+users.supabaseId
+
+Therefore the API must never begin serving authenticated requests against a
+database where this column/migration has not been applied.
+
+Create/use a proper Drizzle migration.
+
+The migration should safely add:
+
+supabaseId
+
+to the users table.
+
+Requirements:
+
+- nullable during migration if necessary
+- unique where appropriate
+- indexed
+- no rewrite of users.id
+- no destructive PK migration
+- preserve all existing foreign keys
+- preserve existing memories/connections/messages/etc.
+
+Run the migration before production API startup.
+
+If migration fails:
+
+DO NOT start the API server.
+
+Log a clear server-side migration failure.
+
+==================================================
+3. VERIFY EXISTING USERS
+==================================================
+
+Audit how existing Daymark users created before Supabase Auth are linked.
+
+Do NOT identify users permanently by email on every request.
+
+Email may only be used for a controlled one-time migration/linking step if
+necessary.
+
+After linking:
+
+users.supabaseId must become the authoritative auth mapping.
+
+Normal request:
+
+Supabase JWT
+→ authenticated Supabase user ID
+→ users.supabaseId
+→ internal users.id
+
+All product queries then use internal users.id.
+
+==================================================
+4. REMOVE DANGEROUS FALLBACKS
+==================================================
+
+Search the repository for authentication fallbacks involving:
+
+email
+req.body.userId
+req.query.userId
+req.params.userId
+x-user-id
+clerkId
+supabase user ID used directly as internal PK
+
+No protected route should trust a client-provided user ID as proof of identity.
+
+Client may provide IDs for TARGET resources/users where needed.
+
+But CURRENT USER identity must always come from verified Supabase authentication.
+
+==================================================
+5. AUDIT EVERY PROTECTED ROUTE
+==================================================
+
+Audit:
+
+memories
+people
+connections
+daylinks
+memory drops
+future gifts
+scheduled messages
+notifications
+relationship events
+birthday wishes
+invites
+globe private actions
+share links
+profile
+privacy
+notification settings
+account deletion
+
+Each route must use the same authenticated internal user resolution.
+
+Do not leave one route using old Clerk assumptions or a different identity mapping.
+
+==================================================
+6. COMPLETE CLERK REMOVAL AUDIT
+==================================================
+
+Search the ENTIRE repository for:
+
+@clerk
+ClerkProvider
+useClerk
+useUser
+useAuth
+useSignIn
+useSignUp
+getAuth
+clerkId
+CLERK_
+publishableKey
+clerkMiddleware
+clerkClient
+
+Be careful with generic `useAuth` if Daymark now has its own Supabase auth hook.
+
+Remove only obsolete Clerk references.
+
+Final result:
+
+ZERO active Clerk dependency.
+
+==================================================
+7. REMOVE GOOGLE/OAUTH UI
+==================================================
+
+I do NOT want Google authentication.
+
+Search for:
+
+Google
+google
+OAuth
+oauth
+SSO
+sso
+
+Remove Google login/signup UI and obsolete Google-specific authentication code.
+
+Daymark authentication should expose only:
+
+Create my Daymark
+
+I already have an account
+
+==================================================
+8. VERIFY SIGNUP
+==================================================
+
+Test in a completely fresh incognito session:
+
+Create my Daymark
+
+→ email
+→ username
+→ password
+→ confirm password
+→ Supabase signup
+→ verification email
+→ verification
+→ onboarding
+→ Home
+
+Verify exactly ONE Daymark users row is created.
+
+Verify:
+
+users.supabaseId = authenticated Supabase user ID
+
+Do not create duplicate profile rows after refresh or repeated `/auth/user` calls.
+
+==================================================
+9. VERIFY SIGN IN
+==================================================
+
+Existing verified user:
+
+email
+password
+→ Supabase session
+→ resolve users.supabaseId
+→ internal Daymark user
+→ Home
+
+If onboarding is incomplete:
+
+→ onboarding
+
+==================================================
+10. VERIFY FORGOT PASSWORD
+==================================================
+
+Delete all remnants of the broken Clerk verification-code implementation.
+
+Do not use:
+
+attemptFirstFactor
+prepareEmailAddressVerification
+resetPasswordEmailCode
+SignInFuture
+SignInResource
+
+Use ONLY Supabase's actual password recovery flow.
+
+Expected:
+
+Forgot Password
+→ enter email
+→ Supabase sends reset email
+→ user follows secure recovery link
+→ Daymark reset-password page
+→ new password
+→ confirm password
+→ Supabase update password
+→ success
+
+If Supabase is configured for OTP instead, use only the API actually available
+in the installed Supabase SDK.
+
+Do not invent methods.
+
+==================================================
+11. AUTH CALLBACK
+==================================================
+
+Audit the Supabase email verification/recovery callback.
+
+Correctly distinguish:
+
+signup confirmation
+password recovery
+normal session
+
+A password recovery link must go to reset-password UI.
+
+A signup verification link should continue into Daymark onboarding/login state.
+
+Prevent open redirect vulnerabilities.
+
+Only allow known Daymark destinations.
+
+==================================================
+12. SESSION PERSISTENCE
+==================================================
+
+Test:
+
+sign in
+→ refresh
+→ still signed in
+
+Close tab
+→ reopen
+→ correct session behavior
+
+Protected pages must wait for auth initialization before rendering private data.
+
+==================================================
+13. LOGOUT
+==================================================
+
+Logout must:
+
+Supabase signOut
+→ close realtime subscriptions
+→ clear TanStack Query user cache
+→ clear user-specific client state
+→ redirect to public auth/landing
+
+==================================================
+14. ACCOUNT SWITCHING SECURITY TEST
+==================================================
+
+Create/use:
+
+USER A
+USER B
+
+A signs in.
+
+Load:
+memories
+people
+notifications
+messages
+Daylinks
+
+Logout A.
+
+Sign in B.
+
+At NO point may B see cached A data.
+
+==================================================
+15. THREE USER AUTHORIZATION TEST
+==================================================
+
+Use:
+
+A
+B
+C
+
+A and B connected.
+
+C unrelated.
+
+C must NOT be able to access A/B:
+
+private memories
+photos
+People
+connections
+Daylinks
+Memory Drops
+scheduled messages
+Future Gifts
+birthday wishes
+relationship events
+private notifications
+
+Do not only test frontend navigation.
+
+Call the API endpoints directly with C's authenticated session.
+
+They must reject unauthorized access server-side.
+
+==================================================
+16. SERVICE ROLE SECURITY
+==================================================
+
+Search frontend bundles/source for:
+
+SUPABASE_SERVICE_ROLE_KEY
+SUPABASE_JWT_SECRET
+DATABASE_URL
+
+None may be exposed to browser code.
+
+Frontend should only receive the public Supabase URL and appropriate publishable/
+anon key.
+
+Admin operations remain server-side.
+
+==================================================
+17. COOKIE/TOKEN SECURITY
+==================================================
+
+Review the cookie issue previously identified by code review.
+
+Ensure production cookies/session handling have appropriate:
+
+Secure
+SameSite
+HttpOnly
+
+where applicable to the architecture.
+
+Do not create a second homemade authentication cookie if Supabase session
+management already handles the requirement.
+
+==================================================
+18. SUPABASE AUTH DATABASE LINK
+==================================================
+
+Add/verify database constraints:
+
+users.supabaseId
+
+should be unique for non-null values.
+
+Prevent two Daymark users from linking to the same Supabase Auth account.
+
+Username must also remain unique case-insensitively.
+
+==================================================
+19. AUTH ERROR UX
+==================================================
+
+Do not expose raw SDK messages.
+
+Use Daymark-friendly states:
+
+That email and password don't match.
+
+Looks like you already have a Daymark.
+
+That username is already taken.
+
+Check your email 💌
+
+This reset link has expired.
+
+We couldn't verify that link. Request a new one.
+
+Your password has been changed ✨
+
+==================================================
+20. EMAIL DELIVERY CHECK
+==================================================
+
+Actually verify:
+
+signup email arrives
+
+verification link works
+
+forgot-password email arrives
+
+recovery link works
+
+expired recovery link is handled
+
+Do not claim auth is complete merely because the API returns 200.
+
+==================================================
+21. DATABASE INTEGRITY CHECK
+==================================================
+
+After the migration inspect:
+
+users.id
+users.supabaseId
+
+and foreign-key relationships for:
+
+memories
+people
+connections
+notifications
+scheduled messages
+Future Gifts
+Daylinks
+relationship events
+birthday wishes
+
+Confirm existing internal IDs did NOT change.
+
+==================================================
+22. TYPECHECK + BUILD
+==================================================
+
+Run every relevant workspace typecheck.
+
+The previous pass eventually reached zero TypeScript errors.
+
+Do not regress that.
+
+Then run:
+
+production frontend build
+production API build/check
+database package build
+API schema/client generation if applicable
+
+==================================================
+23. CODE REVIEW
+==================================================
+
+Run the same validation/code-review workflow that has rejected this task several
+times.
+
+Do NOT mark the task complete until:
+
+code_review = ACCEPTED/PASSED
+
+If it is rejected:
+
+read the actual reviewer log
+fix the concrete findings
+rerun review
+
+Do not repeatedly say "complete" before the reviewer passes.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Give me:
+
+AUTH PROVIDER
+Supabase Auth
+
+CLERK
+Removed / remaining references
+
+GOOGLE AUTH
+Removed / remaining references
+
+DATABASE IDENTITY
+internal users.id strategy
+
+AUTH IDENTITY
+users.supabaseId strategy
+
+SIGNUP
+PASS / FAIL
+
+EMAIL VERIFICATION
+PASS / FAIL / requires external configuration
+
+SIGN IN
+PASS / FAIL
+
+FORGOT PASSWORD
+PASS / FAIL
+
+PASSWORD RESET
+PASS / FAIL
+
+SESSION PERSISTENCE
+PASS / FAIL
+
+LOGOUT
+PASS / FAIL
+
+ACCOUNT SWITCHING
+PASS / FAIL
+
+ACCOUNT DELETION
+PASS / FAIL
+
+3-USER AUTHORIZATION
+PASS / FAIL
+
+DATABASE MIGRATION
+PASS / FAIL
+
+TYPECHECK
+PASS / FAIL
+
+PRODUCTION BUILD
+PASS / FAIL
+
+CODE REVIEW
+PASS / FAIL
+
+Do not move on to birthday reminders, privacy settings, Globe improvements,
+Monthly Capsule, or other Daymark features until CODE REVIEW PASSES this auth
+migration.

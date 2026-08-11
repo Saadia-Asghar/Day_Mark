@@ -11,15 +11,10 @@ import {
   db, monthlyCapsulesTable, memoriesTable, usersTable,
   relationshipStreaksTable, scheduledMessagesTable, futureGiftsTable,
 } from "@workspace/db";
-import { getAuth } from "@clerk/express";
+import { requireAuth } from '../middlewares/requireAuth';
 import { pool } from "@workspace/db";
 
 const router: IRouter = Router();
-
-function getAuthUserId(req: Request): string | null {
-  const auth = getAuth(req);
-  return (auth?.sessionClaims?.userId as string | undefined) || auth?.userId || null;
-}
 
 async function generateCapsule(userId: string, year: number, month: number): Promise<Record<string, unknown>> {
   // Memories for the month
@@ -102,9 +97,8 @@ async function generateCapsule(userId: string, year: number, month: number): Pro
 }
 
 // ── GET /api/capsule/latest ──────────────────────────────────────────────
-router.get("/capsule/latest", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.get("/capsule/latest", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const now = new Date();
   // Show previous month's capsule if it's the first 7 days of current month
@@ -145,9 +139,8 @@ router.get("/capsule/latest", async (req, res): Promise<void> => {
 });
 
 // ── GET /api/capsule/:year/:month ────────────────────────────────────────
-router.get("/capsule/:year/:month", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.get("/capsule/:year/:month", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const year = Number(req.params.year);
   const month = Number(req.params.month);
@@ -173,9 +166,8 @@ router.get("/capsule/:year/:month", async (req, res): Promise<void> => {
 });
 
 // ── POST /api/capsule/:year/:month/open ──────────────────────────────────
-router.post("/capsule/:year/:month/open", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.post("/capsule/:year/:month/open", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const year = Number(req.params.year);
   const month = Number(req.params.month);

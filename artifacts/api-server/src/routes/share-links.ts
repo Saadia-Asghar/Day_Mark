@@ -8,8 +8,9 @@
  */
 import { Router, type IRouter, type Request, type Response } from "express";
 import { randomBytes } from "crypto";
-import { eq, and, isNull, or, gt } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { db, memoryShareLinksTable, memoriesTable, pool } from "@workspace/db";
+import { requireAuth } from '../middlewares/requireAuth';
 import pino from "pino";
 
 const logger = pino({ name: "share-links" });
@@ -36,17 +37,9 @@ const router: IRouter = Router();
   }
 })();
 
-function requireAuth(req: Request, res: Response): string | null {
-  const auth = getAuth(req);
-  const userId = (auth?.sessionClaims?.userId as string | undefined) || auth?.userId;
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return null; }
-  return userId;
-}
-
 // ── POST /api/memories/:id/share-link ──────────────────────────────────────
-router.post("/memories/:id/share-link", async (req, res): Promise<void> => {
-  const userId = requireAuth(req, res);
-  if (!userId) return;
+router.post("/memories/:id/share-link", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
   const memoryId = Number(req.params.id);
   const { expiryHours }: { expiryHours?: number | null } = req.body ?? {};
 
@@ -68,9 +61,8 @@ router.post("/memories/:id/share-link", async (req, res): Promise<void> => {
 });
 
 // ── GET /api/memories/:id/share-links ──────────────────────────────────────
-router.get("/memories/:id/share-links", async (req, res): Promise<void> => {
-  const userId = requireAuth(req, res);
-  if (!userId) return;
+router.get("/memories/:id/share-links", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
   const memoryId = Number(req.params.id);
 
   const memory = await db.query.memoriesTable.findFirst({ where: eq(memoriesTable.id, memoryId) });
@@ -86,9 +78,8 @@ router.get("/memories/:id/share-links", async (req, res): Promise<void> => {
 });
 
 // ── DELETE /api/memories/:id/share-link/:linkId ────────────────────────────
-router.delete("/memories/:id/share-link/:linkId", async (req, res): Promise<void> => {
-  const userId = requireAuth(req, res);
-  if (!userId) return;
+router.delete("/memories/:id/share-link/:linkId", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
   const linkId = Number(req.params.linkId);
 
   await db.update(memoryShareLinksTable)
@@ -123,12 +114,13 @@ router.get("/m/:token", async (req, res): Promise<void> => {
       date: memory.date,
       story: memory.story,
       category: memory.category,
-      giftColor: memory.giftColor,
+      mood: memory.mood,
+      location: memory.location,
       photoUrls: memory.photoUrls ?? [],
-      mood: (memory as any).mood ?? null,
-      location: (memory as any).locationLabel ?? null,
+      giftColor: memory.giftColor,
+      ribbon: memory.ribbon,
+      sticker: memory.sticker ?? null,
     },
-    expiresAt: link.expiresAt,
   });
 });
 

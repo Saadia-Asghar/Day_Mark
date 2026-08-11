@@ -7,16 +7,9 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { eq, and, or } from "drizzle-orm";
 import { db, scheduledMessagesTable, usersTable, connectionsTable } from "@workspace/db";
-import { getAuth } from "@clerk/express";
+import { requireAuth } from '../middlewares/requireAuth';
 
 const router: IRouter = Router();
-
-function requireAuth(req: Request, res: Response): string | null {
-  const auth = getAuth(req);
-  const userId = (auth?.sessionClaims?.userId as string | undefined) || auth?.userId;
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return null; }
-  return userId;
-}
 
 async function isConnected(userA: string, userB: string): Promise<boolean> {
   const conn = await db.query.connectionsTable.findFirst({
@@ -33,9 +26,8 @@ async function isConnected(userA: string, userB: string): Promise<boolean> {
 
 // ── GET /api/messages ──────────────────────────────────────────────────────
 
-router.get("/messages", async (req, res): Promise<void> => {
-  const userId = requireAuth(req, res);
-  if (!userId) return;
+router.get("/messages", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const [sent, received, scheduled] = await Promise.all([
     db.query.scheduledMessagesTable.findMany({
@@ -72,9 +64,8 @@ router.get("/messages", async (req, res): Promise<void> => {
 
 // ── POST /api/messages ─────────────────────────────────────────────────────
 
-router.post("/messages", async (req, res): Promise<void> => {
-  const senderId = requireAuth(req, res);
-  if (!senderId) return;
+router.post("/messages", requireAuth, async (req, res): Promise<void> => {
+  const senderId = req.dbUser.id;
 
   const {
     recipientUserId,
@@ -127,9 +118,8 @@ router.post("/messages", async (req, res): Promise<void> => {
 
 // ── PATCH /api/messages/:id ────────────────────────────────────────────────
 
-router.patch("/messages/:id", async (req, res): Promise<void> => {
-  const senderId = requireAuth(req, res);
-  if (!senderId) return;
+router.patch("/messages/:id", requireAuth, async (req, res): Promise<void> => {
+  const senderId = req.dbUser.id;
   const id = Number(req.params.id);
 
   const msg = await db.query.scheduledMessagesTable.findFirst({ where: eq(scheduledMessagesTable.id, id) });
@@ -149,9 +139,8 @@ router.patch("/messages/:id", async (req, res): Promise<void> => {
 
 // ── DELETE /api/messages/:id (cancel) ─────────────────────────────────────
 
-router.delete("/messages/:id", async (req, res): Promise<void> => {
-  const senderId = requireAuth(req, res);
-  if (!senderId) return;
+router.delete("/messages/:id", requireAuth, async (req, res): Promise<void> => {
+  const senderId = req.dbUser.id;
   const id = Number(req.params.id);
 
   const msg = await db.query.scheduledMessagesTable.findFirst({ where: eq(scheduledMessagesTable.id, id) });

@@ -8,7 +8,7 @@ import {
 import { ChevronRight, LogOut, X, Check, Camera, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { useClerk, useUser } from "@clerk/react";
+import { supabase } from "@/lib/supabase";
 import { useUpload } from "@workspace/object-storage-web";
 
 // ── Edit Profile Sheet ───────────────────────────────────────────────────
@@ -17,12 +17,12 @@ function EditProfileSheet({ open, onClose, dbUser }: {
   onClose: () => void;
   dbUser: any;
 }) {
-  const { user: clerkUser } = useUser();
+  const { user: appUser } = useAppAuth();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [firstName, setFirstName] = useState(clerkUser?.firstName ?? "");
-  const [lastName, setLastName] = useState(clerkUser?.lastName ?? "");
+  const [firstName, setFirstName] = useState(appUser?.firstName ?? "");
+  const [lastName, setLastName] = useState(appUser?.lastName ?? "");
   const [username, setUsername] = useState(dbUser?.username ?? "");
   const [bio, setBio] = useState(dbUser?.bio ?? "");
   const [city, setCity] = useState(dbUser?.city ?? "");
@@ -40,8 +40,8 @@ function EditProfileSheet({ open, onClose, dbUser }: {
   // Reset fields when sheet opens
   useEffect(() => {
     if (open) {
-      setFirstName(clerkUser?.firstName ?? "");
-      setLastName(clerkUser?.lastName ?? "");
+      setFirstName(appUser?.firstName ?? "");
+      setLastName(appUser?.lastName ?? "");
       setUsername(dbUser?.username ?? "");
       setBio(dbUser?.bio ?? "");
       setCity(dbUser?.city ?? "");
@@ -56,21 +56,16 @@ function EditProfileSheet({ open, onClose, dbUser }: {
       toast({ title: "Invalid username", description: "3-24 chars, letters/numbers/underscores only", variant: "destructive" });
       return;
     }
-    if (!clerkUser) return;
     setSaving(true);
     try {
-      // Update Clerk name
-      await clerkUser.update({
-        firstName: firstName || undefined,
-        lastName: lastName || undefined,
-      });
-
-      // Update DB profile (username, bio, city, birthday, profileImageUrl)
+      // Update DB profile (firstName, lastName, username, bio, city, birthday, profileImageUrl)
       const res = await fetch("/api/auth/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          firstName: firstName || null,
+          lastName: lastName || null,
           ...(username ? { username } : {}),
           bio: bio || null,
           city: city || null,
@@ -127,15 +122,15 @@ function EditProfileSheet({ open, onClose, dbUser }: {
                   className="relative group"
                   disabled={isUploading}
                 >
-                  {photoPreview || clerkUser?.imageUrl ? (
+                  {photoPreview || appUser?.profileImageUrl ? (
                     <img
-                      src={photoPreview ?? clerkUser!.imageUrl}
+                      src={photoPreview ?? appUser!.profileImageUrl!}
                       alt="You"
                       className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
                     />
                   ) : (
                     <div className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center text-white font-bold text-2xl border-4 border-white shadow-lg">
-                      {((clerkUser?.firstName?.[0] ?? "") + (clerkUser?.lastName?.[0] ?? "")).toUpperCase() || "M"}
+                      {((appUser?.firstName?.[0] ?? "") + (appUser?.lastName?.[0] ?? "")).toUpperCase() || "M"}
                     </div>
                   )}
                   <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
@@ -243,11 +238,11 @@ function EditProfileSheet({ open, onClose, dbUser }: {
               </div>
 
               {/* Email (read-only) */}
-              {clerkUser?.primaryEmailAddress?.emailAddress && (
+              {appUser?.email && (
                 <div>
                   <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest block mb-1.5">Email</label>
                   <div className="h-11 bg-muted/50 border border-border/50 rounded-xl px-3 flex items-center">
-                    <span className="text-sm text-muted-foreground">{clerkUser.primaryEmailAddress.emailAddress}</span>
+                    <span className="text-sm text-muted-foreground">{appUser.email}</span>
                   </div>
                 </div>
               )}
@@ -269,8 +264,7 @@ function EditProfileSheet({ open, onClose, dbUser }: {
 
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
-  const { user } = useAppAuth();
-  const { signOut } = useClerk();
+  const { user, signOut } = useAppAuth();
   const { data: memories } = useListMemories({});
   const { data: people } = useListPeople();
   const { data: futureGifts } = useListFutureGifts();
@@ -368,7 +362,7 @@ export default function ProfilePage() {
         headers: { "x-confirm-delete": "yes" },
       });
       if (res.ok) {
-        await signOut({ redirectUrl: basePath || "/" });
+        await signOut();
       }
     } catch {
       setDeleting(false);
@@ -505,7 +499,7 @@ export default function ProfilePage() {
             <span className="font-bold text-sm flex-1 text-left">{exporting ? "Exporting…" : "Export My Data"}</span>
           </button>
           <button
-            onClick={() => signOut({ redirectUrl: basePath || "/" })}
+            onClick={() => signOut()}
             className="w-full flex items-center gap-3 px-5 py-4 text-red-500 active:bg-red-50 transition-colors border-b border-border/50"
           >
             <LogOut className="w-5 h-5" />

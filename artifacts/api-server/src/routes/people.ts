@@ -41,16 +41,7 @@ router.get("/people", requireAuth, async (req, res): Promise<void> => {
 });
 
 router.post("/people", requireAuth, async (req, res): Promise<void> => {
-  const parsed = GetPersonResponse.parse({
-    id: person.id,
-    name: person.name,
-    relationship: person.relationship ?? null,
-    avatarUrl: person.avatarUrl ?? null,
-    birthday: person.birthday ?? null,
-    memoriesCount,
-    nextImportantDate,
-    memories: memories.map((m) => ({ ...m, people: [] })),
-  });
+  const parsed = CreatePersonBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
@@ -59,7 +50,7 @@ router.post("/people", requireAuth, async (req, res): Promise<void> => {
   // Zod coerces `format: date` fields to Date objects; Drizzle date columns expect strings
   const birthday = parsed.data.birthday
     ? parsed.data.birthday instanceof Date
-      ? parsed.data.birthday.toISOString().slice(0, 10)
+      ? (parsed.data.birthday as Date).toISOString().slice(0, 10)
       : (parsed.data.birthday as string)
     : undefined;
 

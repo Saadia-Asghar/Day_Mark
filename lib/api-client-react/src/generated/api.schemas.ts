@@ -116,6 +116,8 @@ export interface PersonDetail {
   memoriesCount?: number;
   /** @nullable */
   nextImportantDate?: string | null;
+  /** @nullable */
+  linkedUserId?: string | null;
   memories: Memory[];
 }
 

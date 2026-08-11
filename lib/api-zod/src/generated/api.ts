@@ -370,6 +370,7 @@ export const GetPersonResponse = zod.object({
   "birthday": zod.coerce.date().nullish(),
   "memoriesCount": zod.number().optional(),
   "nextImportantDate": zod.string().nullish(),
+  "linkedUserId": zod.string().nullish(),
   "memories": zod.array(zod.object({
   "id": zod.number(),
   "title": zod.string(),

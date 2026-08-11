@@ -10,20 +10,14 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { eq, and, isNull } from "drizzle-orm";
 import { db, invitesTable, usersTable, notificationsTable } from "@workspace/db";
-import { getAuth } from "@clerk/express";
+import { requireAuth, optionalAuth } from '../middlewares/requireAuth';
 import { randomBytes } from "crypto";
 
 const router: IRouter = Router();
 
-function getAuthUserId(req: Request): string | null {
-  const auth = getAuth(req);
-  return (auth?.sessionClaims?.userId as string | undefined) || auth?.userId || null;
-}
-
 // ── POST /api/invites ────────────────────────────────────────────────────
-router.post("/invites", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.post("/invites", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const { personId, expiryDays = 30 } = req.body as { personId?: number; expiryDays?: number };
 
@@ -48,9 +42,8 @@ router.post("/invites", async (req, res): Promise<void> => {
 });
 
 // ── GET /api/invites ─────────────────────────────────────────────────────
-router.get("/invites", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.get("/invites", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const invites = await db.query.invitesTable.findMany({
     where: and(
@@ -75,9 +68,8 @@ router.get("/invites", async (req, res): Promise<void> => {
 });
 
 // ── DELETE /api/invites/:id ───────────────────────────────────────────────
-router.delete("/invites/:id", async (req, res): Promise<void> => {
-  const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+router.delete("/invites/:id", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const inviteId = Number(req.params.id);
   const invite = await db.query.invitesTable.findFirst({
@@ -111,8 +103,9 @@ router.get("/invites/redeem/:token", async (req, res): Promise<void> => {
 });
 
 // ── POST /api/invites/redeem/:token — record redemption ──────────────────
-router.post("/invites/redeem/:token", async (req, res): Promise<void> => {
-  const token = req.params.token;
+// Public + optionally authenticated (redeemer identity used for notification)
+router.post("/invites/redeem/:token", optionalAuth, async (req, res): Promise<void> => {
+  const token = String(req.params.token);
   const invite = await db.query.invitesTable.findFirst({ where: eq(invitesTable.token, token) });
 
   if (!invite || invite.revokedAt) { res.status(404).json({ error: "Invalid invite" }); return; }
@@ -123,9 +116,8 @@ router.post("/invites/redeem/:token", async (req, res): Promise<void> => {
     .set({ useCount: invite.useCount + 1 })
     .where(eq(invitesTable.id, invite.id));
 
-  // Notify the inviter
-  const userId = getAuthUserId(req);
-  const redeemer = userId ? await db.query.usersTable.findFirst({ where: eq(usersTable.id, userId) }) : null;
+  // Notify the inviter (optional — redeemer may not be authenticated yet)
+  const redeemer = req.dbUser ?? null;
 
   if (invite.inviterUserId) {
     await db.insert(notificationsTable).values({

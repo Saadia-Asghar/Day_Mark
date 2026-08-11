@@ -7,16 +7,9 @@ import { eq, and, or } from "drizzle-orm";
 import { db, memoryDropsTable, usersTable, connectionsTable, notificationsTable } from "@workspace/db";
 import { emitToUser } from "./events";
 import { recordDaylinkActivity } from "./daylinks";
-import { getAuth } from "@clerk/express";
+import { requireAuth } from '../middlewares/requireAuth';
 
 const router: IRouter = Router();
-
-function requireAuth(req: Request, res: Response): string | null {
-  const auth = getAuth(req);
-  const userId = (auth?.sessionClaims?.userId as string | undefined) || auth?.userId;
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return null; }
-  return userId;
-}
 
 async function isConnected(userA: string, userB: string): Promise<boolean> {
   const conn = await db.query.connectionsTable.findFirst({
@@ -33,9 +26,8 @@ async function isConnected(userA: string, userB: string): Promise<boolean> {
 
 // ── GET /api/drops ─────────────────────────────────────────────────────────
 
-router.get("/drops", async (req, res): Promise<void> => {
-  const userId = requireAuth(req, res);
-  if (!userId) return;
+router.get("/drops", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
 
   const received = await db.query.memoryDropsTable.findMany({
     where: eq(memoryDropsTable.recipientUserId, userId),
@@ -53,9 +45,8 @@ router.get("/drops", async (req, res): Promise<void> => {
 
 // ── POST /api/drops ────────────────────────────────────────────────────────
 
-router.post("/drops", async (req, res): Promise<void> => {
-  const senderId = requireAuth(req, res);
-  if (!senderId) return;
+router.post("/drops", requireAuth, async (req, res): Promise<void> => {
+  const senderId = req.dbUser.id;
 
   const { recipientUserId, note, photoUrl, linkedMemoryId } = req.body as {
     recipientUserId: string;
@@ -93,9 +84,8 @@ router.post("/drops", async (req, res): Promise<void> => {
 
 // ── PATCH /api/drops/:id/react ─────────────────────────────────────────────
 
-router.patch("/drops/:id/react", async (req, res): Promise<void> => {
-  const userId = requireAuth(req, res);
-  if (!userId) return;
+router.patch("/drops/:id/react", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
   const dropId = Number(req.params.id);
   const { reaction } = req.body as { reaction: string };
 
@@ -129,9 +119,8 @@ router.patch("/drops/:id/react", async (req, res): Promise<void> => {
 
 // ── PATCH /api/drops/:id/open ─────────────────────────────────────────────
 
-router.patch("/drops/:id/open", async (req, res): Promise<void> => {
-  const userId = requireAuth(req, res);
-  if (!userId) return;
+router.patch("/drops/:id/open", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.dbUser.id;
   const dropId = Number(req.params.id);
 
   const drop = await db.query.memoryDropsTable.findFirst({ where: eq(memoryDropsTable.id, dropId) });

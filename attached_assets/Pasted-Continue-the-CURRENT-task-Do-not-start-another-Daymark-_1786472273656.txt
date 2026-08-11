@@ -1,0 +1,489 @@
+Continue the CURRENT task. Do not start another Daymark feature.
+
+We are at the FINAL AUTH VALIDATION stage.
+
+Do not make another broad authentication rewrite.
+
+Your job now is to get this task through CODE REVIEW and prove the actual
+authentication flows work end-to-end.
+
+==================================================
+1. WAIT FOR / INSPECT CURRENT CODE REVIEW
+==================================================
+
+The current validation/code review is still running.
+
+When it finishes:
+
+IF PASSED:
+continue with the runtime tests below.
+
+IF REJECTED:
+open the exact code-review log,
+extract every concrete finding,
+fix each finding,
+rerun validation.
+
+Do not mark the task complete while code_review is rejected.
+
+==================================================
+2. FIX THE PRODUCTION BUILD
+==================================================
+
+The previous production Vite build failed because PORT was required at build
+time.
+
+Do NOT dismiss this as a pre-existing environment constraint.
+
+A frontend production build should not depend on a runtime server PORT unless
+there is a real architectural reason.
+
+Find exactly where PORT is being required during Vite build.
+
+Fix the configuration so:
+
+pnpm/npm production build
+
+can run successfully in a clean build environment.
+
+Runtime PORT may still be supplied when the server starts.
+
+BUILD TIME and RUNTIME configuration must be separated correctly.
+
+Then prove:
+
+frontend production build = PASS
+API build/typecheck = PASS
+
+==================================================
+3. DO NOT CHANGE THE AUTH ARCHITECTURE
+==================================================
+
+Keep:
+
+Supabase Auth
+users.supabaseId
+stable internal users.id
+Drizzle/Postgres
+Express API
+
+Do NOT:
+
+restore Clerk
+add Google
+add OAuth
+rewrite users.id
+create custom password authentication
+
+==================================================
+4. VERIFY ZERO CLERK / GOOGLE AUTH
+==================================================
+
+Search the complete active repository.
+
+There should be no active:
+
+@clerk
+ClerkProvider
+useClerk
+useSignIn
+useSignUp
+clerkMiddleware
+CLERK_
+
+There should be no active:
+
+Continue with Google
+Google OAuth
+Google sign-in
+SSO login
+
+Ignore documentation/history only if it is clearly not active application code.
+
+==================================================
+5. SIGNUP RUNTIME TEST
+==================================================
+
+Do not just inspect code.
+
+Use the running application.
+
+Test with a fresh account:
+
+Create my Daymark
+→ email
+→ username
+→ password
+→ confirm password
+→ signup
+
+Verify:
+
+Supabase Auth user created
+
+exactly ONE Daymark user/profile created
+
+users.supabaseId matches Supabase auth user
+
+internal users.id remains Daymark's product ID
+
+verification email behavior is correct
+
+No:
+
+signUp.prepareEmailAddressVerification
+
+or any Clerk method should exist.
+
+==================================================
+6. EMAIL VERIFICATION TEST
+==================================================
+
+Actually test the verification flow.
+
+Verify:
+
+signup email is generated/sent
+
+verification link returns to Daymark
+
+verified user receives a valid session or can sign in
+
+new user reaches onboarding
+
+returning user does not repeat onboarding
+
+If external email configuration prevents delivery:
+
+report exactly which Supabase setting is missing.
+
+Do NOT report PASS if it was not tested.
+
+==================================================
+7. SIGN-IN TEST
+==================================================
+
+Test:
+
+valid email + password
+→ Home
+
+wrong password
+→ friendly error
+
+unverified account
+→ correct verification state
+
+refresh after login
+→ session persists
+
+No raw Supabase error objects in UI.
+
+==================================================
+8. PASSWORD RECOVERY TEST
+==================================================
+
+The PASSWORD_RECOVERY callback was recently fixed.
+
+Now prove it works.
+
+Test:
+
+Forgot Password
+→ enter email
+→ reset email
+→ click recovery link
+→ /reset-password
+→ enter new password
+→ confirm
+→ success
+→ login with NEW password
+
+The recovery link must NOT route to onboarding.
+
+Test an expired/invalid recovery link too.
+
+Expected UX:
+
+This reset link has expired.
+
+Request a New Link
+
+==================================================
+9. CALLBACK SECURITY
+==================================================
+
+Audit /auth-callback.
+
+Correctly distinguish:
+
+signup verification
+PASSWORD_RECOVERY
+normal SIGNED_IN/session events
+
+Do not rely on a generic SIGNED_IN branch for password recovery.
+
+Prevent arbitrary external redirect URLs.
+
+Only allow known Daymark destinations.
+
+==================================================
+10. AUTHORIZATION IDENTITY TEST
+==================================================
+
+For protected APIs, current user identity must always resolve:
+
+Supabase JWT
+→ Supabase user ID
+→ users.supabaseId
+→ internal users.id
+
+No protected endpoint may trust:
+
+req.body.userId
+req.query.userId
+x-user-id
+email
+
+as proof of current identity.
+
+Email must not be the normal runtime identity bridge.
+
+==================================================
+11. ACCOUNT DELETION TEST
+==================================================
+
+The code was changed to use:
+
+req.dbUser.supabaseId
+
+Now actually test it.
+
+Verify:
+
+User A can delete A.
+
+User A cannot manipulate the request to delete User B.
+
+Supabase Auth identity is deleted server-side.
+
+Daymark deletion policy executes.
+
+public/share access is revoked.
+
+service-role credentials never reach browser code.
+
+==================================================
+12. LOGOUT + ACCOUNT SWITCH TEST
+==================================================
+
+Test:
+
+A logs in.
+
+Open:
+memories
+people
+notifications
+Daylinks
+
+A logs out.
+
+B logs in.
+
+B must NEVER see A's data, even briefly.
+
+Confirm:
+
+Supabase session cleared
+
+TanStack Query user cache cleared
+
+realtime subscriptions closed
+
+user-specific local state cleared
+
+==================================================
+13. THREE USER SECURITY TEST
+==================================================
+
+A + B = connected
+
+C = unrelated
+
+Using authenticated API requests, verify C cannot access A/B:
+
+private memories
+People
+connections
+Daylinks
+Memory Drops
+scheduled messages
+Future Gifts
+relationship events
+birthday wishes
+private notifications
+
+Do not test this only through UI hiding.
+
+Test server authorization.
+
+==================================================
+14. MIGRATION STARTUP TEST
+==================================================
+
+Confirm the supabase_id migration executes before API traffic is accepted.
+
+Test a clean startup.
+
+If migration fails:
+
+API must fail startup.
+
+It must NOT start in a partially migrated state.
+
+==================================================
+15. DATABASE CONSTRAINTS
+==================================================
+
+Verify:
+
+users.supabaseId is appropriately UNIQUE
+
+username uniqueness is database-enforced
+
+existing users.id values remain unchanged
+
+existing foreign keys remain intact
+
+No two Daymark profiles may map to one Supabase identity.
+
+==================================================
+16. SECRET AUDIT
+==================================================
+
+Verify browser/client code contains NO:
+
+SUPABASE_SERVICE_ROLE_KEY
+SUPABASE_JWT_SECRET
+DATABASE_URL
+
+Only the public Supabase client configuration may reach the frontend.
+
+==================================================
+17. FINAL BUILD MATRIX
+==================================================
+
+Run:
+
+DB package build/typecheck
+API typecheck
+Web typecheck
+frontend production build
+API production/startup validation
+migration startup
+code review
+
+ALL must pass.
+
+Do not use:
+
+"pre-existing issue"
+
+as a reason to mark a failed production build as complete.
+
+==================================================
+18. FINAL REPORT
+==================================================
+
+Return this exact matrix:
+
+Clerk removed:
+PASS / FAIL
+
+Google/OAuth removed:
+PASS / FAIL
+
+Supabase Auth:
+PASS / FAIL
+
+supabaseId mapping:
+PASS / FAIL
+
+Stable internal users.id:
+PASS / FAIL
+
+Signup runtime:
+PASS / FAIL / NOT TESTED
+
+Verification email:
+PASS / FAIL / NOT TESTED
+
+Verification callback:
+PASS / FAIL
+
+Sign in:
+PASS / FAIL / NOT TESTED
+
+Password recovery email:
+PASS / FAIL / NOT TESTED
+
+Password recovery callback:
+PASS / FAIL
+
+Password reset:
+PASS / FAIL / NOT TESTED
+
+Session persistence:
+PASS / FAIL / NOT TESTED
+
+Logout:
+PASS / FAIL / NOT TESTED
+
+Account switching:
+PASS / FAIL / NOT TESTED
+
+Account deletion:
+PASS / FAIL / NOT TESTED
+
+3-user authorization:
+PASS / FAIL / NOT TESTED
+
+Migration startup:
+PASS / FAIL
+
+Secret audit:
+PASS / FAIL
+
+DB typecheck:
+PASS / FAIL
+
+API typecheck:
+PASS / FAIL
+
+Web typecheck:
+PASS / FAIL
+
+Production build:
+PASS / FAIL
+
+CODE REVIEW:
+PASS / FAIL
+
+For every FAIL or NOT TESTED:
+state exactly why.
+
+IMPORTANT:
+
+Do not start:
+birthdays
+Globe improvements
+Monthly Capsule
+new social features
+design changes
+
+until:
+
+CODE REVIEW = PASS
+AND
+PRODUCTION BUILD = PASS.

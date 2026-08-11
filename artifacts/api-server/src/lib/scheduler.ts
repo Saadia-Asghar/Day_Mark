@@ -257,7 +257,7 @@ async function processMonthlyCapsulesIfNeeded() {
         title: `Your ${monthName} is wrapped 🎁`,
         message: `${memories.length} little moment${memories.length !== 1 ? "s" : ""} from ${monthName}. Tap to open.`,
         // @ts-ignore
-        dedup_key: `capsule_${userId}_${year}_${month}`,
+        dedupeKey: `capsule_${userId}_${year}_${month}`,
       }).onConflictDoNothing();
 
       emitToUser(userId, "monthlyCapsule.ready", { year, month });

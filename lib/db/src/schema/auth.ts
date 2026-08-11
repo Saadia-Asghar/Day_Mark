@@ -18,6 +18,9 @@ export const usersTable = pgTable('users', {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   email: varchar('email').unique(),
+  // Supabase Auth UUID — the external identity from Supabase Auth.
+  // Separate from `id` so existing rows keep their stable internal PK.
+  supabaseId: varchar('supabase_id').unique(),
   firstName: varchar('first_name'),
   lastName: varchar('last_name'),
   profileImageUrl: varchar('profile_image_url'),
