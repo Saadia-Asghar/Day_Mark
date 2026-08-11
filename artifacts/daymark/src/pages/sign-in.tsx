@@ -59,9 +59,11 @@ export default function SignInPage() {
         password,
       });
 
-      // Step 2: if Clerk still needs the password as a first factor, supply it
+      // Step 2: if Clerk still needs the password as a first factor, supply it.
+      // Use result.attemptFirstFactor (on the returned resource), NOT signIn.attemptFirstFactor
+      // (the hook's signIn is a reactive snapshot and may not have all methods).
       if (result.status === "needs_first_factor") {
-        result = await signIn.attemptFirstFactor({
+        result = await result.attemptFirstFactor({
           strategy: "password",
           password,
         });

@@ -1,11 +1,16 @@
 /**
- * /forgot-password — Clerk password reset (correct three-step flow).
+ * /forgot-password — Password reset.
+ *
+ * IMPORTANT: In Clerk v6 signal API, the `signIn` from useSignIn() is a
+ * reactive snapshot. Only the RETURNED value from signIn.create() is a live
+ * SignInResource with all methods (attemptFirstFactor, resetPassword, etc.).
+ * We store it in a ref and chain every subsequent call off that ref.
  *
  * Step 1 — email:  signIn.create({ strategy:'reset_password_email_code', identifier })
- *                  → Clerk sends code, status = needs_first_factor
- * Step 2 — verify: signIn.attemptFirstFactor({ strategy:'reset_password_email_code', code })
+ *                  → returns live resource, store in ref, status = needs_first_factor
+ * Step 2 — code:   resourceRef.current.attemptFirstFactor({ strategy:'reset_password_email_code', code })
  *                  → status = needs_new_password
- * Step 3 — set pw: signIn.resetPassword({ password })
+ * Step 3 — set pw: resourceRef.current.resetPassword({ password })
  *                  → status = complete → activate session
  */
 import { useSignIn } from "@clerk/react";
@@ -42,6 +47,10 @@ export default function ForgotPasswordPage() {
   const { setActive } = useClerk();
   const [, setLocation] = useLocation();
 
+  // Store the live SignInResource returned from create() — the hook's `signIn`
+  // is a reactive snapshot and may not have all methods after state transitions.
+  const resourceRef = useRef<any>(null);
+
   const [step, setStep] = useState<ResetStep>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -76,10 +85,12 @@ export default function ForgotPasswordPage() {
     setError(null);
     setLoading(true);
     try {
-      await signIn.create({
+      // create() returns the live resource — store it for subsequent steps
+      const resource = await signIn.create({
         strategy: "reset_password_email_code",
         identifier: email.trim(),
       });
+      resourceRef.current = resource;
       setStep("verify");
       startCooldown();
     } catch (err: any) {
@@ -88,36 +99,43 @@ export default function ForgotPasswordPage() {
     setLoading(false);
   };
 
-  // ── Resend: create a fresh reset request ────────────────────────────────
+  // ── Resend ───────────────────────────────────────────────────────────────
   const handleResend = async () => {
     if (resendCooldown > 0 || !signIn) return;
     setError(null);
     try {
-      await signIn.create({
+      const resource = await signIn.create({
         strategy: "reset_password_email_code",
         identifier: email.trim(),
       });
+      resourceRef.current = resource;
       startCooldown();
     } catch (err: any) {
       setError(friendlyError(err));
     }
   };
 
-  // ── Step 2: verify the code ──────────────────────────────────────────────
+  // ── Step 2: verify code ──────────────────────────────────────────────────
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signIn) return;
     setError(null);
     setLoading(true);
     try {
-      const result = await signIn.attemptFirstFactor({
+      const resource = resourceRef.current;
+      if (!resource?.attemptFirstFactor) {
+        setError("Session expired — please go back and request a new code.");
+        setLoading(false);
+        return;
+      }
+      const result = await resource.attemptFirstFactor({
         strategy: "reset_password_email_code",
         code: code.trim(),
       });
+      resourceRef.current = result;
+
       if (result.status === "needs_new_password") {
         setStep("password");
       } else if (result.status === "complete") {
-        // Some Clerk instances complete here without a separate password step
         await setActive({ session: result.createdSessionId });
         setStep("success");
       } else {
@@ -132,13 +150,20 @@ export default function ForgotPasswordPage() {
   // ── Step 3: set new password ─────────────────────────────────────────────
   const handleSetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signIn) return;
     setError(null);
     if (newPassword !== confirmPassword) { setError("Passwords don't match."); return; }
     if (newPassword.length < 8) { setError("Password must be at least 8 characters."); return; }
     setLoading(true);
     try {
-      const result = await signIn.resetPassword({ password: newPassword });
+      const resource = resourceRef.current;
+      if (!resource?.resetPassword) {
+        setError("Session expired — please start again.");
+        setLoading(false);
+        return;
+      }
+      const result = await resource.resetPassword({ password: newPassword });
+      resourceRef.current = result;
+
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
         setStep("success");
@@ -155,7 +180,11 @@ export default function ForgotPasswordPage() {
     <div className="min-h-[100dvh] bg-[#FFF9F5] flex flex-col px-6 pt-14 pb-10 overflow-x-hidden">
       {step !== "success" && (
         <button
-          onClick={() => step === "email" ? window.history.back() : setStep(step === "verify" ? "email" : "verify")}
+          onClick={() => {
+            if (step === "email") window.history.back();
+            else if (step === "verify") setStep("email");
+            else if (step === "password") setStep("verify");
+          }}
           className="w-9 h-9 rounded-full bg-white border border-border shadow-sm flex items-center justify-center mb-5 active:scale-95 transition-all"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -179,9 +208,9 @@ export default function ForgotPasswordPage() {
               <div>
                 <label className="text-sm font-bold block mb-1.5">Email address</label>
                 <input
-                  type="email" autoComplete="email" value={email}
+                  type="email" autoComplete="email" value={email} autoFocus
                   onChange={e => { setEmail(e.target.value); setError(null); }}
-                  placeholder="you@example.com" required autoFocus
+                  placeholder="you@example.com" required
                   className="w-full px-4 py-3.5 bg-white border-2 border-border rounded-2xl text-sm outline-none focus:border-primary transition-colors"
                 />
               </div>
