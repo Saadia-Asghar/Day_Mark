@@ -37,7 +37,7 @@ import PrivacyPage from '@/pages/privacy';
 import TermsPage from '@/pages/terms';
 import { type ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ClerkProvider, AuthenticateWithRedirectCallback, useAuth, useClerk, useUser } from '@clerk/react';
+import { ClerkProvider, useAuth, useClerk, useUser } from '@clerk/react';
 import AuthPage from '@/pages/auth';
 import SignInPage from '@/pages/sign-in';
 import SignUpPage from '@/pages/sign-up';
@@ -304,16 +304,6 @@ function Router() {
           <Route path="/forgot-password">
             {isAuthenticated ? <Redirect to="/home" /> : <ForgotPasswordPage />}
           </Route>
-          {/* OAuth SSO callback */}
-          <Route path="/sso-callback/*?">
-            <AuthenticateWithRedirectCallback
-              signUpUrl={`${basePath}/sign-up`}
-              signInUrl={`${basePath}/sign-in`}
-              signUpForceRedirectUrl={`${basePath}/onboarding`}
-              signInForceRedirectUrl={`${basePath}/home`}
-            />
-          </Route>
-
           {/* Protected */}
           <Route path="/onboarding">
             <ProtectedRoute component={OnboardingPage} requireOnboarding={false} />
