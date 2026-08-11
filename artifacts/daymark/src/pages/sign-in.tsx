@@ -53,15 +53,21 @@ export default function SignInPage() {
     setError(null);
     setLoading(true);
     try {
-      // Use signIn.create — the correct Clerk custom flow API
-      const result = await signIn.create({
-        strategy: "password",
+      // Step 1: identify the user
+      let result = await signIn.create({
         identifier: email.trim(),
         password,
       });
 
+      // Step 2: if Clerk still needs the password as a first factor, supply it
+      if (result.status === "needs_first_factor") {
+        result = await signIn.attemptFirstFactor({
+          strategy: "password",
+          password,
+        });
+      }
+
       if (result.status === "complete") {
-        // Persist or clear remembered email
         if (rememberMe) {
           localStorage.setItem(REMEMBER_EMAIL_KEY, email.trim());
         } else {
@@ -70,8 +76,7 @@ export default function SignInPage() {
         await setActive({ session: result.createdSessionId });
         setLocation("/home");
       } else {
-        // Unexpected multi-factor or other step
-        setError("Additional verification required. Please try again.");
+        setError("Sign-in incomplete — please try again.");
       }
     } catch (err: any) {
       const e0 = err?.errors?.[0] ?? err;
