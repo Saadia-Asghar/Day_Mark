@@ -11,16 +11,24 @@ import { DaymarkCharacter } from "@/components/daymark-character";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+const REMEMBER_EMAIL_KEY = "daymark_remembered_email";
+
 function friendlyError(code: string | undefined, msg: string): string {
   if (!code) return msg || "Something went wrong.";
-  if (code.includes("password_incorrect") || code.includes("invalid_credentials") || code.includes("form_password_incorrect")) {
-    return "That password doesn't match. Try again or reset it.";
-  }
-  if (code.includes("not_found") || code.includes("no_user") || code.includes("identifier_not_found")) {
-    return "We couldn't find a Daymark with that email.";
-  }
+  if (
+    code.includes("password_incorrect") ||
+    code.includes("invalid_credentials") ||
+    code.includes("form_password_incorrect")
+  ) return "That password doesn't match. Try again or reset it.";
+  if (
+    code.includes("not_found") ||
+    code.includes("no_user") ||
+    code.includes("identifier_not_found")
+  ) return "We couldn't find a Daymark with that email.";
   if (code.includes("too_many")) return "Too many attempts. Please wait a moment and try again.";
   if (code.includes("unverified")) return "Your email isn't verified yet. Check your inbox.";
+  if (code.includes("strategy") || code.includes("verification_strategy"))
+    return "Sign-in failed. If you just registered, please check your email for a verification link and try again.";
   return msg || "Something went wrong. Please try again.";
 }
 
@@ -29,9 +37,13 @@ export default function SignInPage() {
   const { setActive } = useClerk();
   const [, setLocation] = useLocation();
 
-  const [email, setEmail] = useState("");
+  const savedEmail = typeof localStorage !== "undefined"
+    ? (localStorage.getItem(REMEMBER_EMAIL_KEY) ?? "") : "";
+
+  const [email, setEmail] = useState(savedEmail);
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [rememberMe, setRememberMe] = useState(savedEmail !== "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,16 +53,24 @@ export default function SignInPage() {
     setError(null);
     setLoading(true);
     try {
-      const { error: signInError } = await signIn.password({
+      // Use signIn.create — the correct Clerk custom flow API
+      const result = await signIn.create({
+        strategy: "password",
         identifier: email.trim(),
         password,
       });
-      if (signInError) {
-        setError(friendlyError(signInError.code, (signInError as any).longMessage ?? signInError.message ?? "Sign in failed."));
-      } else if (signIn.status === "complete" && signIn.createdSessionId) {
-        await setActive({ session: signIn.createdSessionId });
+
+      if (result.status === "complete") {
+        // Persist or clear remembered email
+        if (rememberMe) {
+          localStorage.setItem(REMEMBER_EMAIL_KEY, email.trim());
+        } else {
+          localStorage.removeItem(REMEMBER_EMAIL_KEY);
+        }
+        await setActive({ session: result.createdSessionId });
         setLocation("/home");
       } else {
+        // Unexpected multi-factor or other step
         setError("Additional verification required. Please try again.");
       }
     } catch (err: any) {
@@ -118,6 +138,22 @@ export default function SignInPage() {
             </button>
           </div>
         </div>
+
+        {/* Remember me */}
+        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+          <div
+            onClick={() => setRememberMe(v => !v)}
+            className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors flex-shrink-0
+              ${rememberMe ? "bg-primary border-primary" : "bg-white border-border"}`}
+          >
+            {rememberMe && (
+              <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </div>
+          <span className="text-sm text-foreground font-medium">Remember me</span>
+        </label>
 
         {error && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}

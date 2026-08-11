@@ -105,18 +105,10 @@ export default function SignUpPage() {
     if (isValidUsername(username) && usernameAvail === false) { setError("That username is already taken. Try another."); return; }
     setLoading(true);
     try {
-      const { error: createError } = await signUp.password({ emailAddress: email.trim(), password });
-      if (createError) {
-        setError(friendlyError((createError as any).code, (createError as any).longMessage ?? (createError as any).message ?? "Sign up failed."));
-        setLoading(false);
-        return;
-      }
-      const { error: sendError } = await signUp.verifications.sendEmailCode();
-      if (sendError) {
-        setError(friendlyError((sendError as any).code, (sendError as any).longMessage ?? (sendError as any).message ?? "Couldn't send code."));
-        setLoading(false);
-        return;
-      }
+      // signUp.create is the correct Clerk custom-flow API
+      await signUp.create({ emailAddress: email.trim(), password });
+      // Send email verification code
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
       setStep("verify");
       startCooldown();
     } catch (err: any) {
@@ -132,13 +124,13 @@ export default function SignUpPage() {
     setError(null);
     setLoading(true);
     try {
-      const { error: verifyError } = await signUp.verifications.verifyEmailCode({ code: code.trim() });
-      if (verifyError) {
-        setError(friendlyError((verifyError as any).code, (verifyError as any).longMessage ?? (verifyError as any).message ?? "Verification failed."));
+      const result = await signUp.attemptEmailAddressVerification({ code: code.trim() });
+      if (result.status !== "complete") {
+        setError("Verification incomplete. Please try again.");
         setLoading(false);
         return;
       }
-      if (signUp.status === "complete" && signUp.createdSessionId) {
+      if (result.createdSessionId) {
         if (isValidUsername(username)) {
           try {
             await fetch(`${basePath}/api/auth/profile`, {
@@ -149,10 +141,10 @@ export default function SignUpPage() {
             });
           } catch { /* best effort */ }
         }
-        await setActive({ session: signUp.createdSessionId });
+        await setActive({ session: result.createdSessionId });
         setLocation("/onboarding");
       } else {
-        setError("Verification incomplete. Please try again.");
+        setError("Sign-up complete but no session — please try signing in.");
       }
     } catch (err: any) {
       const e0 = err?.errors?.[0] ?? err;
@@ -165,7 +157,7 @@ export default function SignUpPage() {
     if (resendCooldown > 0 || !signUp) return;
     setError(null);
     try {
-      await signUp.verifications.sendEmailCode();
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
       startCooldown();
     } catch { setError("Couldn't resend. Try again."); }
   };
