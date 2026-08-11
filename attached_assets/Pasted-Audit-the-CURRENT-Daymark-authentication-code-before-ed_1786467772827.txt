@@ -1,0 +1,655 @@
+Audit the CURRENT Daymark authentication code before editing.
+
+IMPORTANT:
+
+I do NOT want Google sign-in.
+I do NOT want OAuth.
+I do NOT want multiple authentication providers.
+
+Daymark should use ONE authentication system only.
+
+Preferred final architecture:
+
+AUTH = Supabase Auth
+DATABASE = Supabase PostgreSQL
+ORM = Drizzle
+API = Express
+
+Do not use Clerk.
+Do not use Google OAuth.
+Do not keep leftover Clerk code.
+
+==================================================
+1. REMOVE GOOGLE AUTH COMPLETELY
+==================================================
+
+Remove all:
+
+- Continue with Google buttons
+- Google icons
+- oauth_google strategies
+- SSO callbacks
+- Google redirect URLs
+- Google-specific user handling
+- Google auth environment variables
+- Google auth loading/error states
+- Google auth routes
+
+Search the whole repository for:
+
+google
+oauth
+sso
+clerk
+useSignIn
+useSignUp
+ClerkProvider
+
+Remove obsolete code after the replacement auth system is working.
+
+==================================================
+2. FINAL AUTH EXPERIENCE
+==================================================
+
+The Daymark auth landing screen should show only:
+
+Daymark logo
+
+Marky
+
+Your memories have a home.
+
+Keep the moments, people and little things that make life yours.
+
+PRIMARY BUTTON:
+
+Create my Daymark
+
+SECONDARY BUTTON:
+
+I already have an account
+
+No Google button.
+No social login divider.
+No OAuth option.
+
+==================================================
+3. NEW USER FLOW
+==================================================
+
+Route:
+
+/sign-up
+
+Fields:
+
+Email address
+
+Username
+
+Password
+
+Confirm password
+
+Button:
+
+Create My Daymark
+
+Username example:
+
+@saadia
+
+Validate:
+
+- 3–24 characters
+- letters
+- numbers
+- underscore
+- unique case-insensitively
+
+Password requirements must match the actual Supabase Auth password policy.
+
+Do not store the password in the Daymark profile table.
+
+Supabase Auth manages credentials.
+
+==================================================
+4. EMAIL VERIFICATION
+==================================================
+
+After signup:
+
+send the REAL Supabase verification email.
+
+Do not invent a 6-digit verification-code system unless the configured Supabase
+flow actually uses one.
+
+Recommended UX:
+
+Check your email 💌
+
+We sent a verification link to:
+
+saadia@example.com
+
+Button:
+
+Open Email App
+
+Secondary:
+
+Resend Verification Email
+
+After verification:
+
+return to Daymark.
+
+Then:
+
+if onboardingCompleted = false
+→ /onboarding
+
+==================================================
+5. RETURNING USER SIGN-IN
+==================================================
+
+Route:
+
+/sign-in
+
+Heading:
+
+Welcome back 💜
+
+Fields:
+
+Email address
+
+Password
+
+Button:
+
+Sign In
+
+Below:
+
+Forgot password?
+
+New to Daymark?
+Create your Daymark
+
+No username login initially unless it can be implemented securely and cleanly.
+
+Email should be the authentication identifier.
+
+Username remains the Daymark social identity.
+
+==================================================
+6. FORGOT PASSWORD
+==================================================
+
+Delete the current broken Clerk reset implementation.
+
+Build the reset flow using Supabase Auth's official password-recovery flow.
+
+Expected:
+
+STEP 1
+
+Forgot your password?
+
+Email address
+
+Button:
+
+Send Reset Link
+
+STEP 2
+
+Show:
+
+Check your email 💌
+
+We sent you a secure password reset link.
+
+STEP 3
+
+User opens the reset link.
+
+Daymark receives the recovery session.
+
+Show:
+
+Create a new password
+
+New password
+
+Confirm password
+
+Button:
+
+Reset Password
+
+STEP 4
+
+Show:
+
+Password changed successfully ✨
+
+Button:
+
+Continue to Daymark
+
+Do not force a verification code if Supabase recovery uses an email link.
+
+==================================================
+7. EXPIRED RESET LINK
+==================================================
+
+If reset link expired:
+
+show:
+
+This reset link has expired.
+
+Button:
+
+Send a New Reset Link
+
+Do not show raw Supabase errors.
+
+==================================================
+8. EXISTING USER ROUTING
+==================================================
+
+After successful sign-in:
+
+fetch the Daymark profile.
+
+If:
+
+onboardingCompleted = true
+
+→ /home
+
+If:
+
+onboardingCompleted = false
+
+→ /onboarding
+
+Returning users must not repeat onboarding.
+
+==================================================
+9. NEW USER PROFILE CREATION
+==================================================
+
+After Supabase Auth creates the account:
+
+create one Daymark profile row.
+
+Recommended fields:
+
+id
+authUserId
+email
+username
+displayName
+avatarUrl
+birthday
+timezone
+city
+onboardingCompleted
+createdAt
+updatedAt
+
+Use the Supabase auth user ID as the authentication identity.
+
+Keep product data linked through the Daymark profile/internal user ID if the
+current schema already depends on it.
+
+Do not duplicate users.
+
+==================================================
+10. USERNAME UNIQUENESS
+==================================================
+
+Enforce username uniqueness in the database.
+
+Case-insensitive.
+
+Two simultaneous signups requesting:
+
+@saadia
+
+must result in only one successful username claim.
+
+Frontend availability checks are helpful but not sufficient.
+
+==================================================
+11. ONBOARDING
+==================================================
+
+Account creation happens BEFORE onboarding.
+
+Onboarding should only cover Daymark setup.
+
+Do not ask again for:
+
+email
+password
+username
+
+Ask optional:
+
+Display name
+
+Birthday
+
+City
+
+Timezone
+
+Profile photo
+
+Memory interests
+
+Default privacy settings
+
+Then:
+
+Start My Daymark
+
+Set:
+
+onboardingCompleted = true
+
+Redirect:
+
+/home
+
+==================================================
+12. SESSION PERSISTENCE
+==================================================
+
+Use Supabase Auth's session handling.
+
+Browser refresh must keep the user signed in.
+
+On startup:
+
+loading auth state
+
+then:
+
+authenticated
+or
+unauthenticated
+
+Do not render protected data before auth resolves.
+
+==================================================
+13. PROTECTED ROUTES
+==================================================
+
+Public:
+
+/
+ /auth
+ /sign-in
+ /sign-up
+ /forgot-password
+ /reset-password
+ /privacy
+ /terms
+
+Protected:
+
+/onboarding
+/home
+/wrap
+/gifts
+/gifts/:id
+/calendar
+/people
+/people/:id
+/profile
+/connections
+/messages
+/future-gifts
+/globe private actions
+/settings
+
+==================================================
+14. LOGOUT
+==================================================
+
+On logout:
+
+- Supabase signOut
+- close realtime subscriptions
+- clear TanStack Query user cache
+- clear local user-specific state
+- redirect to /
+
+Do not leave stale data visible.
+
+==================================================
+15. ACCOUNT SWITCHING TEST
+==================================================
+
+USER A signs in.
+
+Verify:
+
+A's memories
+A's People
+A's messages
+A's Daylinks
+
+Logout.
+
+USER B signs in.
+
+B must never briefly see:
+
+A's data.
+
+==================================================
+16. DUPLICATE EMAIL
+==================================================
+
+If email already exists:
+
+show:
+
+Looks like you already have a Daymark.
+
+Button:
+
+Sign In Instead
+
+Do not create another profile.
+
+==================================================
+17. WRONG PASSWORD
+==================================================
+
+Show:
+
+That email and password don't match.
+
+Actions:
+
+Try Again
+
+Forgot Password?
+
+Do not reveal whether an account exists in security-sensitive contexts if the
+auth provider recommends generic messaging.
+
+==================================================
+18. REMOVE CLERK COMPLETELY
+==================================================
+
+Only after Supabase Auth works end-to-end:
+
+remove:
+
+@clerk packages
+
+ClerkProvider
+
+Clerk hooks
+
+Clerk middleware
+
+Clerk callback routes
+
+Clerk-specific profile identity fields if no longer required
+
+old auth experiments
+
+broken forgot-password code
+
+SSO code
+
+Google OAuth code
+
+Do not leave two auth systems installed.
+
+==================================================
+19. DATABASE + AUTH CONNECTION
+==================================================
+
+Use:
+
+Supabase Auth
++
+Supabase PostgreSQL
+
+But keep concerns separate.
+
+Supabase Auth:
+
+credentials
+email verification
+password recovery
+sessions
+
+Postgres:
+
+Daymark profile
+memories
+connections
+People
+Daylinks
+messages
+Future Gifts
+notifications
+Globe data
+
+Never store password hashes yourself.
+
+==================================================
+20. SECURITY
+==================================================
+
+Never:
+
+- log passwords
+- log reset tokens
+- expose service-role key
+- store credentials in localStorage manually
+- trust userId from frontend
+- expose another user's private data
+
+Verify backend requests using authenticated Supabase user/session.
+
+==================================================
+21. EMAIL DELIVERY
+==================================================
+
+Ensure production verification and password-reset emails use valid Supabase
+email configuration.
+
+Test:
+
+signup verification email
+
+resend verification
+
+forgot-password email
+
+expired link
+
+used link
+
+Do not mark auth complete until actual emails arrive and links work.
+
+==================================================
+22. AUTH DESIGN
+==================================================
+
+Keep Daymark branding:
+
+cream background
+purple CTA
+transparent purple Marky
+gold bow
+soft rounded fields
+
+Keep authentication visually calm.
+
+No Google branding.
+No third-party-provider clutter.
+
+==================================================
+23. FINAL AUTH TEST MATRIX
+==================================================
+
+Test in incognito:
+
+1. New signup
+2. Username validation
+3. Verification email arrives
+4. Verification link works
+5. Onboarding
+6. Home
+7. Logout
+8. Returning login
+9. Wrong password
+10. Forgot password
+11. Reset email arrives
+12. Reset link works
+13. New password works
+14. Expired reset link
+15. Resend verification
+16. Duplicate email
+17. Duplicate username
+18. Browser refresh preserves session
+19. Account switching
+20. Production build
+
+Do not consider authentication fixed because TypeScript compiles.
+
+The full running flow must work end-to-end.
+
+FINAL REPORT
+
+Report:
+
+1. Clerk removed
+2. Google/OAuth removed
+3. Supabase Auth connected
+4. email/password signup result
+5. email verification result
+6. login result
+7. password reset result
+8. session persistence result
+9. username uniqueness result
+10. account switching result
+11. stale auth code removed
+12. typecheck result
+13. production build result
+14. any required Supabase email configuration
