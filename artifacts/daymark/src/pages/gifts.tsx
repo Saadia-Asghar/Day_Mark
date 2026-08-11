@@ -294,7 +294,7 @@ const ScrapbookGrid = ({ memories }: { memories: Memory[] }) => {
 
 // ── Filters ────────────────────────────────────────────────────────────
 const FILTERS = [
-  { label: "All 🎁", value: "all" },
+  { label: "All ✨", value: "all" },
   { label: "Friends 👯‍♀️", value: "friends" },
   { label: "Family 🏡", value: "family" },
   { label: "Travel ✈️", value: "travel" },
@@ -320,7 +320,7 @@ export default function GiftsPage() {
       {/* Sticky header */}
       <header className="pt-10 pb-4 px-5 shrink-0 bg-[#FFF9F5]/95 backdrop-blur-md z-10 sticky top-0">
         <div className="flex justify-between items-baseline mb-0.5">
-          <h1 className="text-[26px] font-extrabold tracking-tight">My Gifts 🎁</h1>
+          <h1 className="text-[26px] font-extrabold tracking-tight">My Gifts</h1>
           <span className="text-xs font-bold text-muted-foreground">{filtered.length} memories</span>
         </div>
         <p className="text-sm font-medium text-muted-foreground mb-4">All the little things worth keeping.</p>
@@ -383,7 +383,7 @@ export default function GiftsPage() {
                 href="/wrap"
                 className="bg-primary text-white px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] text-sm"
               >
-                Wrap a Memory 🎁
+                Wrap a Memory ✨
               </Link>
             )}
           </div>

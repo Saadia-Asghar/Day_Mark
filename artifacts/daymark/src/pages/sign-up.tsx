@@ -1,12 +1,7 @@
-/**
- * /sign-up — Daymark sign-up with Supabase Auth. Email + password only.
- * Supabase returns a session immediately and the user continues to onboarding.
- * This requires Confirm email to be disabled in the Supabase dashboard.
- */
 import { supabase } from "@/lib/supabase";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
-import { Eye, EyeOff, Check, X, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Check, X, ArrowLeft, Mail, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { DaymarkCharacter } from "@/components/daymark-character";
 
@@ -62,6 +57,9 @@ export default function SignUpPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendLoading, setResendLoading] = useState(false);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -79,6 +77,21 @@ export default function SignUpPage() {
       setUsernameChecking(false);
     }, 500);
   }, [username]);
+
+  // Cooldown countdown for resend button
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  const handleResend = async () => {
+    if (resendCooldown > 0 || resendLoading) return;
+    setResendLoading(true);
+    await supabase.auth.resend({ type: "signup", email: email.trim() }).catch(() => undefined);
+    setResendLoading(false);
+    setResendCooldown(60);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,9 +116,8 @@ export default function SignUpPage() {
       if (signUpError) {
         setError(friendlyError(signUpError.message));
       } else if (!data.session) {
-        setError(
-          "Your account was created, but instant access is not enabled yet. Please ask the Daymark administrator to disable email confirmation, then sign in.",
-        );
+        // Email confirmation required — account created, awaiting verification
+        setAwaitingConfirmation(true);
       } else {
         if (isValidUsername(username)) {
           await fetch(`${basePath}/api/auth/profile`, {
@@ -124,6 +136,67 @@ export default function SignUpPage() {
     }
     setLoading(false);
   };
+
+  // ── Awaiting email confirmation screen ──────────────────────────────────
+  if (awaitingConfirmation) {
+    return (
+      <div className="min-h-[100dvh] bg-[#FFF9F5] flex flex-col items-center justify-center px-6 pb-10">
+        <AnimatePresence>
+          <motion.div
+            key="confirm"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 28 }}
+            className="w-full max-w-sm text-center"
+          >
+            {/* Icon */}
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+              <Mail className="w-9 h-9 text-primary" />
+            </div>
+
+            <h1 className="text-2xl font-extrabold mb-2">Check your inbox 💜</h1>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-1">
+              We sent a confirmation link to
+            </p>
+            <p className="text-sm font-bold text-foreground mb-6 break-all">{email}</p>
+
+            <div className="bg-white border border-border rounded-2xl px-5 py-4 text-left mb-6 shadow-sm">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Click the link in the email to activate your account, then come back here to sign in.
+                If you don't see it, check your spam folder.
+              </p>
+            </div>
+
+            {/* Resend */}
+            <button
+              onClick={handleResend}
+              disabled={resendCooldown > 0 || resendLoading}
+              className="w-full h-[52px] border-2 border-primary text-primary rounded-full font-bold flex items-center justify-center gap-2 active:scale-[0.97] disabled:opacity-50 transition-all mb-4"
+            >
+              {resendLoading
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : resendCooldown > 0
+                  ? `Resend in ${resendCooldown}s`
+                  : "Resend confirmation email"}
+            </button>
+
+            <Link href="/sign-in">
+              <button className="w-full h-[52px] bg-primary text-white rounded-full font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] flex items-center justify-center gap-2 active:scale-[0.97] transition-all">
+                Go to sign in
+              </button>
+            </Link>
+
+            <button
+              onClick={() => { setAwaitingConfirmation(false); setError(null); }}
+              className="mt-4 text-sm text-muted-foreground underline-offset-2 hover:underline"
+            >
+              Use a different email
+            </button>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] bg-[#FFF9F5] flex flex-col px-6 pt-14 pb-10 overflow-x-hidden">

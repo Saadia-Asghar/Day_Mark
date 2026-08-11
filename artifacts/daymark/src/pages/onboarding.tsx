@@ -18,7 +18,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 // ── Spec slides (Section 6) ────────────────────────────────────────────────
 const WELCOME_STEPS = [
   {
-    emoji: "🎁",
+    emoji: "✨",
     title: "Keep your moments",
     desc: "Save photos, stories and little things that matter.",
     character: "marky" as const,
@@ -242,7 +242,7 @@ function PersonalSetupStep({ onDone }: { onDone: () => void }) {
         >
           {saving
             ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            : "Start my Daymark 🎁"}
+            : "Start my Daymark ✨"}
         </button>
         <button onClick={onDone} className="text-sm text-muted-foreground font-medium">
           Skip for now
@@ -382,7 +382,7 @@ export default function OnboardingPage() {
             onClick={nextStep}
             className="w-full bg-primary text-primary-foreground py-4 rounded-2xl text-lg font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all"
           >
-            {step === WELCOME_STEPS.length - 1 ? "Let's go 🎁" : "Continue"}
+            {step === WELCOME_STEPS.length - 1 ? "Let's go ✨" : "Continue"}
             {step < WELCOME_STEPS.length - 1 && <ChevronRight className="w-5 h-5" />}
           </button>
         </div>

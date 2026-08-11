@@ -77,7 +77,7 @@ export default function SharedMemoryPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-16"
           >
-            <div className="text-5xl mb-4">{error === "revoked" ? "🚫" : error === "expired" ? "⏰" : "🎁"}</div>
+            <div className="text-5xl mb-4">{error === "revoked" ? "🚫" : error === "expired" ? "⏰" : "💜"}</div>
             <h1 className="text-xl font-extrabold mb-2">
               {error === "revoked" ? "Link revoked" : error === "expired" ? "Link expired" : "Memory not found"}
             </h1>

@@ -791,7 +791,7 @@ export default function PersonDetailPage() {
               onClick={handleWrapTogether}
               className="w-full bg-primary text-white py-4 rounded-full text-base font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] active:scale-95 transition-all flex items-center justify-center gap-2"
             >
-              🎁 Wrap a memory together
+              ✨ Wrap a memory together
             </button>
           </div>
         )}

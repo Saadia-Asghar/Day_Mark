@@ -167,7 +167,7 @@ function NotificationsDrawer({ open, onClose }: { open: boolean; onClose: () => 
   };
 
   const typeIcon: Record<string, string> = {
-    memory_from_past: "🎁",
+    memory_from_past: "💜",
     birthday_upcoming: "🎂",
     future_gift_ready: "🔓",
     shared_memory_updated: "📸",
@@ -176,7 +176,7 @@ function NotificationsDrawer({ open, onClose }: { open: boolean; onClose: () => 
     // Social feature notification types
     connection_request: "💜",
     connection_accepted: "✨",
-    memory_drop: "🎁",
+    memory_drop: "💌",
     daylink_updated: "🔗",
     daylink_milestone: "🌟",
     scheduled_message_received: "💌",
@@ -664,7 +664,7 @@ export default function HomePage() {
                         )}
                       </div>
                       <div className="bg-primary text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-sm shadow-primary/20 flex items-center gap-1">
-                        🎁 Open this gift
+                        ✨ Open memory
                       </div>
                     </div>
                   </div>

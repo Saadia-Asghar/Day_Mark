@@ -13,10 +13,8 @@ export default function AuthPage() {
       <div className="absolute -bottom-20 -left-16 w-56 h-56 bg-[#EAE3FF]/50 rounded-full blur-3xl pointer-events-none" />
 
       {/* Logo */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
-        <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm">
-          <span className="text-white font-extrabold text-base">D</span>
-        </div>
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-1.5">
+        <DaymarkCharacter character="marky" pose="idle" size="xs" animation="none" className="!w-9 !h-9" />
         <span className="font-extrabold text-xl text-foreground tracking-tight">Daymark</span>
       </motion.div>
 

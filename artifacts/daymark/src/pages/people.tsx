@@ -112,7 +112,7 @@ export default function PeoplePage() {
                     {/* Stats row */}
                     <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
                       {person.memoriesCount != null && (
-                        <span>🎁 {person.memoriesCount}</span>
+                        <span>📸 {person.memoriesCount}</span>
                       )}
                       {bdayLabel && (
                         <span>{bdayLabel}</span>

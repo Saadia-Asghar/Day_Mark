@@ -434,7 +434,7 @@ export default function ProfilePage() {
   const initials = ((user.firstName?.[0] ?? "") + (user.lastName?.[0] ?? "")).toUpperCase() || "M";
 
   const stats = [
-    { label: "Memories",   value: memories?.length ?? 0,     icon: "🎁" },
+    { label: "Memories",   value: memories?.length ?? 0,     icon: "📸" },
     { label: "People",     value: people?.length ?? 0,        icon: "❤️" },
     { label: "Daylinks",   value: daylinksCount ?? 0,         icon: "✨" },
     { label: "Future",     value: futureGifts?.length ?? 0,   icon: "🔒" },
@@ -446,7 +446,7 @@ export default function ProfilePage() {
       items: [
         { label: "My Story",           icon: "📖", href: "/home" },
         { label: "My People",          icon: "❤️", href: "/people" },
-        { label: "My Gifts",           icon: "🎁", href: "/gifts" },
+        { label: "My Gifts",           icon: "✨", href: "/gifts" },
         { label: "Future Gifts",       icon: "🔒", href: "/future-gifts" },
         { label: "Memory Globe",       icon: "🌍", href: "/globe" },
       ],

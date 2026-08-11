@@ -2,16 +2,15 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Sparkles, Gift, ArrowRight, Heart, Star } from "lucide-react";
 import heroImg from "@assets/generated_images/hero.png";
+import { DaymarkCharacter } from "@/components/daymark-character";
 
 export default function LandingPage() {
   return (
     <div className="min-h-[100dvh] bg-[#FFF9F5] text-foreground font-sans flex flex-col overflow-x-hidden">
       {/* Compact header — Daymark logo only, no nav links on mobile */}
       <header className="px-5 pt-8 pb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-base shadow-sm">
-            D
-          </div>
+        <div className="flex items-center gap-1.5">
+          <DaymarkCharacter character="marky" pose="idle" size="xs" animation="none" className="!w-8 !h-8" />
           <span className="font-bold text-lg text-foreground tracking-tight">Daymark</span>
         </div>
         {/* Memory = Gift pill */}
