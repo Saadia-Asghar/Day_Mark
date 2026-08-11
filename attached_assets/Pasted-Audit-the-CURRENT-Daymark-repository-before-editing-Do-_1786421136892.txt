@@ -1,0 +1,358 @@
+Audit the CURRENT Daymark repository before editing.
+
+Do not rebuild completed systems.
+
+The latest repository now includes:
+- Clerk authentication
+- dedicated auth chooser
+- dedicated sign-in
+- dedicated sign-up
+- Google auth routing
+- onboarding routing
+- Memories
+- People
+- Connections
+- Daylinks
+- Memory Drops
+- Messages for Later
+- scheduled delivery
+- Notifications
+- Future Gifts
+- Memory Globe
+- shared memories
+- Profile
+- Calendar
+- persistent image storage
+- SSE/realtime foundations
+
+This pass should complete the remaining production gaps.
+
+1. GLOBAL MASCOT SYSTEM
+
+Implement the previously requested reusable DaymarkCharacter system.
+
+All active mascot artwork must:
+- use transparent PNG/WebP
+- have no cream/white rectangular background
+- use consistent character colors
+- use Marky purple + gold as primary identity
+- use Framer Motion animations
+- respect reduced motion
+
+Replace direct mascot imports throughout the app.
+
+Do not fix mascot color page by page.
+
+2. COMPLETE EMAIL AUTH EDGE CASES
+
+Verify these flows work:
+
+NEW EMAIL USER
+email + username + password
+→ email verification
+→ onboarding
+→ home
+
+RETURNING USER
+email + password
+→ home
+
+FORGOT PASSWORD
+email
+→ verification code
+→ new password
+→ sign in
+
+UNVERIFIED USER
+→ verification
+→ onboarding or home depending onboardingCompleted
+
+DUPLICATE EMAIL
+→ suggest Sign In instead
+
+DUPLICATE USERNAME
+→ database-level uniqueness error
+
+GOOGLE NEW USER
+→ choose username if missing
+→ onboarding
+
+GOOGLE RETURNING USER
+→ home
+
+Test account switching and clear user-specific cache on sign out.
+
+3. MIGRATE DATABASE TO SUPABASE POSTGRES
+
+Keep:
+- Clerk auth
+- Drizzle ORM
+- Express API
+
+Use Supabase PostgreSQL as the production database.
+
+Do not add Supabase Auth.
+
+Preserve all existing data and tables.
+
+Use the current DATABASE_URL architecture.
+
+Run migrations and verify:
+- users
+- memories
+- people
+- connections
+- Daylinks
+- messages
+- Future Gifts
+- notifications
+- Globe data
+
+4. PRODUCTION REALTIME
+
+Do not rely only on a single-process in-memory SSE client map.
+
+Use Supabase Realtime or another shared event mechanism for multi-instance reliability.
+
+Ensure real-time updates work for:
+- connection request
+- connection accepted
+- Memory Drop
+- Daylink update
+- scheduled message arrival
+- birthday wish
+- Future Gift unlock
+- shared memory update
+- Globe publish/remove
+
+Avoid duplicate delivery between SSE and Supabase Realtime.
+
+5. BIRTHDAY + ANNIVERSARY ENGINE
+
+Create recurring relationship events.
+
+Support:
+- birthdays
+- friendship anniversaries
+- relationship anniversaries
+- graduation anniversaries
+- custom meaningful dates
+
+Reminders:
+- 7 days before
+- 3 days before
+- 1 day before
+- day of
+
+Prevent duplicate reminders.
+
+6. BIRTHDAY TODAY EXPERIENCE
+
+If today is a connected person’s birthday:
+
+Home should show:
+
+“It’s Sarah’s birthday today 🎂”
+
+If scheduled message exists:
+“Your message is ready to arrive at 9:00 AM.”
+
+If not:
+“You haven’t wished Sarah yet.”
+
+Actions:
+- Wish now
+- Memory Drop
+- Share memory
+- Future Gift
+
+Never auto-generate/send a wish without approval.
+
+7. BIRTHDAY WISH WALL
+
+On the birthday person’s profile:
+
+Birthday Wishes
+
+Examples:
+- Saadia wished you 💜
+- Areeba sent you a memory
+- Mom left you a Future Gift
+
+No ranking or popularity metrics.
+
+8. INVITE FRIENDS
+
+Build:
+- copy invite link
+- WhatsApp invite
+- QR code
+- native share
+
+Invite tokens must:
+- expire
+- be revocable
+- not auto-connect accounts
+
+When invitee joins:
+“Saadia invited you to Daymark.”
+
+Then:
+Connect with Saadia
+
+9. PERSON → DAYMARK LINKING
+
+After a connection is accepted:
+
+Ask:
+“Is this the Sarah already in My People?”
+
+Allow linking to existing Person.
+
+Preserve:
+- memories
+- birthday
+- relationship
+- notes
+
+Do not duplicate Person records.
+
+10. MONTHLY MEMORY CAPSULE
+
+Implement:
+
+“Your Month in Little Things ✨”
+
+Use only real user data.
+
+Show:
+- memories saved
+- people
+- places
+- moods
+- longest Daylink
+- Future Gifts created
+- messages sent for later
+- most-kept-close memory
+- one rediscovered memory
+
+At month end:
+“Your August is wrapped 🎁”
+
+11. GLOBE COUNTRY → CITY → MEMORY
+
+Upgrade Globe to support:
+- world
+- country
+- city
+- individual memory
+
+Use clusters.
+
+Example:
+Pakistan
+82 moments
+
+→ Islamabad
+12 moments
+
+→ individual memory points
+
+Never expose precise GPS by default.
+
+12. PUBLIC BIRTHDAY / MEMORY ANNIVERSARY ON GLOBE
+
+Allow explicit opt-in only.
+
+Users may publish:
+- their own birthday moment
+- anniversary of a selected public memory
+
+Default OFF.
+
+Do not expose birthdays stored privately inside someone else’s People data.
+
+13. PRIVACY SETTINGS
+
+Build real settings for:
+- username discoverability
+- email discoverability
+- connection requests
+- birthday visibility
+- Globe birthday
+- Globe wishes
+- default memory visibility
+- default Globe identity
+- location precision
+
+Defaults should favor privacy.
+
+14. NOTIFICATION SETTINGS
+
+Toggles:
+- Birthday
+- Anniversary
+- Daylink
+- Future Gift
+- Messages for Later
+- Memory Drop
+- Globe reactions
+- Monthly Capsule
+
+15. DESIGN CONSISTENCY PASS
+
+Apply the same Memory Shelf quality to:
+- Connections
+- Messages
+- Profile
+- Globe
+- Birthday Wish Wall
+- Invite flow
+
+Avoid generic white SaaS cards.
+
+16. THREE-USER SECURITY TEST
+
+Use A, B, C.
+
+A and B connected.
+C unrelated.
+
+C must not access:
+- A/B private memories
+- photos
+- Daylinks
+- messages
+- birthday wishes
+- Future Gifts
+- connections
+
+C may only see explicit Globe-public data.
+
+17. FINAL BUILD CHECK
+
+Run:
+- Supabase/Drizzle migrations
+- typecheck
+- production build
+- lint if configured
+
+Report:
+1. mascot system
+2. auth edge cases
+3. Supabase migration
+4. production realtime
+5. birthday engine
+6. anniversary engine
+7. wish wall
+8. invite system
+9. Person linking
+10. monthly capsule
+11. Globe drilldown
+12. privacy settings
+13. notification settings
+14. three-user privacy test
+15. typecheck
+16. production build
+
+Do not add another major feature category after this pass.
