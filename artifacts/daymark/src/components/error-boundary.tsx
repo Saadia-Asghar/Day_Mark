@@ -48,8 +48,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
     return (
       <div className="min-h-[100dvh] bg-[#FFF9F5] flex flex-col items-center justify-center px-6 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-          <span className="text-2xl">💜</span>
+        <div className="mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-primary/20" />
+          </div>
         </div>
         <h1 className="text-xl font-extrabold text-foreground mb-2">Something went sideways</h1>
         <p className="text-sm text-muted-foreground mb-6 max-w-[260px] leading-relaxed">

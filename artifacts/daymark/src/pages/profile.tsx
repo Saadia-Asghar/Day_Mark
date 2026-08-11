@@ -5,7 +5,7 @@ import { useAppAuth } from "@/App";
 import {
   useListMemories, useListPeople, useListFutureGifts,
 } from "@workspace/api-client-react";
-import { ChevronRight, LogOut, X, Check, Camera, Loader2, Mail } from "lucide-react";
+import { ChevronRight, LogOut, X, Check, Camera, Loader2, Mail, Package, Trash2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -589,7 +589,7 @@ export default function ProfilePage() {
           )}
           {(dbUser.city || user.email) && (
             <p className="text-xs text-muted-foreground font-medium mt-1">
-              {dbUser.city ? `📍 ${dbUser.city}` : user.email}
+              {dbUser.city ? dbUser.city : user.email}
             </p>
           )}
 
@@ -619,13 +619,15 @@ export default function ProfilePage() {
           <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest mb-3 px-1">Coming Up</p>
           <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
             {upcomingEvents.slice(0, 5).map((ev, i) => {
-              const EVENT_EMOJI: Record<string, string> = { birthday: "🎂", anniversary: "💍", friendship_anniversary: "💜", graduation: "🎓", custom: "✨" };
-              const emoji = EVENT_EMOJI[ev.type] ?? "📅";
-              const label = ev.daysUntil === 0 ? "Today 🎉" : ev.daysUntil === 1 ? "Tomorrow" : `In ${ev.daysUntil} days`;
+              const EVENT_COLOR: Record<string, string> = { birthday: "#FF6B9D", anniversary: "#F43F5E", friendship_anniversary: "#6847F5", graduation: "#F59E0B", custom: "#94A3B8" };
+              const dotColor = EVENT_COLOR[ev.type] ?? "#6847F5";
+              const label = ev.daysUntil === 0 ? "Today" : ev.daysUntil === 1 ? "Tomorrow" : `In ${ev.daysUntil} days`;
               const date = new Date(ev.nextDate + "T00:00:00");
               return (
                 <div key={ev.id} className={`flex items-center gap-3 px-5 py-3.5 ${i < Math.min(upcomingEvents.length, 5) - 1 ? "border-b border-border/50" : ""}`}>
-                  <span className="text-xl">{emoji}</span>
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: `${dotColor}20` }}>
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: dotColor }} />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold truncate">{ev.title}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -678,7 +680,7 @@ export default function ProfilePage() {
             disabled={exporting}
             className="w-full flex items-center gap-3 px-5 py-4 text-foreground active:bg-muted transition-colors border-b border-border/50"
           >
-            <span className="text-xl">📦</span>
+            <Package className="w-5 h-5 text-foreground" />
             <span className="font-bold text-sm flex-1 text-left">{exporting ? "Exporting…" : "Export My Data"}</span>
           </button>
           <button
@@ -692,7 +694,7 @@ export default function ProfilePage() {
             onClick={() => setShowDeleteConfirm(true)}
             className="w-full flex items-center gap-3 px-5 py-4 text-red-400 active:bg-red-50 transition-colors"
           >
-            <span className="text-xl">🗑️</span>
+            <Trash2 className="w-5 h-5 text-red-400" />
             <span className="font-bold text-sm">Delete My Daymark</span>
           </button>
         </div>
@@ -709,7 +711,7 @@ export default function ProfilePage() {
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center p-4" onClick={() => setShowDeleteConfirm(false)}>
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
-              <span className="text-2xl">🗑️</span>
+              <Trash2 className="w-7 h-7 text-red-400" />
             </div>
             <h2 className="text-xl font-extrabold text-foreground mb-1">Delete My Daymark</h2>
             <p className="text-sm text-muted-foreground leading-relaxed mb-4">

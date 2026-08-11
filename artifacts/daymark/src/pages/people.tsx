@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Heart } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useListPeople } from "@workspace/api-client-react";
@@ -17,10 +18,10 @@ function getBirthdayLabel(birthday?: string | null): string | null {
   bday.setFullYear(today.getFullYear());
   if (bday < today) bday.setFullYear(today.getFullYear() + 1);
   const days = differenceInDays(bday, today);
-  if (days === 0) return "🎂 Today!";
-  if (days === 1) return "🎂 Tomorrow";
-  if (days <= 30) return `🎂 in ${days}d`;
-  return `🎂 ${format(new Date(birthday), "MMM d")}`;
+  if (days === 0) return "Birthday today!";
+  if (days === 1) return "Birthday tomorrow";
+  if (days <= 30) return `Birthday in ${days}d`;
+  return `Birthday ${format(new Date(birthday), "MMM d")}`;
 }
 
 export default function PeoplePage() {
@@ -36,7 +37,7 @@ export default function PeoplePage() {
 
       {/* Header */}
       <header className="px-5 pt-12 pb-4">
-        <h1 className="text-[28px] font-extrabold leading-tight">The People in Your Story ❤️</h1>
+        <h1 className="text-[28px] font-extrabold leading-tight">The People in Your Story</h1>
         <p className="text-sm text-muted-foreground font-medium mt-1">
           Every memory is better when you remember who was there.
         </p>
@@ -112,7 +113,7 @@ export default function PeoplePage() {
                     {/* Stats row */}
                     <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
                       {person.memoriesCount != null && (
-                        <span>📸 {person.memoriesCount}</span>
+                        <span>{person.memoriesCount} memories</span>
                       )}
                       {bdayLabel && (
                         <span>{bdayLabel}</span>
@@ -120,7 +121,9 @@ export default function PeoplePage() {
                     </div>
 
                     {/* Heart sticker */}
-                    <div className="absolute top-2 right-2 text-xs">❤️</div>
+                    <div className="absolute top-2 right-2 w-5 h-5 bg-white/80 rounded-full flex items-center justify-center shadow-sm">
+                      <Heart className="w-3 h-3 fill-red-400 text-red-400" />
+                    </div>
                   </div>
                 </Link>
               </motion.div>

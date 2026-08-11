@@ -1,6 +1,6 @@
 import React from "react";
 import { cn } from "@/lib/utils";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Heart, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
 
 // --- DmButton ---
@@ -112,8 +112,8 @@ export const DmMemoryCard = ({ title, date, category, giftColor, photoUrl, peopl
         <div className="absolute top-0 bottom-0 left-0 w-1" style={{ backgroundColor: giftColor }} />
 
         {isKeptClose && (
-          <div className="absolute top-3 right-3 text-accent bg-white/80 backdrop-blur-sm w-6 h-6 rounded-full flex items-center justify-center shadow-sm">
-            <span className="text-xs">❤️</span>
+          <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm w-6 h-6 rounded-full flex items-center justify-center shadow-sm">
+            <Heart className="w-3 h-3 fill-red-400 text-red-400" />
           </div>
         )}
       </div>
@@ -249,7 +249,7 @@ export const DmPageHeader = ({ title, subtitle, leftAction, rightAction, backHre
 export function DmErrorState({ message = "Something went wrong.", onRetry }: { message?: string; onRetry?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-      <div className="text-4xl mb-3">😔</div>
+      <AlertCircle className="w-10 h-10 text-muted-foreground mb-3" />
       <p className="font-semibold text-foreground mb-1">{message}</p>
       {onRetry && <button onClick={onRetry} className="mt-3 text-sm font-bold text-primary underline">Try again</button>}
     </div>

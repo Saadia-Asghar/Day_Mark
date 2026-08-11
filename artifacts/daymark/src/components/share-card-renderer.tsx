@@ -132,12 +132,10 @@ async function renderCard(
 
   // Category pill
   if (memory.category) {
-    const EMOJIS: Record<string, string> = { everyday: "✨", travel: "✈️", food: "🍜", people: "💜", nature: "🌿", celebration: "🎉" };
-    const emoji = EMOJIS[memory.category] ?? "✨";
     ctx.font = `bold ${w * 0.028}px -apple-system, sans-serif`;
     ctx.fillStyle = "#6847F5";
     ctx.textAlign = "left";
-    ctx.fillText(`${emoji} ${memory.category.toUpperCase()}`, pad, contentY);
+    ctx.fillText(memory.category.toUpperCase(), pad, contentY);
   }
 
   // Title
@@ -246,10 +244,10 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
 
 // ── Component ────────────────────────────────────────────────────────────
 
-const TEMPLATES: { id: CardTemplate; emoji: string; label: string; desc: string }[] = [
-  { id: "gift", emoji: "🎁", label: "Little Gift", desc: "Clean and warm" },
-  { id: "polaroid", emoji: "📸", label: "Polaroid Memory", desc: "Film photo feel" },
-  { id: "on_this_day", emoji: "✨", label: "On This Day", desc: "Anniversary style" },
+const TEMPLATES: { id: CardTemplate; color: string; label: string; desc: string }[] = [
+  { id: "gift",       color: "#6847F5", label: "Little Gift",    desc: "Clean and warm" },
+  { id: "polaroid",   color: "#1A0D2B", label: "Polaroid",       desc: "Film photo feel" },
+  { id: "on_this_day",color: "#F59E0B", label: "On This Day",    desc: "Anniversary style" },
 ];
 
 const FORMATS: { id: CardFormat; label: string }[] = [
@@ -317,7 +315,7 @@ export function ShareCardRenderer({ memory, onClose }: ShareCardRendererProps) {
         </div>
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/40 shrink-0">
           <div>
-            <h2 className="font-extrabold text-base">Create Share Card 📸</h2>
+            <h2 className="font-extrabold text-base">Create Share Card</h2>
             <p className="text-xs text-muted-foreground mt-0.5">Instagram, WhatsApp, anywhere</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
@@ -336,7 +334,7 @@ export function ShareCardRenderer({ memory, onClose }: ShareCardRendererProps) {
                   onClick={() => setTemplate(t.id)}
                   className={`rounded-2xl p-3 border text-center transition-all ${template === t.id ? "bg-[#EAE3FF] border-primary/40" : "bg-white border-border"}`}
                 >
-                  <div className="text-2xl mb-1">{t.emoji}</div>
+                  <div className="w-6 h-6 rounded-full mb-1.5 mx-auto" style={{ backgroundColor: t.color }} />
                   <p className="text-xs font-bold leading-tight">{t.label}</p>
                 </button>
               ))}
@@ -361,7 +359,7 @@ export function ShareCardRenderer({ memory, onClose }: ShareCardRendererProps) {
 
           {/* Privacy note */}
           <div className="bg-[#EAE3FF]/50 rounded-2xl p-3 text-xs font-medium text-primary leading-relaxed">
-            🛡️ People OFF · Location OFF · Full story OFF by default
+            People OFF · Location OFF · Full story OFF by default
           </div>
 
           {/* Action buttons */}

@@ -11,21 +11,21 @@ import { DmPersonAvatar } from "@/components/daymark";
 import { PhysicalGiftAnimation } from "@/components/scrapbook";
 
 const TYPES = [
-  { id: "photo", label: "Photo", icon: Camera, emoji: "📷", color: "bg-sky-100 text-sky-700" },
-  { id: "story", label: "Story", icon: Edit3, emoji: "✏️", color: "bg-amber-100 text-amber-700" },
-  { id: "voice", label: "Voice", icon: Mic, emoji: "🎙", color: "bg-emerald-100 text-emerald-700" },
-  { id: "video", label: "Video", icon: Video, emoji: "🎬", color: "bg-purple-100 text-purple-700" },
-  { id: "place", label: "Place", icon: MapPin, emoji: "📍", color: "bg-rose-100 text-rose-700" },
+  { id: "photo", label: "Photo", icon: Camera, color: "bg-sky-100 text-sky-700" },
+  { id: "story", label: "Story", icon: Edit3, color: "bg-amber-100 text-amber-700" },
+  { id: "voice", label: "Voice", icon: Mic, color: "bg-emerald-100 text-emerald-700" },
+  { id: "video", label: "Video", icon: Video, color: "bg-purple-100 text-purple-700" },
+  { id: "place", label: "Place", icon: MapPin, color: "bg-rose-100 text-rose-700" },
 ];
 
 const MOODS = [
-  { id: "happy", emoji: "☀️", label: "Happy", color: "bg-amber-100 text-amber-700" },
-  { id: "emotional", emoji: "🥹", label: "Emotional", color: "bg-rose-100 text-rose-700" },
-  { id: "peaceful", emoji: "🌿", label: "Peaceful", color: "bg-emerald-100 text-emerald-700" },
-  { id: "chaotic", emoji: "😂", label: "Chaotic", color: "bg-orange-100 text-orange-700" },
-  { id: "proud", emoji: "✨", label: "Proud", color: "bg-violet-100 text-violet-700" },
-  { id: "grateful", emoji: "💜", label: "Grateful", color: "bg-purple-100 text-purple-700" },
-  { id: "nostalgic", emoji: "🌙", label: "Nostalgic", color: "bg-indigo-100 text-indigo-700" },
+  { id: "happy",     label: "Happy",     dot: "#F59E0B", color: "bg-amber-100 text-amber-700" },
+  { id: "emotional", label: "Emotional", dot: "#F43F5E", color: "bg-rose-100 text-rose-700" },
+  { id: "peaceful",  label: "Peaceful",  dot: "#10B981", color: "bg-emerald-100 text-emerald-700" },
+  { id: "chaotic",   label: "Chaotic",   dot: "#F97316", color: "bg-orange-100 text-orange-700" },
+  { id: "proud",     label: "Proud",     dot: "#8B5CF6", color: "bg-violet-100 text-violet-700" },
+  { id: "grateful",  label: "Grateful",  dot: "#6847F5", color: "bg-purple-100 text-purple-700" },
+  { id: "nostalgic", label: "Nostalgic", dot: "#6366F1", color: "bg-indigo-100 text-indigo-700" },
 ];
 
 const COLORS = [
@@ -563,7 +563,7 @@ export default function WrapMemoryPage() {
                       onClick={() => updateForm('mood', mood.label)}
                       className={`flex flex-col items-center justify-center rounded-2xl px-5 py-4 min-w-[100px] border-2 transition-all active:scale-95 ${mood.color} ${isSelected ? 'border-foreground scale-105 shadow-md' : 'border-transparent shadow-sm'}`}
                     >
-                      <span className="text-[32px] mb-2">{mood.emoji}</span>
+                      <div className="w-8 h-8 rounded-full mb-2 border-2 border-white/60" style={{ backgroundColor: mood.dot }} />
                       <span className="text-sm font-bold">{mood.label}</span>
                     </button>
                   );
@@ -644,7 +644,7 @@ export default function WrapMemoryPage() {
                             : 'bg-white text-muted-foreground border-border hover:bg-muted'
                         }`}
                       >
-                        <span>{r.emoji}</span> {r.id}
+                        {r.id}
                       </button>
                     ))}
                   </div>
@@ -653,7 +653,7 @@ export default function WrapMemoryPage() {
                 {/* Tag / Category */}
                 <div>
                   <span className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest mb-3 block">
-                    🏷 Gift Tag
+                    Gift Tag
                   </span>
                   <div className="flex flex-wrap gap-2">
                     {CATEGORIES.map(cat => (

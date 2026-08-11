@@ -242,7 +242,7 @@ function SSEBanner({ status }: { status: SSEStatus }) {
                   : 'bg-emerald-100 text-emerald-800'
               }`}
             >
-              {status === 'reconnecting' ? '⏳ Reconnecting…' : '✅ Back in sync ✨'}
+              {status === 'reconnecting' ? 'Reconnecting…' : 'Back in sync'}
             </div>
           </div>
         </motion.div>

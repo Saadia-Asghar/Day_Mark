@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useListCalendarEvents, useGetOnThisDay } from "@workspace/api-client-react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { DaymarkCharacter } from "@/components/daymark-character";
 import {
   format, addMonths, subMonths, startOfMonth, endOfMonth,
   eachDayOfInterval, isSameMonth, isToday, isSameDay,
@@ -9,14 +10,14 @@ import {
 import { DmErrorState } from "@/components/daymark";
 import { OnThisDayCard, GiftFromPastSkeleton } from "@/components/scrapbook";
 
-// Event type → visual marker
-const EVENT_MARKERS: Record<string, string> = {
-  birthday:    "🎈",
-  memory:      "🎁",
-  travel:      "📍",
-  anniversary: "❤️",
-  achievement: "⭐",
-  future_gift: "🔒",
+// Event type → color dot
+const EVENT_COLORS: Record<string, string> = {
+  birthday:    "#FF6B9D",
+  memory:      "#6847F5",
+  travel:      "#06B6D4",
+  anniversary: "#F43F5E",
+  achievement: "#F59E0B",
+  future_gift: "#94A3B8",
 };
 
 export default function CalendarPage() {
@@ -48,7 +49,7 @@ export default function CalendarPage() {
 
       {/* Header */}
       <header className="px-5 pt-12 pb-5">
-        <h1 className="text-[28px] font-extrabold leading-tight">Your Days ✨</h1>
+        <h1 className="text-[28px] font-extrabold leading-tight">Your Days</h1>
         <p className="text-sm text-muted-foreground font-medium mt-1">
           The moments ahead and the ones worth revisiting.
         </p>
@@ -108,9 +109,10 @@ export default function CalendarPage() {
                 >
                   <span className="text-sm z-10">{format(date, "d")}</span>
                   {hasEvent && (
-                    <span className="absolute -bottom-0.5 text-[8px] z-20 leading-none">
-                      {EVENT_MARKERS[dayEvents[0].type] ?? "🎁"}
-                    </span>
+                    <span
+                      className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full z-20"
+                      style={{ backgroundColor: EVENT_COLORS[dayEvents[0].type] ?? "#6847F5" }}
+                    />
                   )}
                 </button>
               );
@@ -129,7 +131,9 @@ export default function CalendarPage() {
             <div className="space-y-3">
               {selectedEvents.map((e) => (
                 <div key={e.id} className="flex items-center gap-3 py-2 border-b border-border/40 last:border-0">
-                  <span className="text-xl">{EVENT_MARKERS[e.type] ?? "🗓"}</span>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${EVENT_COLORS[e.type] ?? "#6847F5"}20` }}>
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: EVENT_COLORS[e.type] ?? "#6847F5" }} />
+                  </div>
                   <div>
                     <p className="font-bold text-sm">{e.title}</p>
                     <p className="text-xs text-muted-foreground capitalize">{e.type.replace(/_/g, " ")}</p>
@@ -190,7 +194,7 @@ export default function CalendarPage() {
           </div>
         ) : (
           <div className="bg-white rounded-3xl border border-border p-8 flex flex-col items-center text-center shadow-sm">
-            <div className="text-5xl mb-4">📅</div>
+            <DaymarkCharacter character="marky" pose="idle" size="sm" animation="float" className="mb-4" />
             <h3 className="font-bold text-base mb-1">Nothing to revisit yet</h3>
             <p className="text-sm text-muted-foreground mb-4">
               You haven't saved any memories on this date in past years.

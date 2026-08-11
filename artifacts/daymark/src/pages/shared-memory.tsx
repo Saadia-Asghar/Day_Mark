@@ -24,11 +24,11 @@ interface SharedMemory {
 
 const CATEGORY_LABELS: Record<string, string> = {
   everyday: "Everyday",
-  travel: "Travel ✈️",
-  food: "Food 🍜",
-  people: "People 💜",
-  nature: "Nature 🌿",
-  celebration: "Celebration 🎉",
+  travel: "Travel",
+  food: "Food",
+  people: "People",
+  nature: "Nature",
+  celebration: "Celebration",
 };
 
 export default function SharedMemoryPage() {
@@ -77,7 +77,9 @@ export default function SharedMemoryPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-16"
           >
-            <div className="text-5xl mb-4">{error === "revoked" ? "🚫" : error === "expired" ? "⏰" : "💜"}</div>
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4 mx-auto">
+              <div className="w-6 h-6 rounded-full bg-muted-foreground/30" />
+            </div>
             <h1 className="text-xl font-extrabold mb-2">
               {error === "revoked" ? "Link revoked" : error === "expired" ? "Link expired" : "Memory not found"}
             </h1>

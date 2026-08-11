@@ -19,10 +19,10 @@ const COLORS = [
 ];
 
 const RIBBONS = [
-  { id: "Classic", emoji: "🤍" },
-  { id: "Heart",   emoji: "❤️" },
-  { id: "Stars",   emoji: "⭐" },
-  { id: "Minimal", emoji: "🕊️" },
+  { id: "Classic" },
+  { id: "Heart" },
+  { id: "Stars" },
+  { id: "Minimal" },
 ];
 
 export default function CreateFutureGiftPage() {
@@ -89,7 +89,7 @@ export default function CreateFutureGiftPage() {
           giftColor={form.giftColor}
           ribbon={form.ribbon}
           photoUrl={form.photoPreview}
-          successTitle="Sealed with care. 💜"
+          successTitle="Sealed with care."
           successMessage={`It will be ready for ${recipient} on ${unlockLabel}.`}
           primaryHref="/future-gifts"
           primaryLabel="View Future Gifts"
@@ -110,7 +110,7 @@ export default function CreateFutureGiftPage() {
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
         </Link>
-        <div className="font-bold text-lg">Seal a Gift 🎁</div>
+        <div className="font-bold text-lg">Seal a Gift</div>
         <div className="w-10 h-10" />
       </header>
 
@@ -256,7 +256,7 @@ export default function CreateFutureGiftPage() {
           <div className="bg-white border border-border rounded-3xl p-5 shadow-sm space-y-5">
             {/* Box color */}
             <div>
-              <p className="text-xs font-bold text-muted-foreground mb-2">🎁 Box Color</p>
+              <p className="text-xs font-bold text-muted-foreground mb-2">Box Color</p>
               <div className="flex gap-3">
                 {COLORS.map((c) => (
                   <button
@@ -279,7 +279,7 @@ export default function CreateFutureGiftPage() {
 
             {/* Ribbon */}
             <div>
-              <p className="text-xs font-bold text-muted-foreground mb-2">🎀 Ribbon</p>
+              <p className="text-xs font-bold text-muted-foreground mb-2">Ribbon</p>
               <div className="flex gap-2 flex-wrap">
                 {RIBBONS.map((r) => (
                   <button
@@ -291,7 +291,7 @@ export default function CreateFutureGiftPage() {
                         : "bg-white text-muted-foreground border-border hover:bg-muted"
                     }`}
                   >
-                    {r.emoji} {r.id}
+                    {r.id}
                   </button>
                 ))}
               </div>

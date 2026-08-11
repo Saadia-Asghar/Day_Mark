@@ -3,7 +3,7 @@
  * Physical, memory-shelf visual language for the whole app.
  */
 import { useReducedMotion, motion, AnimatePresence } from "framer-motion";
-import { MapPin, Image as ImageIcon } from "lucide-react";
+import { MapPin, Image as ImageIcon, Lock, Unlock } from "lucide-react";
 import { DaymarkCharacter } from "@/components/daymark-character";
 import { Link } from "wouter";
 
@@ -72,14 +72,18 @@ export function GiftTag({ category }: { category: string }) {
 }
 
 // ── MoodSticker ───────────────────────────────────────────────────────────
-const MOOD_EMOJI: Record<string, string> = {
-  Happy: "☀️", Emotional: "🥹", Peaceful: "🌿",
-  Chaotic: "😂", Proud: "✨", Grateful: "💜", Nostalgic: "🌙",
+const MOOD_COLOR: Record<string, string> = {
+  Happy: "#F59E0B", Emotional: "#F43F5E", Peaceful: "#10B981",
+  Chaotic: "#F97316", Proud: "#8B5CF6", Grateful: "#6847F5", Nostalgic: "#6366F1",
 };
 export function MoodSticker({ mood, className = "" }: { mood: string; className?: string }) {
+  const color = MOOD_COLOR[mood] ?? "#6847F5";
   return (
-    <div className={`w-9 h-9 rounded-full bg-white shadow-sm border border-border flex items-center justify-center text-lg ${className}`}>
-      {MOOD_EMOJI[mood] ?? "✨"}
+    <div
+      className={`w-9 h-9 rounded-full shadow-sm border-2 border-white flex items-center justify-center ${className}`}
+      style={{ backgroundColor: color }}
+    >
+      <span className="text-[10px] font-extrabold text-white uppercase">{mood.slice(0, 2)}</span>
     </div>
   );
 }
@@ -224,12 +228,12 @@ export function SealedGiftCard({
                 {/* Lock tag */}
                 {!isReady && (
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full border border-border shadow-sm flex items-center justify-center">
-                    <span className="text-[9px]">🔒</span>
+                    <Lock className="w-2.5 h-2.5 text-muted-foreground" />
                   </div>
                 )}
                 {isReady && (
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full shadow-sm flex items-center justify-center">
-                    <span className="text-[9px]">🎁</span>
+                    <Unlock className="w-2.5 h-2.5 text-white" />
                   </div>
                 )}
               </div>
@@ -411,7 +415,7 @@ export function PhysicalGiftAnimation({
   giftColor,
   ribbon,
   photoUrl,
-  successTitle = "It's safe with us. 💜",
+  successTitle = "It's safe with us.",
   successMessage = "Another little piece of your life, beautifully kept.",
   primaryHref = "/gifts",
   primaryLabel = "View Gifts",
@@ -512,7 +516,7 @@ export function PhysicalGiftAnimation({
             className="absolute -bottom-3 -right-4 bg-white rounded-lg px-2 py-1 shadow-md border border-border text-[9px] font-bold text-muted-foreground"
             style={{ transform: "rotate(-5deg)" }}
           >
-            🎁 Memory
+            Memory
           </motion.div>
         </motion.div>
 

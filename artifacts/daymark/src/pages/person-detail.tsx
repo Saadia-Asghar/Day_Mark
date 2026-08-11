@@ -133,7 +133,7 @@ function DropComposeSheet({
         const d = await res.json();
         toast({ title: d.error ?? "Couldn't send", variant: "destructive" });
       } else {
-        toast({ title: `Moment dropped to ${recipientName} 💜` });
+        toast({ title: `Moment dropped to ${recipientName}` });
         onSent();
         onClose();
       }
@@ -162,7 +162,7 @@ function DropComposeSheet({
         </div>
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
           <div>
-            <h2 className="font-extrabold text-base">Drop a little moment 💌</h2>
+            <h2 className="font-extrabold text-base">Drop a little moment</h2>
             <p className="text-xs text-muted-foreground mt-0.5">For {recipientName}</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
@@ -202,7 +202,7 @@ function DropComposeSheet({
           {type === "photo" && (
             <div className="bg-white border-2 border-dashed border-border rounded-2xl h-32 flex flex-col items-center justify-center gap-2 text-muted-foreground">
               <ImageIcon className="w-8 h-8" />
-              <p className="text-xs font-medium">Photo drops coming soon 📸</p>
+              <p className="text-xs font-medium">Photo drops coming soon</p>
             </div>
           )}
 
@@ -211,7 +211,7 @@ function DropComposeSheet({
             disabled={sending || (type === "note" && !note.trim())}
             className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_16px_rgba(104,71,245,0.25)] disabled:opacity-50 transition-all"
           >
-            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <>💌 Drop it</>}
+            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Drop it"}
           </button>
 
           <p className="text-center text-[11px] text-muted-foreground">
@@ -227,7 +227,7 @@ function DropComposeSheet({
 
 function ReceivedDropCard({ drop, onReact }: { drop: MemoryDrop; onReact: (id: number, r: string) => void }) {
   const [opened, setOpened] = useState(drop.status !== "delivered");
-  const REACTIONS = ["💜", "✨", "🥹", "😂"];
+  const REACTIONS = ["Love", "Wow", "Aww", "Haha"];
 
   const handleOpen = async () => {
     if (opened) return;
@@ -248,7 +248,7 @@ function ReceivedDropCard({ drop, onReact }: { drop: MemoryDrop; onReact: (id: n
         </div>
         <div className="flex-1 min-w-0">
           {!opened ? (
-            <p className="text-sm font-bold">Tap to open 💜</p>
+            <p className="text-sm font-bold">Tap to open</p>
           ) : (
             <>
               {drop.note && <p className="text-sm font-medium leading-snug line-clamp-2">{drop.note}</p>}
@@ -264,14 +264,14 @@ function ReceivedDropCard({ drop, onReact }: { drop: MemoryDrop; onReact: (id: n
               <button
                 key={r}
                 onClick={(e) => { e.stopPropagation(); onReact(drop.id, r); }}
-                className="text-lg leading-none active:scale-125 transition-transform"
+                className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-muted text-muted-foreground active:scale-105 transition-transform"
               >
                 {r}
               </button>
             ))}
           </div>
         )}
-        {drop.reaction && <span className="text-2xl">{drop.reaction}</span>}
+        {drop.reaction && <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary">{drop.reaction}</span>}
       </div>
     </motion.div>
   );
@@ -347,7 +347,7 @@ export default function PersonDetailPage() {
         const data = await res.json();
         setWishes((prev) => [data.wish, ...prev]);
         setWishText("");
-        toast({ title: `Birthday wish sent to ${person.name} 🎂` });
+        toast({ title: `Birthday wish sent to ${person.name}` });
       }
     } catch { /* ignore */ }
     setSendingWish(false);
@@ -496,7 +496,7 @@ export default function PersonDetailPage() {
           >
             <div className="px-5 pt-5 pb-3">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">🎂</span>
+                <Gift className="w-6 h-6 text-primary" />
                 <div>
                   <p className="font-extrabold text-sm text-foreground">It's {person.name}'s birthday!</p>
                   <p className="text-xs text-muted-foreground">Send a birthday wish</p>
@@ -508,7 +508,7 @@ export default function PersonDetailPage() {
                   value={wishText}
                   onChange={(e) => setWishText(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendBirthdayWish()}
-                  placeholder="Write something meaningful… 💜"
+                  placeholder="Write something meaningful…"
                   className="flex-1 bg-white border border-border/60 rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
                 <button
@@ -549,7 +549,7 @@ export default function PersonDetailPage() {
               className="w-full flex items-center justify-center gap-2 py-3 bg-[#EAE3FF] text-primary rounded-2xl font-bold text-sm border border-primary/20 active:scale-[0.98] transition-all shadow-sm"
             >
               <Mail className="w-4 h-4" />
-              Drop a little moment 💌
+              Drop a little moment
             </button>
 
             {/* Received drops from this person */}
@@ -593,24 +593,27 @@ export default function PersonDetailPage() {
               onClick={() => setAddingEvent(true)}
               className="w-full py-3 border border-dashed border-border/60 rounded-2xl text-xs text-muted-foreground font-medium flex items-center justify-center gap-2 active:scale-[0.98]"
             >
-              🎂 Add a birthday, anniversary, or special date
+              Add a birthday, anniversary, or special date
             </button>
           )}
 
           {events.length > 0 && (
             <div className="space-y-2">
               {events.map((ev) => {
-                const EVENT_EMOJI: Record<string, string> = { birthday: "🎂", anniversary: "💍", friendship_anniversary: "💜", graduation: "🎓", custom: "✨" };
+                const EVENT_COLOR: Record<string, string> = { birthday: "#FF6B9D", anniversary: "#F43F5E", friendship_anniversary: "#6847F5", graduation: "#F59E0B", custom: "#94A3B8" };
+                const dotColor = EVENT_COLOR[ev.type] ?? "#6847F5";
                 const daysUntil = ev.daysUntil ?? 0;
                 return (
                   <div key={ev.id} className="flex items-center gap-3 bg-white rounded-xl border border-border/60 px-3 py-2.5">
-                    <span className="text-xl">{EVENT_EMOJI[ev.type] ?? "📅"}</span>
+                    <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: `${dotColor}20` }}>
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: dotColor }} />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold leading-tight">{ev.title}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
                         {ev.nextDate ? new Date(ev.nextDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
                         {" · "}
-                        {daysUntil === 0 ? "Today 🎉" : daysUntil === 1 ? "Tomorrow" : `${daysUntil} days`}
+                        {daysUntil === 0 ? "Today" : daysUntil === 1 ? "Tomorrow" : `${daysUntil} days`}
                       </p>
                     </div>
                   </div>
@@ -639,11 +642,11 @@ export default function PersonDetailPage() {
                 }}
                 className="w-full bg-muted/30 border border-border rounded-xl px-3 py-2.5 text-sm font-medium outline-none focus:border-primary"
               >
-                <option value="birthday">🎂 Birthday</option>
-                <option value="anniversary">💍 Anniversary</option>
-                <option value="friendship_anniversary">💜 Friendiversary</option>
-                <option value="graduation">🎓 Graduation</option>
-                <option value="custom">✨ Custom</option>
+                <option value="birthday">Birthday</option>
+                <option value="anniversary">Anniversary</option>
+                <option value="friendship_anniversary">Friendiversary</option>
+                <option value="graduation">Graduation</option>
+                <option value="custom">Custom</option>
               </select>
               <input
                 type="text"
