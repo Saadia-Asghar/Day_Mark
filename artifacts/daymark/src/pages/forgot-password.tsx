@@ -40,10 +40,17 @@ export default function ForgotPasswordPage() {
         { redirectTo },
       );
       if (resetError) {
-        // For security, Supabase doesn't reveal whether an email exists.
-        // Always show the "check email" screen regardless.
-        console.warn("[forgot-password]", resetError.message);
+        const message = resetError.message.toLowerCase();
+        if (message.includes("rate") || message.includes("too many")) {
+          setError("Too many reset requests. Please wait a few minutes and try again.");
+        } else {
+          setError("We couldn't send the reset email. Please try again shortly.");
+        }
+        setLoading(false);
+        return;
       }
+      // Supabase does not reveal whether the address exists, so the same sent
+      // state is used for known and unknown email addresses.
       setStep("sent");
     } catch {
       setError("Something went wrong. Please try again.");

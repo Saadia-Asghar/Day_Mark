@@ -34,6 +34,12 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const linkError = params.get("error_description") ?? hashParams.get("error_description");
+    if (linkError) {
+      setError(decodeURIComponent(linkError.replace(/\+/g, " ")));
+      return;
+    }
     // Username passed through the sign-up redirect URL so we can persist it.
     const username = params.get("username");
     // `mode=recovery` is set by forgot-password.tsx to flag recovery intent.
@@ -95,6 +101,18 @@ export default function AuthCallbackPage() {
       }
     });
 
+    // URL detection can complete before this component subscribes. Recover
+    // from the already-created recovery session instead of timing out.
+    if (isRecoveryIntent) {
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!cancelled && session) {
+          sessionStorage.setItem(RECOVERY_FLAG, "1");
+          clearTimeout(timer);
+          setLocation("/reset-password");
+        }
+      });
+    }
+
     return () => {
       cancelled = true;
       clearTimeout(timer);
@@ -121,7 +139,7 @@ export default function AuthCallbackPage() {
   return (
     <div className="min-h-[100dvh] bg-[#FFF9F5] flex flex-col items-center justify-center gap-4">
       <div className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-      <p className="text-sm text-muted-foreground font-semibold">Confirming your email…</p>
+      <p className="text-sm text-muted-foreground font-semibold">Checking your secure link…</p>
     </div>
   );
 }

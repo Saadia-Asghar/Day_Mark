@@ -1,11 +1,11 @@
 /**
  * /sign-up — Daymark sign-up with Supabase Auth. Email + password only.
- * After form submission Supabase sends a magic verification link.
- * The user clicks the link → redirected to /auth/callback → /onboarding.
+ * Supabase returns a session immediately and the user continues to onboarding.
+ * This requires Confirm email to be disabled in the Supabase dashboard.
  */
 import { supabase } from "@/lib/supabase";
-import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "wouter";
+import { motion } from "framer-motion";
+import { Link, useLocation } from "wouter";
 import { Eye, EyeOff, Check, X, ArrowLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { DaymarkCharacter } from "@/components/daymark-character";
@@ -49,10 +49,8 @@ function PasswordStrength({ pw }: { pw: string }) {
   );
 }
 
-type Step = "form" | "check-email";
-
 export default function SignUpPage() {
-  const [step, setStep] = useState<Step>("form");
+  const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -91,16 +89,12 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      // Build the redirect URL so Supabase knows where to send the user after email confirmation
-      const redirectTo = `${window.location.origin}${basePath}/auth/callback?username=${encodeURIComponent(username)}`;
-
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: redirectTo,
           data: {
-            // Store username in user_metadata so auth-callback can save it
+            // Keep a copy in auth metadata as a fallback for onboarding.
             username: isValidUsername(username) ? username : undefined,
           },
         },
@@ -108,8 +102,22 @@ export default function SignUpPage() {
 
       if (signUpError) {
         setError(friendlyError(signUpError.message));
+      } else if (!data.session) {
+        setError(
+          "Your account was created, but instant access is not enabled yet. Please ask the Daymark administrator to disable email confirmation, then sign in.",
+        );
       } else {
-        setStep("check-email");
+        if (isValidUsername(username)) {
+          await fetch(`${basePath}/api/auth/profile`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${data.session.access_token}`,
+            },
+            body: JSON.stringify({ username }),
+          }).catch(() => undefined);
+        }
+        setLocation("/onboarding");
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -119,9 +127,7 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#FFF9F5] flex flex-col px-6 pt-14 pb-10 overflow-x-hidden">
-      <AnimatePresence mode="wait">
-        {step === "form" && (
-          <motion.div key="form" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
+      <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}>
             <Link href="/auth">
               <button className="w-9 h-9 rounded-full bg-white border border-border shadow-sm flex items-center justify-center mb-5 active:scale-95 transition-all">
                 <ArrowLeft className="w-4 h-4" />
@@ -218,38 +224,7 @@ export default function SignUpPage() {
               {" "}and{" "}
               <Link href="/privacy"><span className="text-primary font-semibold underline-offset-2 hover:underline cursor-pointer">Privacy Policy</span></Link>.
             </p>
-          </motion.div>
-        )}
-
-        {step === "check-email" && (
-          <motion.div key="check-email" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
-            className="flex flex-col items-center text-center pt-16 px-2">
-            <DaymarkCharacter character="marky" pose="envelope" size="lg" animation="float" className="mb-6" />
-            <h1 className="text-2xl font-extrabold mb-2">Check your inbox 💌</h1>
-            <p className="text-sm text-muted-foreground mb-2">
-              We sent a verification link to
-            </p>
-            <p className="font-bold text-foreground mb-6">{email}</p>
-            <p className="text-xs text-muted-foreground leading-relaxed max-w-[280px]">
-              Click the link in the email to confirm your account and start your Daymark.
-              The link expires in 24 hours.
-            </p>
-            <div className="mt-8 w-full max-w-sm space-y-3">
-              <button
-                onClick={() => setStep("form")}
-                className="w-full h-12 border-2 border-border rounded-full font-bold text-sm text-foreground bg-white active:scale-[0.97] transition-all"
-              >
-                Use a different email
-              </button>
-              <Link href="/sign-in">
-                <button className="w-full h-12 text-primary font-bold text-sm active:scale-[0.97] transition-all">
-                  Already verified? Sign in
-                </button>
-              </Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </motion.div>
     </div>
   );
 }

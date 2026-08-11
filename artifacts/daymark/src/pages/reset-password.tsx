@@ -54,11 +54,13 @@ export default function ResetPasswordPage() {
     // in case timing allows, and fall back to the timeout → error.
     let cancelled = false;
 
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (cancelled) return;
       if (event === "PASSWORD_RECOVERY") {
         // Clear any stale flag from a previous recovery session
         sessionStorage.removeItem(RECOVERY_FLAG);
+        if (timer) clearTimeout(timer);
         setStep("set-password");
       }
       // Intentionally NOT handling SIGNED_IN here — an ordinary session does
@@ -66,8 +68,8 @@ export default function ResetPasswordPage() {
     });
 
     // If we haven't heard a recovery event after 3 s the link is invalid/expired.
-    const timer = setTimeout(() => {
-      if (!cancelled && step === "loading") {
+    timer = setTimeout(() => {
+      if (!cancelled) {
         setStep("error");
       }
     }, 3000);
@@ -99,7 +101,13 @@ export default function ResetPasswordPage() {
           setError("Failed to update password. Please try again.");
         }
       } else {
+        const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+        if (signOutError) {
+          setError("Your password changed, but we couldn't finish signing you out. Please close this tab and sign in again.");
+          return;
+        }
         setStep("success");
+        window.setTimeout(() => setLocation("/sign-in?passwordReset=1"), 1500);
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -203,9 +211,9 @@ export default function ResetPasswordPage() {
             <DaymarkCharacter character="marky" pose="celebrate" size="lg" animation="celebrate" className="mb-6" />
             <h1 className="text-2xl font-extrabold mb-2">Your password has been changed ✨</h1>
             <p className="text-sm text-muted-foreground mb-8">You're all set. Sign in with your new password.</p>
-            <button onClick={() => setLocation("/home")}
+            <button onClick={() => setLocation("/sign-in?passwordReset=1")}
               className="w-full max-w-sm h-[52px] bg-primary text-white rounded-full font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] flex items-center justify-center active:scale-[0.97] transition-all">
-              Go to my Daymark
+              Back to sign in
             </button>
           </motion.div>
         )}

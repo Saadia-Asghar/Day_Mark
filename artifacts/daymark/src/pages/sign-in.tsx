@@ -3,7 +3,7 @@
  */
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { DaymarkCharacter } from "@/components/daymark-character";
@@ -27,6 +27,8 @@ function friendlyError(message: string): string {
 
 export default function SignInPage() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
+  const passwordReset = new URLSearchParams(search).get("passwordReset") === "1";
 
   const savedEmail = typeof localStorage !== "undefined"
     ? (localStorage.getItem(REMEMBER_EMAIL_KEY) ?? "") : "";
@@ -101,6 +103,11 @@ export default function SignInPage() {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col gap-4"
       >
+        {passwordReset && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 text-sm text-emerald-700 font-medium">
+            Your password was changed. Sign in with your new password.
+          </div>
+        )}
         <div>
           <label className="text-sm font-bold text-foreground block mb-1.5">Email address</label>
           <input
