@@ -80,21 +80,19 @@ function UsernameStep({ onDone }: { onDone: () => void }) {
     setDebounce(t);
   };
 
-  const canContinue = !value || (isValidUsername(value) && available !== false);
+  const canContinue = isValidUsername(value) && available === true;
 
   const handleSubmit = async () => {
     if (!canContinue) return;
     setSaving(true);
-    if (value && available) {
-      try {
-        await fetch(`${basePath}/api/auth/profile`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ username: value }),
-        });
-      } catch { /* best effort */ }
-    }
+    try {
+      await fetch(`${basePath}/api/auth/profile`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username: value }),
+      });
+    } catch { /* best effort */ }
     setSaving(false);
     onDone();
   };
@@ -151,10 +149,7 @@ function UsernameStep({ onDone }: { onDone: () => void }) {
         >
           {saving
             ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            : value && available ? `Claim @${value}` : "Continue"}
-        </button>
-        <button onClick={onDone} className="text-sm text-muted-foreground font-medium">
-          Skip for now
+            : value && available ? `Claim @${value}` : "Choose a username to continue"}
         </button>
       </div>
     </div>
@@ -279,12 +274,16 @@ export default function OnboardingPage() {
       : step;
 
   const finish = () => {
+    // Optimistically mark onboarding complete in the cache RIGHT NOW so the
+    // route guard at /home lets us through even if the API call is slow/fails.
+    qc.setQueryData(['/api/auth/user'], (old: Record<string, unknown> | undefined) => {
+      if (!old?.user) return old;
+      return { ...old, user: { ...(old.user as Record<string, unknown>), onboardingCompleted: true } };
+    });
+    setLocation("/home");
+    // Persist in the background; on success refetch to sync server state.
     completeOnboarding.mutate(undefined, {
-      onSuccess: () => {
-        qc.invalidateQueries({ queryKey: ['/api/auth/user'] });
-        setLocation("/home");
-      },
-      onError: () => setLocation("/home"),
+      onSuccess: () => qc.invalidateQueries({ queryKey: ['/api/auth/user'] }),
     });
   };
 
@@ -318,8 +317,20 @@ export default function OnboardingPage() {
             />
           ))}
         </div>
-        <button onClick={finish} className="text-sm font-bold text-muted-foreground">
-          Skip
+        <button
+          onClick={() => {
+            // Skip slides — but username is still required, so jump there (or to setup if username is set).
+            if (needsUsername && !showUsernameStep && !showSetupStep) {
+              setShowUsernameStep(true);
+            } else if (!showSetupStep) {
+              setShowSetupStep(true);
+            } else {
+              finish();
+            }
+          }}
+          className="text-sm font-bold text-muted-foreground"
+        >
+          Skip slides
         </button>
       </div>
 
