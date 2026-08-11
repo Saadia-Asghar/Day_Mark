@@ -1,0 +1,1540 @@
+Audit the CURRENT Daymark repository and implement this as a connected
+PRE-LAUNCH PRODUCTION PASS.
+
+Do not merely write another audit document.
+Do not stop after planning.
+Make the code changes, run migrations, test the flows, and report the results.
+
+CURRENT PRODUCT ALREADY HAS
+
+- Clerk authentication
+- auth chooser
+- dedicated sign-in
+- dedicated sign-up
+- Google auth
+- onboarding routing
+- user profiles
+- usernames
+- Memories
+- People
+- Connections
+- Daylinks
+- Memory Drops
+- Messages for Later
+- scheduled delivery
+- Notifications
+- Future Gifts
+- Memory Globe
+- shared memories
+- Calendar
+- persistent image storage
+- Drizzle ORM
+- Express API
+- SSE/realtime foundations
+- mobile-first UI
+- Memory Shelf design
+
+IMPLEMENT ALL THREE CURRENT REPLIT SUGGESTIONS:
+
+1. Move the production database to Supabase
+2. Complete birthday + anniversary reminders and wishing
+3. Complete privacy + notification settings with a 3-user security test
+
+Then finish the connected launch blockers:
+
+4. Invite Friends
+5. Person → Daymark account linking
+6. Monthly Memory Capsule
+7. Globe country/city drilldown
+8. production realtime
+9. mascot consistency
+10. final launch QA
+
+==================================================
+PHASE 1 — SUPABASE PRODUCTION DATABASE
+==================================================
+
+Migrate Daymark's production PostgreSQL database to Supabase PostgreSQL.
+
+KEEP:
+
+Clerk = authentication
+Drizzle = ORM
+Express = API
+TanStack Query = frontend query layer
+
+DO NOT:
+
+use Supabase Auth
+replace Clerk
+replace Drizzle
+maintain two active production databases
+
+The application already uses DATABASE_URL.
+
+Use Supabase PostgreSQL through the same Drizzle/node-postgres architecture.
+
+Before migration:
+
+- inventory all tables
+- inventory all foreign keys
+- inventory indexes
+- inspect current data
+- create backup/export
+- generate migrations
+- apply migrations
+- verify data
+
+Tables to preserve include all current schemas, including at minimum:
+
+users
+people
+memories
+memoryPeople
+memoryParticipants
+calendarEvents
+futureGifts
+notifications
+connections
+relationshipStreaks
+streakActivities
+scheduledMessages
+memoryDrops
+memoryShareLinks
+dailyPrompts
+promptResponses
+
+Also migrate every newer table already present in the workspace.
+
+After migration:
+
+the app must read/write ONLY Supabase PostgreSQL.
+
+Do not silently fall back to the previous database.
+
+==================================================
+PHASE 2 — SUPABASE CONNECTION QUALITY
+==================================================
+
+Configure:
+
+SSL
+production pooling
+connection timeout
+idle timeout
+reasonable pool size
+
+All secrets remain server-side.
+
+Do not expose:
+
+DATABASE_URL
+Supabase service-role key
+Clerk secret
+
+to frontend code.
+
+==================================================
+PHASE 3 — PRODUCTION REALTIME
+==================================================
+
+The existing in-memory SSE client map is not enough for a multi-instance
+production deployment.
+
+Make realtime horizontally scalable.
+
+Preferred architecture:
+
+Supabase PostgreSQL
++
+shared realtime/event mechanism
++
+TanStack Query invalidation
+
+Either:
+
+A. use Supabase Realtime directly for appropriate database events
+
+OR
+
+B. use database-backed/shared pub-sub to fan events into existing SSE
+
+Do not create duplicate event delivery.
+
+Document which system handles which events.
+
+Realtime must work for:
+
+connection.requested
+connection.accepted
+connection.declined
+memoryDrop.created
+memoryDrop.reacted
+daylink.updated
+scheduledMessage.received
+futureGift.created
+futureGift.unlocked
+sharedMemory.updated
+notification.created
+birthdayWish.created
+anniversaryWish.created
+relationshipEvent.reminder
+globe.memoryPublished
+globe.memoryRemoved
+monthlyCapsule.ready
+
+==================================================
+PHASE 4 — RELATIONSHIP EVENT ENGINE
+==================================================
+
+Build a reusable event engine for meaningful dates.
+
+Create:
+
+relationshipEvents
+
+Fields:
+
+id
+ownerUserId
+personId nullable
+linkedUserId nullable
+
+type
+title
+
+eventMonth
+eventDay
+eventYear nullable
+
+timezone
+isRecurring
+
+visibility
+
+createdAt
+updatedAt
+
+Types:
+
+birthday
+friendship_anniversary
+relationship_anniversary
+graduation
+custom
+
+This should become the source of truth for upcoming important relationship dates.
+
+==================================================
+PHASE 5 — CONNECT EXISTING BIRTHDAYS
+==================================================
+
+Existing Person birthdays should feed this event engine.
+
+Do not maintain disconnected duplicate birthday systems.
+
+If a Person has:
+
+birthday
+
+ensure it creates or links to the appropriate recurring relationship event.
+
+If Person later links to an actual Daymark account:
+
+preserve the event and link:
+
+linkedUserId
+
+Do not lose historical data.
+
+==================================================
+PHASE 6 — REMINDER ENGINE
+==================================================
+
+Support configurable reminders.
+
+Defaults:
+
+7 days before
+3 days before
+1 day before
+morning of event
+
+Create:
+
+relationshipEventReminders
+
+Fields:
+
+id
+eventId
+userId
+reminderType
+scheduledFor
+status
+dedupeKey
+sentAt
+createdAt
+
+Statuses:
+
+pending
+processing
+sent
+cancelled
+failed
+
+Use a UNIQUE dedupe key.
+
+Example:
+
+user:event:2027:one_day_before
+
+Refreshes/restarts must not create duplicates.
+
+==================================================
+PHASE 7 — IMPORTANT TODAY
+==================================================
+
+Add a contextual Home section:
+
+Important Today ✨
+
+Only render when relevant.
+
+Possible events:
+
+birthday
+anniversary
+Future Gift unlock
+scheduled message arrival
+memory anniversary
+
+Example:
+
+It's Sarah's birthday today 🎂
+
+If user already scheduled a wish:
+
+Your message is ready to arrive at 9:00 AM.
+
+If not:
+
+You haven't wished Sarah yet.
+
+Actions:
+
+Wish Now
+Memory Drop
+Share a Memory
+Create Future Gift
+
+==================================================
+PHASE 8 — BIRTHDAY REMINDER UX
+==================================================
+
+7 DAYS BEFORE
+
+Sarah's birthday is next week 🎂
+
+Actions:
+
+Schedule a Wish
+Create Future Gift
+
+3 DAYS BEFORE
+
+Sarah's birthday is in 3 days.
+
+1 DAY BEFORE
+
+Sarah's birthday is tomorrow.
+
+You haven't prepared anything yet.
+
+Actions:
+
+Write a Wish
+Share a Memory
+Remind Me Tomorrow
+
+DAY OF
+
+It's Sarah's birthday today 🎂
+
+Wish Now
+
+Never auto-write or auto-send a wish the user did not explicitly approve.
+
+==================================================
+PHASE 9 — SCHEDULED BIRTHDAY WISH
+==================================================
+
+Reuse Messages for Later.
+
+A user can prepare a birthday or anniversary message in advance.
+
+At delivery time:
+
+1. atomically claim row
+2. scheduled → processing
+3. verify sender exists
+4. verify recipient exists
+5. verify accepted connection if required
+6. verify no blocking
+7. persist delivery
+8. create Wish record
+9. create Notification
+10. emit realtime event
+11. processing → sent
+
+On failure:
+
+processing → failed
+
+Do NOT mark sent before delivery is complete.
+
+==================================================
+PHASE 10 — TIMEZONE CORRECTNESS
+==================================================
+
+Store actual timestamps in UTC.
+
+But retain:
+
+month
+day
+intended local delivery time
+timezone
+
+For recurring birthdays:
+
+recompute next year's local date/time
+then convert to UTC.
+
+Do not simply add 365 days.
+
+Do not simply call setFullYear on the UTC timestamp.
+
+==================================================
+PHASE 11 — BIRTHDAY WISH WALL
+==================================================
+
+Create:
+
+birthdayWishes
+
+Fields:
+
+id
+relationshipEventId
+senderUserId
+recipientUserId
+type
+messageId nullable
+memoryDropId nullable
+futureGiftId nullable
+memoryId nullable
+createdAt
+
+Types:
+
+text
+memory
+memory_drop
+future_gift
+
+On recipient Profile:
+
+Birthday Today 🎂
+
+Birthday Wishes
+
+Examples:
+
+Saadia wished you 💜
+
+Areeba sent you a memory.
+
+Mom left you a Future Gift.
+
+Update live.
+
+Do not rank wishers.
+
+==================================================
+PHASE 12 — ANNIVERSARY EXPERIENCE
+==================================================
+
+Reuse the same backend.
+
+Examples:
+
+3 years of friendship ✨
+
+1 year since graduation 🎓
+
+Actions:
+
+Send Anniversary Note
+Open an Old Memory
+Create Future Gift
+
+Do not build a second independent anniversary system.
+
+==================================================
+PHASE 13 — PERSON DETAIL AS RELATIONSHIP HUB
+==================================================
+
+Person Detail should show:
+
+portrait
+relationship
+birthday
+anniversary
+next important date
+Daylink
+shared memories
+Messages for Later
+Future Gifts
+Memory Drops
+
+Actions:
+
+Add Today's Moment
+Wish Now
+Schedule a Wish
+Drop a Memory
+Wrap a Memory Together
+Invite to Daymark
+
+==================================================
+PHASE 14 — PRIVACY SETTINGS
+==================================================
+
+Create:
+
+/settings/privacy
+
+Persist real values in database.
+
+Controls:
+
+Find me by username
+
+Find me by email
+
+Allow connection requests
+
+Birthday visibility
+
+Allow birthday wishes from connections
+
+Allow birthday wishes from Globe
+
+Default memory visibility
+
+Default Globe identity
+
+Default Globe location precision
+
+Show public profile from Globe
+
+Default share:
+People
+Location
+Story
+
+Defaults should be privacy-first.
+
+==================================================
+PHASE 15 — BIRTHDAY PRIVACY
+==================================================
+
+birthdayVisibility values:
+
+nobody
+connections
+selected_connections
+public_badge
+
+DEFAULT:
+
+nobody
+
+A birthday saved in another person's private People record must never make the
+actual Daymark user's birthday public.
+
+Only the owner controls public visibility.
+
+==================================================
+PHASE 16 — NOTIFICATION SETTINGS
+==================================================
+
+Create:
+
+/settings/notifications
+
+Toggles:
+
+Birthday reminders
+Anniversary reminders
+Daylink reminders
+Memory anniversaries
+Future Gift ready
+Messages for Later
+Connection requests
+Memory Drops
+Shared memory changes
+Globe reactions
+Monthly Capsule
+Invite activity
+
+Persist them.
+
+Do not merely hide notifications in the frontend.
+
+The server must check notification preferences BEFORE creating non-essential
+notifications.
+
+==================================================
+PHASE 17 — NOTIFICATION DEDUPLICATION
+==================================================
+
+Prevent notification spam.
+
+Examples:
+
+no repeated birthday reminder after refresh
+
+no Daylink reminder if today's Daylink is already complete
+
+max one Daylink reminder per relationship/day
+
+no duplicate Future Gift-ready notification
+
+no repeated monthly capsule notification
+
+Use database dedupe keys/statuses.
+
+==================================================
+PHASE 18 — BLOCKING
+==================================================
+
+Blocking must affect every social system.
+
+Blocked users cannot:
+
+connect
+Memory Drop
+birthday wish
+anniversary wish
+schedule personal message
+invite to shared memory
+send Future Gift
+view private shared content
+
+Scheduled delivery must re-check block state at send time.
+
+==================================================
+PHASE 19 — INVITE FRIENDS
+==================================================
+
+Implement launch-ready invite system.
+
+Create:
+
+invites
+
+Fields:
+
+id
+inviterUserId
+token
+expiresAt
+maxUses
+useCount
+revokedAt
+createdAt
+
+Actions:
+
+Copy Invite Link
+WhatsApp Invite
+Instagram Story Invite
+Native Share
+QR Code
+
+Invite URL:
+
+/join/@username?invite=TOKEN
+
+Invite must:
+
+expire
+be revocable
+not auto-connect accounts
+
+==================================================
+PHASE 20 — INVITEE EXPERIENCE
+==================================================
+
+When someone joins from an invite:
+
+show:
+
+Saadia invited you to Daymark 💜
+
+Button:
+
+Connect with Saadia
+
+Do not auto-accept.
+
+After acceptance:
+
+send realtime update to inviter.
+
+==================================================
+PHASE 21 — PERSON → DAYMARK LINKING
+==================================================
+
+After a connection is accepted:
+
+ask inviter/user:
+
+Is this the Sarah already in My People?
+
+Show likely matching local Person records.
+
+Allow:
+
+Link to Sarah
+
+Preserve:
+
+memories
+birthday
+relationship
+notes
+important dates
+
+Do not create duplicate Person records.
+
+==================================================
+PHASE 22 — MONTHLY MEMORY CAPSULE
+==================================================
+
+Implement:
+
+Your Month in Little Things ✨
+
+Create:
+
+monthlyCapsules
+
+Fields:
+
+id
+userId
+year
+month
+summaryData jsonb
+generatedAt
+openedAt
+createdAt
+
+Use REAL user data only.
+
+Include:
+
+memories saved
+people
+places
+moods
+longest Daylink
+Future Gifts created
+Messages for Later sent
+most-kept-close memory
+one rediscovered memory
+
+Do not invent statistics.
+
+==================================================
+PHASE 23 — MONTHLY CAPSULE DELIVERY
+==================================================
+
+Generate capsule after month closes.
+
+First app open next month:
+
+Your July is wrapped 🎁
+
+Tap to open.
+
+Notification:
+
+Your month is ready to remember.
+
+Respect Notification Settings.
+
+==================================================
+PHASE 24 — CAPSULE SHARE CARDS
+==================================================
+
+Allow privacy-safe sharing.
+
+Templates:
+
+My Month in Little Things
+
+Month in Polaroids
+
+People Who Made My Month
+
+Private people names and precise locations:
+
+OFF by default
+
+==================================================
+PHASE 25 — GLOBE WORLD → COUNTRY → CITY → MEMORY
+==================================================
+
+Complete Globe drilldown.
+
+WORLD
+
+Pakistan
+82 moments
+
+Japan
+34
+
+Turkey
+18
+
+COUNTRY
+
+Pakistan
+
+Islamabad
+12
+
+Lahore
+21
+
+Karachi
+26
+
+CITY
+
+Individual public memory points/cards
+
+Use clustering.
+
+Never expose exact private GPS.
+
+Use privacy-safe city/region centroids.
+
+==================================================
+PHASE 26 — GLOBE PUBLIC PROFILE
+==================================================
+
+If owner enables public Globe profile:
+
+show ONLY:
+
+avatar
+display name
+username
+bio
+city/country if enabled
+public Globe memories
+
+Never show:
+
+email
+connections
+private memories
+private birthdays
+Messages for Later
+People records
+
+==================================================
+PHASE 27 — OPTIONAL PUBLIC BIRTHDAY BADGE
+==================================================
+
+Allow account owner to opt into:
+
+Birthday Today 🎂
+
+on Globe.
+
+Default:
+
+OFF
+
+Optional:
+
+Allow Globe birthday wishes
+
+Default:
+
+OFF
+
+Unconnected users may only use lightweight predefined wishes:
+
+Happy birthday! 🎂
+Hope today is beautiful ✨
+Sending a little joy 💜
+
+No stranger DMs.
+
+==================================================
+PHASE 28 — GLOBAL MASCOT SYSTEM
+==================================================
+
+Complete mascot consistency before launch.
+
+Create/use one:
+
+<DaymarkCharacter />
+
+All active mascot artwork:
+
+transparent PNG/WebP
+
+Marky:
+purple + gold
+
+No beige/white square backgrounds.
+
+Use Framer Motion:
+
+float
+wave
+peek
+celebrate
+sleep
+
+Respect reduced motion.
+
+Replace direct active mascot imports.
+
+==================================================
+PHASE 29 — AUTH PRODUCTION QA
+==================================================
+
+Current auth has been refactored.
+
+Now verify all flows:
+
+NEW EMAIL USER
+
+email
+username
+password
+confirm
+verification
+onboarding
+home
+
+RETURNING USER
+
+email
+password
+home
+
+FORGOT PASSWORD
+
+email
+verification code
+new password
+sign in
+
+NEW GOOGLE USER
+
+Google
+username if needed
+onboarding
+home
+
+RETURNING GOOGLE USER
+
+Google
+home
+
+UNVERIFIED USER
+
+verify
+then correct destination
+
+DUPLICATE EMAIL
+
+suggest Sign In
+
+DUPLICATE USERNAME
+
+database-enforced rejection
+
+==================================================
+PHASE 30 — ACCOUNT SWITCHING
+==================================================
+
+Test:
+
+A logs in
+
+A data visible
+
+A logs out
+
+B logs in
+
+B must NEVER briefly see:
+
+A memories
+A notifications
+A profile
+A Daylinks
+A messages
+
+Clear user-specific TanStack Query data before rendering B.
+
+==================================================
+PHASE 31 — PRODUCTION REALTIME UI
+==================================================
+
+No refresh required for:
+
+connection request
+
+connection accepted
+
+Memory Drop
+
+Daylink
+
+birthday wish
+
+scheduled message
+
+Future Gift unlock
+
+shared memory update
+
+Globe publish/remove
+
+Monthly Capsule ready
+
+If realtime disconnects:
+
+show:
+
+Reconnecting…
+
+After restoration:
+
+Back in sync ✨
+
+REST remains functional.
+
+==================================================
+PHASE 32 — THREE-USER SECURITY TEST
+==================================================
+
+Use:
+
+USER A
+USER B
+USER C
+
+A and B connected.
+
+C unrelated.
+
+C must NOT access:
+
+A/B private memories
+photos
+People
+connections
+Daylinks
+Memory Drops
+Messages for Later
+birthday wishes
+anniversary wishes
+Future Gifts
+relationship events
+private notifications
+
+==================================================
+PHASE 33 — PUBLIC EXCEPTION TEST
+==================================================
+
+C may only access:
+
+explicit Globe-public DTO
+
+explicit public profile fields
+
+explicit public birthday badge if enabled
+
+valid non-expired/non-revoked share token
+
+Nothing else.
+
+==================================================
+PHASE 34 — SETTINGS SECURITY TEST
+==================================================
+
+Test:
+
+A disables username discovery
+
+B search:
+A absent
+
+A birthday visibility = connections
+
+C:
+birthday hidden
+
+A disables Globe wishes
+
+C:
+cannot wish
+
+A disables Daylink reminders
+
+no reminder created
+
+==================================================
+PHASE 35 — SUPABASE SECURITY
+==================================================
+
+If frontend reads Supabase tables directly:
+
+enable RLS.
+
+Do not use broad policies for private tables.
+
+If private data stays behind Express:
+
+keep it server-mediated.
+
+Never expose service-role credentials client-side.
+
+==================================================
+PHASE 36 — DATABASE INDEXES
+==================================================
+
+Ensure indexes for:
+
+users.username
+
+connections user pair/status
+
+relationshipEvents owner
+
+relationshipEvents month/day
+
+relationshipEventReminders scheduledFor/status
+
+scheduledMessages deliveryTimestamp/status
+
+birthdayWishes recipient
+
+notifications user/read status
+
+relationshipStreak pairs
+
+Globe visibility/date/location
+
+monthlyCapsules user/year/month
+
+invite token
+
+==================================================
+PHASE 37 — STALE JOB RECOVERY
+==================================================
+
+If a worker crashes while status=processing:
+
+recover after a safe timeout.
+
+Apply to:
+
+scheduled messages
+
+relationship reminders
+
+monthly capsule generation
+
+Do not permanently lose jobs.
+
+==================================================
+PHASE 38 — OBSERVABILITY
+==================================================
+
+Add structured logs for:
+
+Supabase connectivity
+
+scheduled delivery
+
+birthday reminder creation
+
+anniversary reminders
+
+wish delivery
+
+monthly capsule generation
+
+realtime failures
+
+Do not log:
+
+passwords
+tokens
+private full message bodies
+DB credentials
+
+==================================================
+PHASE 39 — ERROR MONITORING READY
+==================================================
+
+Add an error boundary and structured frontend error reporting hooks.
+
+If no external service is configured yet:
+
+implement a clean abstraction so Sentry or similar can be connected after launch.
+
+Do not expose stack traces to users.
+
+==================================================
+PHASE 40 — TERMS + PRIVACY
+==================================================
+
+Before launch, create real routes:
+
+/privacy
+/terms
+
+Auth page already references them.
+
+They should not be dead text.
+
+Include clear product-specific statements about:
+
+private memories
+
+Globe opt-in visibility
+
+scheduled messages
+
+birthday visibility
+
+account deletion
+
+data handling
+
+Do not invent legal guarantees you cannot support.
+
+==================================================
+PHASE 41 — ACCOUNT DELETION
+==================================================
+
+Add:
+
+Delete My Daymark
+
+Require confirmation.
+
+Handle:
+
+memories
+People
+connections
+messages
+Future Gifts
+Globe posts
+wish data
+share links
+storage media
+
+Define deletion behavior carefully.
+
+Revoke public links immediately.
+
+Remove public Globe content immediately.
+
+Do not leave orphaned private data unintentionally.
+
+==================================================
+PHASE 42 — DATA EXPORT
+==================================================
+
+Add:
+
+Export My Daymark
+
+Generate a user-owned data export containing:
+
+profile
+memories metadata
+People
+important dates
+connections metadata
+scheduled messages metadata
+Future Gifts metadata
+
+Do not export other users' private data.
+
+Photo export may use secure signed/download links or archive mechanism.
+
+==================================================
+PHASE 43 — RATE LIMITING
+==================================================
+
+Add production rate limits for:
+
+auth-adjacent API operations
+
+username search
+
+connection requests
+
+Memory Drops
+
+birthday wishes
+
+Globe reactions
+
+reports
+
+share-link creation
+
+invite creation
+
+Prevent spam and abuse.
+
+==================================================
+PHASE 44 — INPUT VALIDATION
+==================================================
+
+Use server-side validation for all writes.
+
+Validate:
+
+titles
+message lengths
+bios
+usernames
+dates
+URLs
+IDs
+visibility enums
+location precision
+file metadata
+
+Do not trust frontend validation.
+
+==================================================
+PHASE 45 — GLOBE MODERATION
+==================================================
+
+Before real users join:
+
+ensure:
+
+Report Memory
+
+works.
+
+Create moderation state:
+
+active
+under_review
+removed
+
+Reported public content should be reviewable.
+
+Users should be able to remove their own Globe memory instantly.
+
+==================================================
+PHASE 46 — IMAGE SAFETY + PERFORMANCE
+==================================================
+
+Validate uploads:
+
+JPEG
+PNG
+WebP
+
+reasonable max file size
+
+Avoid enormous original files on every card.
+
+Create/reserve thumbnail variants if supported.
+
+Lazy-load below fold.
+
+Do not lazy-load above-the-fold hero memory.
+
+==================================================
+PHASE 47 — ACCESSIBILITY
+==================================================
+
+Audit:
+
+keyboard
+screen-reader labels
+focus states
+contrast
+reduced motion
+44px targets
+form errors
+verification screens
+settings toggles
+Globe controls
+
+==================================================
+PHASE 48 — MOBILE QA
+==================================================
+
+Test:
+
+375 × 812
+390 × 844
+430 × 932
+
+Also test:
+
+keyboard open
+
+long usernames
+
+long memory titles
+
+many notifications
+
+many wishes
+
+empty states
+
+slow network
+
+offline/reconnect
+
+==================================================
+PHASE 49 — HOME FINAL STRUCTURE
+==================================================
+
+Keep Home emotionally focused.
+
+Order:
+
+1. Greeting
+
+2. This Day
+
+3. Important Today
+only if relevant
+
+4. Daylinks
+
+5. Today's Little Question
+
+6. Capture Today
+
+7. Moment From Somewhere
+
+8. Coming Up
+
+9. Your People
+
+Do not turn it into a dashboard.
+
+==================================================
+PHASE 50 — LAUNCH GATE
+==================================================
+
+DO NOT call this production-ready until ALL are true:
+
+Supabase cutover completed
+
+auth flows tested
+
+3-user privacy test passed
+
+private images isolated
+
+scheduled message delivered exactly once
+
+birthday reminder deduped
+
+block enforcement tested
+
+Globe public DTO tested
+
+invite flow tested
+
+Person linking tested
+
+realtime tested across two browsers
+
+account switching tested
+
+terms/privacy routes live
+
+account deletion tested
+
+rate limiting added
+
+typecheck passed
+
+production build passed
+
+==================================================
+FINAL REPORT
+==================================================
+
+Provide a strict launch report with:
+
+DONE
+PARTIAL
+BLOCKED
+
+for:
+
+1. Supabase database
+2. Realtime
+3. Birthday engine
+4. Anniversary engine
+5. Reminder dedupe
+6. Wish Wall
+7. Scheduled wishes
+8. Privacy controls
+9. Notification controls
+10. Blocking
+11. Invite Friends
+12. Person linking
+13. Monthly Capsule
+14. Globe drilldown
+15. Globe privacy
+16. Mascot system
+17. Auth QA
+18. Terms/privacy pages
+19. Account deletion
+20. Data export
+21. Rate limiting
+22. Moderation
+23. 3-user privacy test
+24. realtime multi-user test
+25. mobile QA
+26. typecheck
+27. production build
+
+Do not create another feature category before these launch requirements are
+resolved.

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check } from "lucide-react";
@@ -64,15 +64,40 @@ export default function NotificationSettingsPage() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<NotifSettings>(DEFAULT);
   const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  // Load persisted settings from DB on mount
+  useEffect(() => {
+    fetch("/api/auth/user", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => {
+        const saved = d.user?.notificationSettings;
+        if (saved && typeof saved === "object") {
+          setSettings((prev) => ({
+            ...prev,
+            ...Object.fromEntries(
+              Object.entries(saved).filter(([k]) => k in prev)
+            ),
+          }));
+        }
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, []);
 
   const update = (key: NotifKey, val: boolean) =>
     setSettings((prev) => ({ ...prev, [key]: val }));
 
   const save = async () => {
     setSaving(true);
-    // Stored client-side in localStorage for now (server-side notifications table coming next)
     try {
-      localStorage.setItem("daymark_notif_settings", JSON.stringify(settings));
+      const res = await fetch("/api/auth/notification-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(settings),
+      });
+      if (!res.ok) throw new Error("Server error");
       toast({ title: "Notification preferences saved 🔔" });
     } catch {
       toast({ title: "Couldn't save", variant: "destructive" });
@@ -115,12 +140,12 @@ export default function NotificationSettingsPage() {
         </motion.div>
 
         <div className="bg-[#EAE3FF]/50 rounded-2xl p-4 text-xs text-primary font-medium leading-relaxed">
-          🔔 Daylink reminders fire at most once per relationship per day.
+          🔔 Daylink reminders fire at most once per relationship per day. Your preferences are saved to your account, not just this device.
         </div>
 
         <button
           onClick={save}
-          disabled={saving}
+          disabled={saving || !loaded}
           className="w-full h-12 bg-primary text-white rounded-full font-bold text-sm shadow-[0_0_16px_rgba(104,71,245,0.25)] disabled:opacity-50 transition-all flex items-center justify-center gap-2"
         >
           {saving ? "Saving…" : <><Check className="w-4 h-4" /> Save Preferences</>}

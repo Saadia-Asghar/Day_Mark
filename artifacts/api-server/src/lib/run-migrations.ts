@@ -109,6 +109,47 @@ export async function runMigrations(): Promise<void> {
       WHERE dedup_key IS NOT NULL
     `);
 
+    // ── relationship_event_reminders ─────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS relationship_event_reminders (
+        id SERIAL PRIMARY KEY,
+        event_id INTEGER NOT NULL,
+        user_id VARCHAR NOT NULL,
+        reminder_type TEXT NOT NULL,
+        scheduled_for TIMESTAMPTZ NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        dedupe_key VARCHAR(200) NOT NULL,
+        sent_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS rer_dedupe ON relationship_event_reminders(dedupe_key)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS rer_scheduled ON relationship_event_reminders(scheduled_for, status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS rer_user ON relationship_event_reminders(user_id)`);
+
+    // ── users: privacy + notification preference columns ─────────────────
+    for (const stmt of [
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS allow_connection_requests BOOLEAN NOT NULL DEFAULT true`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday_visibility VARCHAR(30) NOT NULL DEFAULT 'nobody'`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS allow_birthday_wishes_connections BOOLEAN NOT NULL DEFAULT true`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS allow_birthday_wishes_globe BOOLEAN NOT NULL DEFAULT false`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS default_memory_visibility VARCHAR(20) NOT NULL DEFAULT 'private'`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS default_globe_identity VARCHAR(20) NOT NULL DEFAULT 'anonymous'`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS default_globe_location VARCHAR(20) NOT NULL DEFAULT 'city'`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS show_public_profile BOOLEAN NOT NULL DEFAULT false`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_settings JSONB DEFAULT '{}'`,
+    ]) {
+      await client.query(stmt);
+    }
+
+    // ── indexes for frequently queried fields ────────────────────────────
+    await client.query(`CREATE INDEX IF NOT EXISTS users_username_idx ON users(username)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS conn_pair ON connections(requester_user_id, recipient_user_id, status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS sm_delivery ON scheduled_messages(delivery_timestamp, status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS notif_user_read ON notifications(user_id, read_at)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS mc_user_ym ON monthly_capsules(user_id, year, month)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS inv_token ON invites(token)`);
+
     await client.query("COMMIT");
     logger.info("Migrations applied successfully");
   } catch (err) {

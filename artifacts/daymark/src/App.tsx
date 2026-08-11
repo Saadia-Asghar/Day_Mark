@@ -33,6 +33,8 @@ import NotificationSettingsPage from '@/pages/settings-notifications';
 import SharedMemoryPage from '@/pages/shared-memory';
 import CapsulePage from '@/pages/capsule';
 import InvitePage from '@/pages/invite';
+import PrivacyPage from '@/pages/privacy';
+import TermsPage from '@/pages/terms';
 import { type ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClerkProvider, AuthenticateWithRedirectCallback, useAuth, useClerk, useUser } from '@clerk/react';
@@ -377,6 +379,10 @@ function Router() {
           <Route path="/join/:slug" component={InvitePage} />
 
           {/* Public — no auth required */}
+          {/* Legal — public, no auth required */}
+          <Route path="/privacy" component={PrivacyPage} />
+          <Route path="/terms" component={TermsPage} />
+
           <Route path="/m/:token" component={SharedMemoryPage} />
 
           <Route component={NotFound} />

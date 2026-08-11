@@ -293,6 +293,13 @@ export default function PersonDetailPage() {
   const [newEventDay, setNewEventDay] = useState(new Date().getDate());
   const [savingEvent, setSavingEvent] = useState(false);
 
+  // ── Birthday wish wall ─────────────────────────────────────────────────
+  interface BirthdayWish { id: number; senderUserId: string; senderName?: string; senderAvatar?: string; wishText?: string; type: string; createdAt: string; }
+  const [wishes, setWishes] = useState<BirthdayWish[]>([]);
+  const [wishText, setWishText] = useState("");
+  const [sendingWish, setSendingWish] = useState(false);
+  const [wishesLoaded, setWishesLoaded] = useState(false);
+
   const { data: person, isLoading, isError, refetch } = useGetPerson(id || 0);
 
   // Load relationship events for this person
@@ -314,6 +321,37 @@ export default function PersonDetailPage() {
       })
       .catch(() => {});
   }, [id]);
+
+  // Load birthday wishes when linked user has a birthday today
+  useEffect(() => {
+    if (!person?.linkedUserId) return;
+    const hasBirthdayToday = events.some((ev) => ev.type === "birthday" && ev.daysUntil === 0);
+    if (!hasBirthdayToday) return;
+    fetch(`/api/birthday-wishes/${person.linkedUserId}`, { credentials: "include" })
+      .then((r) => r.ok ? r.json() : { wishes: [] })
+      .then((d) => { setWishes(d.wishes ?? []); setWishesLoaded(true); })
+      .catch(() => setWishesLoaded(true));
+  }, [person?.linkedUserId, events]);
+
+  const sendBirthdayWish = async () => {
+    if (!person?.linkedUserId || !wishText.trim()) return;
+    setSendingWish(true);
+    try {
+      const res = await fetch("/api/birthday-wishes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ recipientUserId: person.linkedUserId, wishText: wishText.trim(), type: "text" }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWishes((prev) => [data.wish, ...prev]);
+        setWishText("");
+        toast({ title: `Birthday wish sent to ${person.name} 🎂` });
+      }
+    } catch { /* ignore */ }
+    setSendingWish(false);
+  };
 
   // Load drops from/to this person
   useEffect(() => {
@@ -448,6 +486,59 @@ export default function PersonDetailPage() {
           <div className="mb-4">
             <DaylinkCard personUserId={person.linkedUserId} />
           </div>
+        )}
+
+        {/* ── Birthday Wish Wall ───────────────────────────────── */}
+        {person.linkedUserId && events.some((ev) => ev.type === "birthday" && ev.daysUntil === 0) && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className="mb-6 bg-gradient-to-br from-[#EAE3FF] to-[#FFF9F5] rounded-3xl border border-primary/20 overflow-hidden shadow-sm"
+          >
+            <div className="px-5 pt-5 pb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">🎂</span>
+                <div>
+                  <p className="font-extrabold text-sm text-foreground">It's {person.name}'s birthday!</p>
+                  <p className="text-xs text-muted-foreground">Send a birthday wish</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={wishText}
+                  onChange={(e) => setWishText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && sendBirthdayWish()}
+                  placeholder="Write something meaningful… 💜"
+                  className="flex-1 bg-white border border-border/60 rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <button
+                  onClick={sendBirthdayWish}
+                  disabled={sendingWish || !wishText.trim()}
+                  className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center disabled:opacity-40 active:scale-95 transition-all flex-shrink-0 self-center"
+                >
+                  <Mail className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            {wishesLoaded && wishes.length > 0 && (
+              <div className="px-5 pb-5 space-y-2">
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-primary/70 mb-1">Wishes sent today</p>
+                {wishes.slice(0, 5).map((w) => (
+                  <div key={w.id} className="flex items-start gap-2 bg-white/70 rounded-xl px-3 py-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-[10px] font-bold text-primary">
+                        {(w.senderName ?? "?")[0]?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-foreground">{w.senderName ?? "Someone"}</p>
+                      {w.wishText && <p className="text-xs text-muted-foreground mt-0.5">{w.wishText}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
         )}
 
         {/* ── Drop a Moment ────────────────────────────────────── */}

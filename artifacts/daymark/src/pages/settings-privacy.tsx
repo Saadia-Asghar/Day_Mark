@@ -8,29 +8,33 @@ interface PrivacySettings {
   discoverableByUsername: boolean;
   discoverableByEmail: boolean;
   allowConnectionRequests: boolean;
-  birthdayVisibility: "nobody" | "connections" | "all";
-  birthdayWishPrivacy: "nobody" | "connections" | "all";
+  birthdayVisibility: "nobody" | "connections" | "public_badge";
+  allowBirthdayWishesFromConnections: boolean;
+  allowBirthdayWishesFromGlobe: boolean;
   defaultMemoryVisibility: "private" | "connections" | "public";
-  defaultGlobeIdentity: "username" | "anonymous";
+  defaultGlobeIdentity: "anonymous" | "username";
   defaultGlobeLocation: "city" | "region" | "country" | "hidden";
+  showPublicProfile: boolean;
 }
 
 const DEFAULT_SETTINGS: PrivacySettings = {
   discoverableByUsername: true,
   discoverableByEmail: false,
   allowConnectionRequests: true,
-  birthdayVisibility: "connections",
-  birthdayWishPrivacy: "connections",
+  birthdayVisibility: "nobody",
+  allowBirthdayWishesFromConnections: true,
+  allowBirthdayWishesFromGlobe: false,
   defaultMemoryVisibility: "private",
   defaultGlobeIdentity: "anonymous",
   defaultGlobeLocation: "city",
+  showPublicProfile: false,
 };
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
       onClick={() => onChange(!value)}
-      className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${value ? "bg-primary" : "bg-muted-foreground/30"}`}
+      className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none flex-shrink-0 ${value ? "bg-primary" : "bg-muted-foreground/30"}`}
       aria-checked={value}
       role="switch"
     >
@@ -74,10 +78,19 @@ export default function PrivacySettingsPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d.user) {
+          const u = d.user;
           setSettings((prev) => ({
             ...prev,
-            discoverableByUsername: d.user.discoverableByUsername ?? prev.discoverableByUsername,
-            discoverableByEmail: d.user.discoverableByEmail ?? prev.discoverableByEmail,
+            discoverableByUsername: u.discoverableByUsername ?? prev.discoverableByUsername,
+            discoverableByEmail: u.discoverableByEmail ?? prev.discoverableByEmail,
+            allowConnectionRequests: u.allowConnectionRequests ?? prev.allowConnectionRequests,
+            birthdayVisibility: (u.birthdayVisibility as PrivacySettings["birthdayVisibility"]) ?? prev.birthdayVisibility,
+            allowBirthdayWishesFromConnections: u.allowBirthdayWishesFromConnections ?? prev.allowBirthdayWishesFromConnections,
+            allowBirthdayWishesFromGlobe: u.allowBirthdayWishesFromGlobe ?? prev.allowBirthdayWishesFromGlobe,
+            defaultMemoryVisibility: (u.defaultMemoryVisibility as PrivacySettings["defaultMemoryVisibility"]) ?? prev.defaultMemoryVisibility,
+            defaultGlobeIdentity: (u.defaultGlobeIdentity as PrivacySettings["defaultGlobeIdentity"]) ?? prev.defaultGlobeIdentity,
+            defaultGlobeLocation: (u.defaultGlobeLocation as PrivacySettings["defaultGlobeLocation"]) ?? prev.defaultGlobeLocation,
+            showPublicProfile: u.showPublicProfile ?? prev.showPublicProfile,
           }));
         }
         setLoaded(true);
@@ -91,15 +104,13 @@ export default function PrivacySettingsPage() {
   const save = async () => {
     setSaving(true);
     try {
-      await fetch("/api/auth/profile", {
+      const res = await fetch("/api/auth/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          discoverableByUsername: settings.discoverableByUsername,
-          discoverableByEmail: settings.discoverableByEmail,
-        }),
+        body: JSON.stringify(settings),
       });
+      if (!res.ok) throw new Error("Server error");
       toast({ title: "Privacy settings saved 🛡️" });
     } catch {
       toast({ title: "Couldn't save", variant: "destructive" });
@@ -118,60 +129,54 @@ export default function PrivacySettingsPage() {
       </div>
 
       {!loaded ? (
-        <div className="flex items-center justify-center pt-20">
-          <div className="w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+        <div className="flex justify-center pt-20">
+          <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
         </div>
       ) : (
         <div className="px-5 pt-6 space-y-4">
           {/* Discoverability */}
-          <Section title="Discoverability">
-            <SettingRow label="Find me by @username" description="Others can search and find you">
+          <Section title="Who can find you">
+            <SettingRow label="Find by username" description="Let people search your @handle to send a connection request">
               <Toggle value={settings.discoverableByUsername} onChange={(v) => update("discoverableByUsername", v)} />
             </SettingRow>
-            <SettingRow label="Find me by email" description="Daymark contacts can find you">
+            <SettingRow label="Find by email" description="Let people find you if they know your email address">
               <Toggle value={settings.discoverableByEmail} onChange={(v) => update("discoverableByEmail", v)} />
             </SettingRow>
-            <SettingRow label="Allow connection requests" description="People can send you connection requests">
+            <SettingRow label="Accept connection requests" description="New people can ask to connect with you">
               <Toggle value={settings.allowConnectionRequests} onChange={(v) => update("allowConnectionRequests", v)} />
+            </SettingRow>
+            <SettingRow label="Show public profile" description="Your username and bio are visible on share links and the Globe">
+              <Toggle value={settings.showPublicProfile} onChange={(v) => update("showPublicProfile", v)} />
             </SettingRow>
           </Section>
 
           {/* Birthday */}
-          <Section title="Birthday visibility">
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-semibold mb-2">Who can see my birthday</p>
+          <Section title="Your birthday">
+            <SettingRow label="Birthday visibility" description="Controls who sees your birthday in Daymark">
+              <div className="w-[200px]">
                 <SegmentedControl
                   options={[
-                    { value: "nobody", label: "Nobody" },
+                    { value: "nobody", label: "Private" },
                     { value: "connections", label: "Friends" },
-                    { value: "all", label: "Everyone" },
+                    { value: "public_badge", label: "Globe" },
                   ]}
                   value={settings.birthdayVisibility}
                   onChange={(v) => update("birthdayVisibility", v)}
                 />
               </div>
-              <div>
-                <p className="text-sm font-semibold mb-1">Who can send me birthday wishes</p>
-                <p className="text-xs text-muted-foreground mb-2">Controls who sees your birthday wish wall</p>
-                <SegmentedControl
-                  options={[
-                    { value: "nobody", label: "Off" },
-                    { value: "connections", label: "Friends" },
-                    { value: "all", label: "Everyone" },
-                  ]}
-                  value={settings.birthdayWishPrivacy}
-                  onChange={(v) => update("birthdayWishPrivacy", v)}
-                />
-              </div>
-            </div>
+            </SettingRow>
+            <SettingRow label="Birthday wishes from connections" description="Friends can send you a wish on your birthday">
+              <Toggle value={settings.allowBirthdayWishesFromConnections} onChange={(v) => update("allowBirthdayWishesFromConnections", v)} />
+            </SettingRow>
+            <SettingRow label="Birthday wishes from Globe" description="Globe visitors can send a predefined birthday wish">
+              <Toggle value={settings.allowBirthdayWishesFromGlobe} onChange={(v) => update("allowBirthdayWishesFromGlobe", v)} />
+            </SettingRow>
           </Section>
 
           {/* Memory defaults */}
-          <Section title="Memory defaults">
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm font-semibold mb-2">Default memory visibility</p>
+          <Section title="New memory defaults">
+            <SettingRow label="Default memory visibility" description="Who sees memories you add (can be changed per memory)">
+              <div className="w-[200px]">
                 <SegmentedControl
                   options={[
                     { value: "private", label: "Private" },
@@ -182,38 +187,37 @@ export default function PrivacySettingsPage() {
                   onChange={(v) => update("defaultMemoryVisibility", v)}
                 />
               </div>
-            </div>
+            </SettingRow>
           </Section>
 
           {/* Globe defaults */}
-          <Section title="Memory Globe defaults">
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm font-semibold mb-2">Identity</p>
+          <Section title="Globe defaults">
+            <SettingRow label="Globe identity" description="How your name appears on the Globe">
+              <div className="w-[160px]">
                 <SegmentedControl
                   options={[
-                    { value: "username", label: "@username" },
                     { value: "anonymous", label: "Anonymous" },
+                    { value: "username", label: "@username" },
                   ]}
                   value={settings.defaultGlobeIdentity}
                   onChange={(v) => update("defaultGlobeIdentity", v)}
                 />
               </div>
-              <div>
-                <p className="text-sm font-semibold mb-2">Location precision</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {(["city", "region", "country", "hidden"] as const).map((l) => (
-                    <button
-                      key={l}
-                      onClick={() => update("defaultGlobeLocation", l)}
-                      className={`py-2 rounded-xl text-xs font-bold capitalize border transition-all ${settings.defaultGlobeLocation === l ? "bg-primary text-white border-primary" : "bg-white border-border text-foreground"}`}
-                    >
-                      {l}
-                    </button>
-                  ))}
-                </div>
+            </SettingRow>
+            <SettingRow label="Globe location detail" description="How precisely your location appears on the Globe">
+              <div className="w-[200px]">
+                <SegmentedControl
+                  options={[
+                    { value: "city", label: "City" },
+                    { value: "region", label: "Region" },
+                    { value: "country", label: "Country" },
+                    { value: "hidden", label: "Hidden" },
+                  ]}
+                  value={settings.defaultGlobeLocation}
+                  onChange={(v) => update("defaultGlobeLocation", v)}
+                />
               </div>
-            </div>
+            </SettingRow>
           </Section>
 
           <div className="bg-[#EAE3FF]/50 rounded-2xl p-4 text-xs text-primary font-medium leading-relaxed">
@@ -252,12 +256,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function SettingRow({ label, description, children }: { label: string; description?: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 pt-3 first:pt-0">
+    <div className="flex items-start justify-between gap-4 pt-3 first:pt-0">
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold">{label}</p>
         {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
       </div>
-      {children}
+      <div className="flex-shrink-0 pt-0.5">{children}</div>
     </div>
   );
 }

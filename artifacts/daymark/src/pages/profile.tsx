@@ -335,6 +335,46 @@ export default function ProfilePage() {
     },
   ];
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePhrase, setDeletePhrase] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/auth/export", { credentials: "include" });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `daymark-export-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silent
+    }
+    setExporting(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deletePhrase !== "delete my daymark") return;
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/auth/account", {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "x-confirm-delete": "yes" },
+      });
+      if (res.ok) {
+        await signOut({ redirectUrl: basePath || "/" });
+      }
+    } catch {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="min-h-[100dvh] bg-[#FFF9F5] text-foreground font-sans pb-32 overflow-x-hidden">
 
@@ -454,14 +494,29 @@ export default function ProfilePage() {
           </div>
         ))}
 
-        {/* Sign out */}
+        {/* Sign out + account actions */}
         <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
           <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="w-full flex items-center gap-3 px-5 py-4 text-foreground active:bg-muted transition-colors border-b border-border/50"
+          >
+            <span className="text-xl">📦</span>
+            <span className="font-bold text-sm flex-1 text-left">{exporting ? "Exporting…" : "Export My Data"}</span>
+          </button>
+          <button
             onClick={() => signOut({ redirectUrl: basePath || "/" })}
-            className="w-full flex items-center gap-3 px-5 py-4 text-red-500 active:bg-red-50 transition-colors"
+            className="w-full flex items-center gap-3 px-5 py-4 text-red-500 active:bg-red-50 transition-colors border-b border-border/50"
           >
             <LogOut className="w-5 h-5" />
             <span className="font-bold text-sm">Sign Out</span>
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="w-full flex items-center gap-3 px-5 py-4 text-red-400 active:bg-red-50 transition-colors"
+          >
+            <span className="text-xl">🗑️</span>
+            <span className="font-bold text-sm">Delete My Daymark</span>
           </button>
         </div>
 
@@ -471,6 +526,44 @@ export default function ProfilePage() {
       </div>
 
       <EditProfileSheet open={showEdit} onClose={() => setShowEdit(false)} dbUser={dbUser} />
+
+      {/* Account deletion confirmation */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center p-4" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
+              <span className="text-2xl">🗑️</span>
+            </div>
+            <h2 className="text-xl font-extrabold text-foreground mb-1">Delete My Daymark</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+              This permanently deletes all your memories, people, messages, future gifts, and public Globe content. <strong>This cannot be undone.</strong>
+            </p>
+            <p className="text-xs font-bold text-foreground mb-2">
+              Type <span className="text-red-500 font-extrabold">delete my daymark</span> to confirm:
+            </p>
+            <input
+              type="text"
+              value={deletePhrase}
+              onChange={(e) => setDeletePhrase(e.target.value.toLowerCase())}
+              placeholder="delete my daymark"
+              className="w-full border border-border rounded-xl px-4 py-3 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-red-300"
+            />
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deletePhrase !== "delete my daymark" || deleting}
+              className="w-full h-12 bg-red-500 text-white rounded-full font-bold text-sm disabled:opacity-40 transition-all active:scale-95"
+            >
+              {deleting ? "Deleting…" : "Permanently Delete Account"}
+            </button>
+            <button
+              onClick={() => { setShowDeleteConfirm(false); setDeletePhrase(""); }}
+              className="w-full mt-3 text-sm text-muted-foreground font-medium py-2"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

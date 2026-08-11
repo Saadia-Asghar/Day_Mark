@@ -1,6 +1,7 @@
 import express, { type Express } from 'express';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
+import rateLimit from 'express-rate-limit';
 import { clerkMiddleware } from '@clerk/express';
 import { publishableKeyFromHost } from '@clerk/shared/keys';
 import router from './routes';
@@ -51,6 +52,31 @@ app.use(
     ),
   })),
 );
+
+// ── Rate limiting ────────────────────────────────────────────────────────────
+// Broad API limit — 300 req/min per IP
+app.use('/api', rateLimit({
+  windowMs: 60_000,
+  max: 300,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please slow down.' },
+}));
+
+// Tight limit for auth-adjacent + write-heavy endpoints
+const strictLimit = rateLimit({
+  windowMs: 60_000,
+  max: 20,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Rate limit exceeded.' },
+});
+app.use('/api/connections', strictLimit);
+app.use('/api/invites', strictLimit);
+app.use('/api/drops', strictLimit);
+app.use('/api/auth/account', strictLimit);
+app.use('/api/users/search', rateLimit({ windowMs: 60_000, max: 40, standardHeaders: 'draft-7', legacyHeaders: false }));
+app.use('/api/globe/reactions', rateLimit({ windowMs: 60_000, max: 30, standardHeaders: 'draft-7', legacyHeaders: false }));
 
 app.use('/api', router);
 

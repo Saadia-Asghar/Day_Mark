@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, index, jsonb, pgTable, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { boolean, index, jsonb, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core';
 
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const sessionsTable = pgTable(
@@ -35,6 +35,21 @@ export const usersTable = pgTable('users', {
   // ── Privacy ─────────────────────────────────────────────────────────────
   discoverableByUsername: boolean('discoverable_by_username').notNull().default(true),
   discoverableByEmail: boolean('discoverable_by_email').notNull().default(false),
+  allowConnectionRequests: boolean('allow_connection_requests').notNull().default(true),
+  /** nobody | connections | public_badge */
+  birthdayVisibility: varchar('birthday_visibility', { length: 30 }).notNull().default('nobody'),
+  allowBirthdayWishesFromConnections: boolean('allow_birthday_wishes_connections').notNull().default(true),
+  allowBirthdayWishesFromGlobe: boolean('allow_birthday_wishes_globe').notNull().default(false),
+  /** private | connections | public */
+  defaultMemoryVisibility: varchar('default_memory_visibility', { length: 20 }).notNull().default('private'),
+  /** anonymous | username */
+  defaultGlobeIdentity: varchar('default_globe_identity', { length: 20 }).notNull().default('anonymous'),
+  /** city | region | country | hidden */
+  defaultGlobeLocation: varchar('default_globe_location', { length: 20 }).notNull().default('city'),
+  showPublicProfile: boolean('show_public_profile').notNull().default(false),
+
+  // ── Notification preferences (JSON map of toggle keys → boolean) ─────
+  notificationSettings: jsonb('notification_settings').$type<Record<string, boolean>>().default({}),
 
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()

@@ -16,3 +16,4 @@ export * from "./relationship-events";
 export * from "./birthday-wishes";
 export * from "./invites";
 export * from "./monthly-capsules";
+export * from "./relationship-event-reminders";

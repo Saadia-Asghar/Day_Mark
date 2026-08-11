@@ -13,7 +13,7 @@ import { and, eq, lte, or, sql } from "drizzle-orm";
 import {
   db, pool, scheduledMessagesTable, notificationsTable, usersTable,
   relationshipEventsTable, monthlyCapsulesTable, memoriesTable,
-  relationshipStreaksTable,
+  relationshipStreaksTable, relationshipEventRemindersTable,
 } from "@workspace/db";
 import { emitToUser } from "../routes/events";
 import pino from "pino";
@@ -140,14 +140,37 @@ async function processBirthdayReminders() {
       }
 
       try {
+        // Insert into relationship_event_reminders for proper tracking + dedup
+        const scheduledFor = new Date(nextDate);
+        scheduledFor.setHours(9, 0, 0, 0); // Deliver at 9am local-ish
+
+        const inserted = await db
+          .insert(relationshipEventRemindersTable)
+          .values({
+            eventId: ev.id,
+            userId: ev.ownerUserId,
+            reminderType: `${days}_day`,
+            scheduledFor,
+            status: "sent",
+            dedupeKey: dedupKey,
+            sentAt: now,
+          })
+          .onConflictDoNothing()
+          .returning();
+
+        // Only emit notification if we actually inserted (not a duplicate)
+        if (inserted.length === 0) continue;
+
         await db.insert(notificationsTable).values({
           userId: ev.ownerUserId,
           type: days === 0 ? "birthday_today" : "birthday_upcoming",
           title,
           message,
-          // @ts-ignore — dedup_key column exists after migration
-          dedup_key: dedupKey,
-        }).onConflictDoNothing();
+          dedupeKey: dedupKey,
+        } as any).onConflictDoNothing();
+
+        emitToUser(ev.ownerUserId, "reminder.birthday", { eventId: ev.id, daysUntil: days, title });
+
       } catch { /* dedup collision — already sent */ }
     }
   }
