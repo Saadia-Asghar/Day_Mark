@@ -16,7 +16,21 @@ import {
   relationshipStreaksTable, relationshipEventRemindersTable,
 } from "@workspace/db";
 import { emitToUser } from "../routes/events";
+import {
+  sendBirthdayReminder,
+  sendCapsuleReady,
+  sendScheduledMessageArrived,
+} from "./email";
 import pino from "pino";
+
+// Base URL for links inside emails (falls back gracefully in local dev)
+const APP_URL = (() => {
+  const domain = process.env.REPLIT_DEV_DOMAIN;
+  if (domain) return `https://${domain}/daymark`;
+  const raw = process.env.APP_URL;
+  if (raw) return raw;
+  return "https://daymark.app"; // production fallback
+})();
 
 const logger = pino({ name: "scheduler" });
 const POLL_INTERVAL_MS = 60_000;
@@ -61,6 +75,17 @@ async function processDueMessages() {
       await db.update(scheduledMessagesTable).set({ status: "sent", sentAt: now }).where(eq(scheduledMessagesTable.id, msg.id));
 
       emitToUser(msg.recipientUserId, "scheduledMessage.received", { id: msg.id });
+
+      // Send email notification to recipient if they have an email address
+      if (recipient.email) {
+        await sendScheduledMessageArrived({
+          to: recipient.email,
+          recipientFirstName: recipient.firstName ?? "there",
+          senderFirstName: sender.firstName ?? "Someone",
+          messageTitle: msg.title ?? "A message for you",
+          appUrl: `${APP_URL}/messages`,
+        });
+      }
 
       // Yearly repeat
       if (msg.repeatType === "yearly") {
@@ -171,6 +196,18 @@ async function processBirthdayReminders() {
 
         emitToUser(ev.ownerUserId, "reminder.birthday", { eventId: ev.id, daysUntil: days, title });
 
+        // Send email reminder to the event owner
+        const owner = await db.query.usersTable.findFirst({ where: eq(usersTable.id, ev.ownerUserId) });
+        if (owner?.email) {
+          await sendBirthdayReminder({
+            to: owner.email,
+            recipientFirstName: owner.firstName ?? "there",
+            eventTitle: ev.title,
+            daysUntil: days,
+            appUrl: `${APP_URL}/people`,
+          });
+        }
+
       } catch { /* dedup collision — already sent */ }
     }
   }
@@ -261,6 +298,19 @@ async function processMonthlyCapsulesIfNeeded() {
       }).onConflictDoNothing();
 
       emitToUser(userId, "monthlyCapsule.ready", { year, month });
+
+      // Send email to the user
+      const user = await db.query.usersTable.findFirst({ where: eq(usersTable.id, userId) });
+      if (user?.email) {
+        await sendCapsuleReady({
+          to: user.email,
+          recipientFirstName: user.firstName ?? "there",
+          monthName,
+          year,
+          memoriesCount: memories.length,
+          capsuleUrl: `${APP_URL}/capsule`,
+        });
+      }
 
       logger.info({ userId, year, month }, "Monthly capsule generated");
     } catch (err) {
