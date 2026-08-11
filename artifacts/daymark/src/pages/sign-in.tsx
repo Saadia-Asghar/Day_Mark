@@ -180,6 +180,13 @@ export default function SignInPage() {
         New to Daymark?{" "}
         <Link href="/sign-up"><span className="text-primary font-bold">Create your Daymark</span></Link>
       </p>
+
+      <p className="text-center text-xs text-muted-foreground mt-3 leading-relaxed">
+        By continuing, you agree to our{" "}
+        <Link href="/terms"><span className="text-primary font-semibold underline-offset-2 hover:underline cursor-pointer">Terms</span></Link>
+        {" "}and{" "}
+        <Link href="/privacy"><span className="text-primary font-semibold underline-offset-2 hover:underline cursor-pointer">Privacy Policy</span></Link>.
+      </p>
     </div>
   );
 }

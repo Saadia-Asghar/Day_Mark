@@ -299,6 +299,12 @@ export default function SignUpPage() {
               Already have a Daymark?{" "}
               <Link href="/sign-in"><span className="text-primary font-bold">Sign in</span></Link>
             </p>
+            <p className="text-center text-xs text-muted-foreground mt-3 leading-relaxed">
+              By continuing, you agree to our{" "}
+              <Link href="/terms"><span className="text-primary font-semibold underline-offset-2 hover:underline cursor-pointer">Terms</span></Link>
+              {" "}and{" "}
+              <Link href="/privacy"><span className="text-primary font-semibold underline-offset-2 hover:underline cursor-pointer">Privacy Policy</span></Link>.
+            </p>
           </motion.div>
         )}
 
@@ -342,6 +348,13 @@ export default function SignUpPage() {
                   className="text-muted-foreground font-medium">Change email</button>
               </div>
             </form>
+
+            <p className="text-center text-xs text-muted-foreground mt-5 leading-relaxed">
+              By continuing, you agree to our{" "}
+              <Link href="/terms"><span className="text-primary font-semibold underline-offset-2 hover:underline cursor-pointer">Terms</span></Link>
+              {" "}and{" "}
+              <Link href="/privacy"><span className="text-primary font-semibold underline-offset-2 hover:underline cursor-pointer">Privacy Policy</span></Link>.
+            </p>
           </motion.div>
         )}
       </AnimatePresence>

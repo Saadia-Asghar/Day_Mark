@@ -111,8 +111,9 @@ export default function AuthPage() {
         )}
         <p className="text-center text-xs text-muted-foreground mt-1 leading-relaxed">
           By continuing, you agree to our{" "}
-          <span className="text-primary font-semibold">Terms</span> and{" "}
-          <span className="text-primary font-semibold">Privacy Policy</span>.
+          <Link href="/terms"><span className="text-primary font-semibold underline-offset-2 hover:underline cursor-pointer">Terms</span></Link>
+          {" "}and{" "}
+          <Link href="/privacy"><span className="text-primary font-semibold underline-offset-2 hover:underline cursor-pointer">Privacy Policy</span></Link>.
         </p>
       </motion.div>
     </div>

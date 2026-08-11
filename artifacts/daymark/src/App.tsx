@@ -407,6 +407,8 @@ function ClerkProviderWithRoutes() {
       appearance={clerkAppearance}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
+      termsUrl={`${basePath}/terms`}
+      privacyPolicyUrl={`${basePath}/privacy`}
       localization={{
         signIn: {
           start: {

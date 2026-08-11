@@ -1,7 +1,7 @@
 /**
  * /privacy — Daymark Privacy Policy
+ * Public route — no authentication required.
  */
-import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -14,11 +14,13 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
 export default function PrivacyPage() {
   return (
     <div className="min-h-[100dvh] bg-[#FFF9F5] px-5 pt-14 pb-20 max-w-2xl mx-auto">
-      <Link href="/landing">
-        <button className="w-9 h-9 rounded-full bg-white border border-border shadow-sm flex items-center justify-center mb-6 active:scale-95 transition-all">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-      </Link>
+      <button
+        onClick={() => window.history.length > 1 ? window.history.back() : (window.location.href = "/")}
+        aria-label="Back"
+        className="w-9 h-9 rounded-full bg-white border border-border shadow-sm flex items-center justify-center mb-6 active:scale-95 transition-all"
+      >
+        <ArrowLeft className="w-4 h-4" />
+      </button>
 
       <div className="mb-8">
         <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-sm mb-4">
