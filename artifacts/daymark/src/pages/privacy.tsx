@@ -91,7 +91,9 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="Contact">
-        <p>Questions about your data? Reach us at <span className="text-primary font-semibold">privacy@daymark.app</span>.</p>
+        <p>Questions about your data? Reach us at{" "}
+          <a href="mailto:hellodaymark.app@gmail.com" className="text-primary font-semibold underline-offset-2 hover:underline">hellodaymark.app@gmail.com</a>.
+        </p>
       </Section>
     </div>
   );

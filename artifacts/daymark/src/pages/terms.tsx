@@ -80,7 +80,9 @@ export default function TermsPage() {
       </Section>
 
       <Section title="Contact">
-        <p>Questions? Reach us at <span className="text-primary font-semibold">hello@daymark.app</span>.</p>
+        <p>Questions? Reach us at{" "}
+          <a href="mailto:hellodaymark.app@gmail.com" className="text-primary font-semibold underline-offset-2 hover:underline">hellodaymark.app@gmail.com</a>.
+        </p>
       </Section>
     </div>
   );
