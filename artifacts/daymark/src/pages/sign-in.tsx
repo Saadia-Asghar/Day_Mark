@@ -12,6 +12,8 @@ const REMEMBER_EMAIL_KEY = "daymark_remembered_email";
 
 function friendlyError(message: string): string {
   const m = message?.toLowerCase() ?? "";
+  if (m.includes("rate limit") || m.includes("too many") || m.includes("email rate"))
+    return "Too many attempts — please wait a few minutes and try again.";
   if (m.includes("invalid login") || m.includes("invalid credentials") || m.includes("wrong password"))
     return "That password doesn't match. Try again or reset it.";
   if (m.includes("user not found") || m.includes("no user"))

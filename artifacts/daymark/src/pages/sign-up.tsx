@@ -24,6 +24,8 @@ function friendlyError(message: string): string {
     return "Please choose a stronger password (at least 8 characters).";
   if (m.includes("valid email"))
     return "Please enter a valid email address.";
+  if (m.includes("rate limit") || m.includes("too many") || m.includes("email rate"))
+    return "Too many sign-up attempts — please wait a few minutes and try again.";
   return message || "Something went wrong. Please try again.";
 }
 
