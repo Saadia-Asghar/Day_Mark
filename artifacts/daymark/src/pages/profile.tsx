@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppAuth } from "@/App";
 import {
@@ -10,6 +10,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useUpload } from "@workspace/object-storage-web";
+import { PENDING_EMAIL_KEY } from "@/pages/auth-callback";
+
+/** Shape stored in localStorage while a user's email change is awaiting confirmation. */
+interface PendingEmailChange { email: string; ts: number; }
 
 // ── Edit Profile Sheet ───────────────────────────────────────────────────
 function EditProfileSheet({ open, onClose, dbUser }: {
@@ -325,6 +329,9 @@ function EditProfileSheet({ open, onClose, dbUser }: {
                               setEmailError(error.message || "Couldn't send confirmation. Try again.");
                             }
                           } else {
+                            // Persist pending state so the banner survives page reloads
+                            const pending: PendingEmailChange = { email: newEmail, ts: Date.now() };
+                            localStorage.setItem(PENDING_EMAIL_KEY, JSON.stringify(pending));
                             setEmailSent(true);
                           }
                         }}
@@ -358,6 +365,8 @@ function EditProfileSheet({ open, onClose, dbUser }: {
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
   const { user, signOut } = useAppAuth();
+  const { toast } = useToast();
+  const search = useSearch();
   const { data: memories } = useListMemories({});
   const { data: people } = useListPeople();
   const { data: futureGifts } = useListFutureGifts();
@@ -367,6 +376,44 @@ export default function ProfilePage() {
     id: number; type: string; title: string; eventMonth: number; eventDay: number;
     daysUntil: number; nextDate: string;
   }>>([]);
+
+  // ── Pending email change banner ───────────────────────────────────────────
+  const [pendingEmail, setPendingEmail] = useState<PendingEmailChange | null>(() => {
+    try {
+      const raw = localStorage.getItem(PENDING_EMAIL_KEY);
+      if (!raw) return null;
+      const parsed: PendingEmailChange = JSON.parse(raw);
+      // Expire after 24 hours (matches Supabase link expiry)
+      if (Date.now() - parsed.ts > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem(PENDING_EMAIL_KEY);
+        return null;
+      }
+      return parsed;
+    } catch { return null; }
+  });
+  const [resendingEmail, setResendingEmail] = useState(false);
+
+  // Show success toast when arriving back from email-confirmation link
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    if (params.get("emailConfirmed") === "1") {
+      toast({ title: "Email updated ✓", description: "Your new email address is now active." });
+      setPendingEmail(null);
+      // Clean the query param without a full reload
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [search, toast]);
+
+  // Listen for Supabase USER_UPDATED event (email confirmed in another tab)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "USER_UPDATED") {
+        localStorage.removeItem(PENDING_EMAIL_KEY);
+        setPendingEmail(null);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     fetch("/api/daylinks", { credentials: "include" })
@@ -464,6 +511,49 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#FFF9F5] text-foreground font-sans pb-32 overflow-x-hidden">
+
+      {/* Pending email change banner */}
+      <AnimatePresence>
+        {pendingEmail && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="sticky top-0 z-50 bg-amber-50 border-b border-amber-200 px-5 py-3 flex items-start gap-3"
+          >
+            <Mail className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-amber-800">Confirm your new email 💌</p>
+              <p className="text-xs text-amber-700 truncate">
+                Check <span className="font-semibold">{pendingEmail.email}</span> and click the link to finish changing your address.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={async () => {
+                  setResendingEmail(true);
+                  await supabase.auth.resend({ type: "email_change", email: user?.email ?? "" });
+                  setResendingEmail(false);
+                  toast({ title: "Resent ✓", description: "Check your inbox again." });
+                }}
+                disabled={resendingEmail}
+                className="text-[11px] font-bold text-amber-700 underline underline-offset-1"
+              >
+                {resendingEmail ? "Sending…" : "Resend"}
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.removeItem(PENDING_EMAIL_KEY);
+                  setPendingEmail(null);
+                }}
+                className="text-amber-500 hover:text-amber-700"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Hero */}
       <div className="bg-white border-b border-border/50 pt-14 pb-8 px-5 relative overflow-hidden">

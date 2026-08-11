@@ -24,6 +24,9 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 /** Session-storage key used to authorise the reset-password page. */
 export const RECOVERY_FLAG = "daymark_recovery_mode";
 
+/** localStorage key — set when a user initiates an email change, cleared on confirmation. */
+export const PENDING_EMAIL_KEY = "daymark_pending_email_change";
+
 export default function AuthCallbackPage() {
   const [, setLocation] = useLocation();
   const search = useSearch();
@@ -52,6 +55,15 @@ export default function AuthCallbackPage() {
         sessionStorage.setItem(RECOVERY_FLAG, "1");
         clearTimeout(timer);
         setLocation("/reset-password");
+        return;
+      }
+
+      if (event === "USER_UPDATED" && session) {
+        // Fired when a user confirms an email-change link.
+        // Clear the pending-email banner and send them back to their profile.
+        clearTimeout(timer);
+        localStorage.removeItem(PENDING_EMAIL_KEY);
+        setLocation("/profile?emailConfirmed=1");
         return;
       }
 
