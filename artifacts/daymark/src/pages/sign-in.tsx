@@ -4,7 +4,7 @@
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
 import { Link, useLocation } from "wouter";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { DaymarkCharacter } from "@/components/daymark-character";
 
@@ -35,10 +35,22 @@ export default function SignInPage() {
   const [rememberMe, setRememberMe] = useState(savedEmail !== "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isUnverified, setIsUnverified] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
+
+  const handleResendVerification = async () => {
+    setResendLoading(true);
+    const { error } = await supabase.auth.resend({ type: "signup", email: email.trim() });
+    setResendLoading(false);
+    if (!error) setResendSent(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsUnverified(false);
+    setResendSent(false);
     setLoading(true);
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -47,6 +59,9 @@ export default function SignInPage() {
       });
 
       if (signInError) {
+        if (signInError.message.toLowerCase().includes("email not confirmed")) {
+          setIsUnverified(true);
+        }
         setError(friendlyError(signInError.message));
       } else {
         if (rememberMe) {
@@ -139,10 +154,24 @@ export default function SignInPage() {
 
         {error && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-sm text-red-600 font-medium">
-            {error}
+            className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-sm text-red-600 font-medium space-y-1.5">
+            <p>{error}</p>
             {error.includes("couldn't find") && (
-              <> <Link href="/sign-up"><span className="text-primary font-bold underline">Create an account</span></Link></>
+              <Link href="/sign-up"><span className="text-primary font-bold underline">Create an account</span></Link>
+            )}
+            {isUnverified && !resendSent && (
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resendLoading}
+                className="flex items-center gap-1.5 text-primary font-bold underline text-sm"
+              >
+                {resendLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                Resend verification email
+              </button>
+            )}
+            {resendSent && (
+              <p className="text-emerald-600 font-semibold">✓ Verification email sent — check your inbox 💌</p>
             )}
           </motion.div>
         )}

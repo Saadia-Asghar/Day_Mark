@@ -5,7 +5,7 @@ import { useAppAuth } from "@/App";
 import {
   useListMemories, useListPeople, useListFutureGifts,
 } from "@workspace/api-client-react";
-import { ChevronRight, LogOut, X, Check, Camera, Loader2 } from "lucide-react";
+import { ChevronRight, LogOut, X, Check, Camera, Loader2, Mail } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -30,6 +30,13 @@ function EditProfileSheet({ open, onClose, dbUser }: {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoObjectPath, setPhotoObjectPath] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Email update state ────────────────────────────────────────────────────
+  const [showEmailUpdate, setShowEmailUpdate] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const { uploadFile, isUploading } = useUpload({
     onSuccess: (response) => {
@@ -237,15 +244,101 @@ function EditProfileSheet({ open, onClose, dbUser }: {
                 />
               </div>
 
-              {/* Email (read-only) */}
-              {appUser?.email && (
-                <div>
-                  <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest block mb-1.5">Email</label>
-                  <div className="h-11 bg-muted/50 border border-border/50 rounded-xl px-3 flex items-center">
-                    <span className="text-sm text-muted-foreground">{appUser.email}</span>
+              {/* Email — view + update */}
+              <div>
+                <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest block mb-1.5">Email address</label>
+                {!showEmailUpdate ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-11 bg-muted/50 border border-border/50 rounded-xl px-3 flex items-center min-w-0">
+                      <span className="text-sm text-muted-foreground truncate">{appUser?.email}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setShowEmailUpdate(true); setEmailSent(false); setEmailError(null); setNewEmail(""); }}
+                      className="shrink-0 h-11 px-3 border border-border rounded-xl text-xs font-bold text-primary bg-white active:scale-95 transition-all"
+                    >
+                      Change
+                    </button>
                   </div>
-                </div>
-              )}
+                ) : emailSent ? (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-700 font-medium flex items-start gap-2">
+                    <Mail className="w-4 h-4 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-bold">Confirmation email sent 💌</p>
+                      <p className="text-xs text-emerald-600 mt-0.5">
+                        Click the link in your new inbox to confirm the change to <span className="font-semibold">{newEmail}</span>.
+                        Your current email stays active until confirmed.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => { setShowEmailUpdate(false); setEmailSent(false); }}
+                        className="text-xs text-emerald-700 underline mt-1"
+                      >
+                        Got it
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      value={newEmail}
+                      onChange={e => { setNewEmail(e.target.value); setEmailError(null); }}
+                      placeholder="New email address"
+                      className="w-full h-11 bg-white border border-border rounded-xl px-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                    {emailError && (
+                      <p className="text-xs text-red-500">{emailError}</p>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setShowEmailUpdate(false); setEmailError(null); }}
+                        className="flex-1 h-10 border border-border rounded-xl text-sm font-bold text-foreground bg-white active:scale-95 transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={emailSending || !newEmail}
+                        onClick={async () => {
+                          if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+                            setEmailError("Please enter a valid email address.");
+                            return;
+                          }
+                          if (newEmail === appUser?.email) {
+                            setEmailError("That's already your current email.");
+                            return;
+                          }
+                          setEmailSending(true);
+                          setEmailError(null);
+                          const { error } = await supabase.auth.updateUser({ email: newEmail });
+                          setEmailSending(false);
+                          if (error) {
+                            const m = error.message.toLowerCase();
+                            if (m.includes("already registered") || m.includes("already in use")) {
+                              setEmailError("That email already has a Daymark.");
+                            } else if (m.includes("invalid")) {
+                              setEmailError("Please enter a valid email address.");
+                            } else {
+                              setEmailError(error.message || "Couldn't send confirmation. Try again.");
+                            }
+                          } else {
+                            setEmailSent(true);
+                          }
+                        }}
+                        className="flex-1 h-10 bg-primary text-white rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(104,71,245,0.2)] active:scale-95 disabled:opacity-60 transition-all"
+                      >
+                        {emailSending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send confirmation"}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      A confirmation link will be sent to your new email. Your current address stays active until confirmed.
+                    </p>
+                  </div>
+                )}
+              </div>
 
               <button
                 onClick={handleSave}

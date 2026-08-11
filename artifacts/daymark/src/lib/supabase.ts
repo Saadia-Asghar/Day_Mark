@@ -16,16 +16,24 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
  * Sync the Supabase access token into a first-party cookie.
  * This lets existing `fetch(..., { credentials: 'include' })` calls reach the
  * Express API server without changing every call site.
+ *
+ * Cookie flags:
+ * - SameSite=Lax  (not Strict) — Strict breaks top-level navigations from
+ *   external origins such as email verification/reset links. Lax allows
+ *   cross-site GET navigations while still blocking cross-site POST/AJAX.
+ * - Secure         — set automatically on HTTPS (required for deployed app).
+ * - path=/         — all API routes share the same cookie.
+ * Note: this cookie cannot be HttpOnly because it is written by JS. The API
+ * also accepts the Bearer token directly, so the cookie is a convenience layer.
  */
 export function syncAuthCookie(accessToken: string | null, expiresIn?: number): void {
   if (typeof document === 'undefined') return;
-  // Add Secure flag on HTTPS to prevent cookie exposure over plain HTTP
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
   if (accessToken) {
     const maxAge = expiresIn ?? 3600;
-    document.cookie = `sb-token=${encodeURIComponent(accessToken)}; path=/; max-age=${maxAge}; SameSite=Strict${secure}`;
+    document.cookie = `sb-token=${encodeURIComponent(accessToken)}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
   } else {
-    document.cookie = `sb-token=; path=/; max-age=0; SameSite=Strict${secure}`;
+    document.cookie = `sb-token=; path=/; max-age=0; SameSite=Lax${secure}`;
   }
 }
 
