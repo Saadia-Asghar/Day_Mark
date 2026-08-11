@@ -3,7 +3,7 @@ import { useRoute, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGetMemory, useKeepMemoryClose, useListMemories } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { ArrowLeft, Heart, MapPin, Calendar, Share, Loader2, Image as ImageIcon, Globe2, X, Check, Copy, StickerIcon } from "lucide-react";
+import { ArrowLeft, Heart, MapPin, Calendar, Share, Loader2, Image as ImageIcon, Globe2, X, Check, Copy, StickerIcon, MessageCircle, Camera } from "lucide-react";
 import { AnimatePresence as AP2, motion as m2 } from "framer-motion";
 import { ShareCardRenderer } from "@/components/share-card-renderer";
 import { DmCategoryTag, DmErrorState } from "@/components/daymark";
@@ -138,7 +138,7 @@ export default function GiftDetailPage() {
   const handleWhatsApp = () => {
     setShowShareSheet(false);
     const text = encodeURIComponent(
-      `Found this little gift from the past 💜\n${memory.title} · ${format(new Date(memory.date), "MMM d, yyyy")}\nShared from Daymark`
+      `"${memory.title}" · ${format(new Date(memory.date), "MMM d, yyyy")}\nShared from Daymark`
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
@@ -159,7 +159,7 @@ export default function GiftDetailPage() {
       });
       setGlobePublished(true);
       setShowGlobeSheet(false);
-      toast({ title: "Added to Memory Globe 🌍", description: "Your little moment is out there." });
+      toast({ title: "Added to Memory Globe", description: "Your little moment is out there." });
     } catch {
       toast({ title: "Couldn't publish", variant: "destructive" });
     }
@@ -234,7 +234,7 @@ export default function GiftDetailPage() {
                 transition={{ duration: 2, repeat: Infinity }}
                 className="mt-12 text-sm font-bold tracking-widest uppercase text-muted-foreground"
               >
-                Tap to unwrap ✨
+                Tap to unwrap
               </motion.p>
             )}
           </motion.div>
@@ -467,7 +467,7 @@ export default function GiftDetailPage() {
                   className="w-full flex items-center gap-4 px-4 py-4 bg-white rounded-2xl border border-border shadow-sm active:scale-[0.98] transition-all"
                 >
                   <div className="w-10 h-10 rounded-xl bg-[#dcfce7] flex items-center justify-center">
-                    <span className="text-xl">💬</span>
+                    <MessageCircle className="w-5 h-5 text-green-600" />
                   </div>
                   <div className="text-left">
                     <p className="font-bold text-sm">WhatsApp</p>
@@ -491,7 +491,7 @@ export default function GiftDetailPage() {
                   className="w-full flex items-center gap-4 px-4 py-4 bg-white rounded-2xl border border-border shadow-sm active:scale-[0.98] transition-all"
                 >
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FFE4B5] to-[#FF7BA9] flex items-center justify-center">
-                    <span className="text-xl">📸</span>
+                    <Camera className="w-5 h-5 text-white" />
                   </div>
                   <div className="text-left">
                     <p className="font-bold text-sm">Create Share Card</p>
@@ -506,7 +506,7 @@ export default function GiftDetailPage() {
                     <Globe2 className="w-5 h-5 text-[#6847F5]" />
                   </div>
                   <div className="text-left flex-1">
-                    <p className="font-bold text-sm">Memory Globe 🌍</p>
+                    <p className="font-bold text-sm">Memory Globe</p>
                     <p className="text-xs text-muted-foreground">Let this moment travel the world</p>
                   </div>
                   {globePublished && <span className="text-[10px] font-bold text-primary bg-[#EAE3FF] px-2 py-0.5 rounded-full">Live</span>}
@@ -556,7 +556,7 @@ export default function GiftDetailPage() {
               </div>
               <div className="flex items-center justify-between px-5 py-4 border-b border-border/40 shrink-0">
                 <div>
-                  <h2 className="font-extrabold text-base">Add to Memory Globe 🌍</h2>
+                  <h2 className="font-extrabold text-base">Add to Memory Globe</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">Let this little moment travel.</p>
                 </div>
                 <button onClick={() => setShowGlobeSheet(false)} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
@@ -614,7 +614,7 @@ export default function GiftDetailPage() {
                 </div>
 
                 <div className="bg-[#EAE3FF]/60 rounded-2xl p-4 text-xs text-primary font-medium leading-relaxed">
-                  ✨ This memory stays on the Globe until you remove it from your profile.
+                  This memory stays on the Globe until you remove it from your profile.
                 </div>
 
                 <button

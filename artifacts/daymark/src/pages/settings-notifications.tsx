@@ -36,15 +36,15 @@ const DEFAULT: NotifSettings = {
   globeReactions: false,
 };
 
-const NOTIF_CONFIG: { key: NotifKey; label: string; description: string; emoji: string }[] = [
-  { key: "daylinkReminder", emoji: "🎀", label: "Daylink reminder", description: "One nudge per relationship when you haven't added a moment today" },
-  { key: "birthdayReminder", emoji: "🎂", label: "Birthday reminder", description: "Remind me a day before someone's birthday" },
-  { key: "memoryAnniversaries", emoji: "✨", label: "Memory anniversaries", description: "When this day matches a memory from the past" },
-  { key: "futureGiftReady", emoji: "🎁", label: "Future Gift ready", description: "When a scheduled memory unlocks" },
-  { key: "messagesForLater", emoji: "💌", label: "Messages for Later", description: "When a scheduled message arrives" },
-  { key: "connectionRequests", emoji: "💜", label: "Connection requests", description: "When someone wants to connect with you" },
-  { key: "memoryDrop", emoji: "🫧", label: "Memory Drops", description: "When someone drops you a little moment" },
-  { key: "globeReactions", emoji: "🌍", label: "Globe reactions", description: "When someone reacts to your Globe memory" },
+const NOTIF_CONFIG: { key: NotifKey; label: string; description: string; color: string }[] = [
+  { key: "daylinkReminder",    color: "#FF6B9D", label: "Daylink reminder",       description: "One nudge per relationship when you haven't added a moment today" },
+  { key: "birthdayReminder",   color: "#F43F5E", label: "Birthday reminder",      description: "Remind me a day before someone's birthday" },
+  { key: "memoryAnniversaries",color: "#6847F5", label: "Memory anniversaries",   description: "When this day matches a memory from the past" },
+  { key: "futureGiftReady",    color: "#F59E0B", label: "Future Gift ready",       description: "When a scheduled memory unlocks" },
+  { key: "messagesForLater",   color: "#EC4899", label: "Messages for Later",      description: "When a scheduled message arrives" },
+  { key: "connectionRequests", color: "#6847F5", label: "Connection requests",     description: "When someone wants to connect with you" },
+  { key: "memoryDrop",         color: "#06B6D4", label: "Memory Drops",            description: "When someone drops you a little moment" },
+  { key: "globeReactions",     color: "#10B981", label: "Globe reactions",          description: "When someone reacts to your Globe memory" },
 ];
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
@@ -98,7 +98,7 @@ export default function NotificationSettingsPage() {
         body: JSON.stringify(settings),
       });
       if (!res.ok) throw new Error("Server error");
-      toast({ title: "Notification preferences saved 🔔" });
+      toast({ title: "Notification preferences saved" });
     } catch {
       toast({ title: "Couldn't save", variant: "destructive" });
     }
@@ -126,9 +126,11 @@ export default function NotificationSettingsPage() {
           className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden"
         >
           <div className="divide-y divide-border/40">
-            {NOTIF_CONFIG.map(({ key, emoji, label, description }) => (
+            {NOTIF_CONFIG.map(({ key, color, label, description }) => (
               <div key={key} className="flex items-center gap-4 px-5 py-4">
-                <span className="text-xl flex-shrink-0">{emoji}</span>
+                <div className="w-8 h-8 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: `${color}18` }}>
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold">{label}</p>
                   <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{description}</p>
@@ -140,7 +142,7 @@ export default function NotificationSettingsPage() {
         </motion.div>
 
         <div className="bg-[#EAE3FF]/50 rounded-2xl p-4 text-xs text-primary font-medium leading-relaxed">
-          🔔 Daylink reminders fire at most once per relationship per day. Your preferences are saved to your account, not just this device.
+          Daylink reminders fire at most once per relationship per day. Your preferences are saved to your account, not just this device.
         </div>
 
         <button

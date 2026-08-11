@@ -80,7 +80,7 @@ function PortraitCard({ conn }: { conn: Connection }) {
 
         {/* Daylink ribbon */}
         <div className="absolute bottom-2 right-2 text-[10px] font-bold text-[#6847F5] bg-[#EAE3FF] px-2 py-0.5 rounded-full">
-          Daylink ✨
+          Daylink
         </div>
       </div>
     </motion.div>
@@ -113,7 +113,7 @@ function InvitationCard({ conn, onAccept, onDecline, accepting }: {
             <p className="text-[11px] text-primary font-semibold">@{conn.requester.username}</p>
           )}
           <p className="text-xs text-muted-foreground mt-1 italic" style={{ fontFamily: "Georgia, serif" }}>
-            "I'd love to connect on Daymark 💜"
+            "I'd love to connect on Daymark"
           </p>
         </div>
       </div>
@@ -186,7 +186,7 @@ export default function ConnectionsPage() {
         credentials: "include", body: JSON.stringify({ recipientUserId: userId }),
       });
       if (res.ok) {
-        toast({ title: "Connection request sent 💜" });
+        toast({ title: "Connection request sent" });
         setSearchResults((prev) => prev.map((u) => u.id === userId ? { ...u, connectionStatus: "pending" } : u));
       } else {
         const err = await res.json();
@@ -200,7 +200,7 @@ export default function ConnectionsPage() {
     setPendingActions((s) => new Set(s).add(connId));
     try {
       const res = await fetch(`/api/connections/${connId}/accept`, { method: "PATCH", credentials: "include" });
-      if (res.ok) { toast({ title: "Connected! 💜" }); setPending((prev) => prev.filter((p) => p.id !== connId)); loadConnections(); }
+      if (res.ok) { toast({ title: "Connected!" }); setPending((prev) => prev.filter((p) => p.id !== connId)); loadConnections(); }
     } catch { /* silent */ }
     setPendingActions((s) => { const n = new Set(s); n.delete(connId); return n; });
   }
@@ -218,7 +218,7 @@ export default function ConnectionsPage() {
       if (res.ok) {
         const data = await res.json();
         if (navigator.share) {
-          await navigator.share({ title: "Join me on Daymark 💜", text: "I'm saving little memories on Daymark — come join me!", url: data.url });
+          await navigator.share({ title: "Join me on Daymark", text: "I'm saving little memories on Daymark — come join me!", url: data.url });
         } else {
           await navigator.clipboard.writeText(data.url);
           toast({ title: "Invite link copied ✓" });

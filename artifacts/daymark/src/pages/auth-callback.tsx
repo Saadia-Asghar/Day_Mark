@@ -123,7 +123,9 @@ export default function AuthCallbackPage() {
   if (error) {
     return (
       <div className="min-h-[100dvh] bg-[#FFF9F5] flex flex-col items-center justify-center px-6 text-center gap-4">
-        <p className="text-2xl">😕</p>
+        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-2">
+          <div className="w-4 h-4 rounded-full bg-muted-foreground/30" />
+        </div>
         <h1 className="text-lg font-extrabold text-foreground">Link expired or invalid</h1>
         <p className="text-sm text-muted-foreground">{error}</p>
         <button

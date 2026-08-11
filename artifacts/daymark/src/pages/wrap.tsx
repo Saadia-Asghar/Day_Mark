@@ -57,11 +57,11 @@ function GiftPreview({ color, ribbon, photoUrl, mood }: { color: string; ribbon:
     Minimal: "rgba(255,255,255,0.4)",
   };
   const rbColor = ribbonColors[ribbon] || "#FFFFFF";
-  const moodEmojis: Record<string, string> = {
-    Happy: "☀️", Emotional: "🥹", Peaceful: "🌿",
-    Chaotic: "😂", Proud: "✨", Grateful: "💜", Nostalgic: "🌙",
+  const moodColors: Record<string, string> = {
+    Happy: "#F59E0B", Emotional: "#F43F5E", Peaceful: "#10B981",
+    Chaotic: "#F97316", Proud: "#8B5CF6", Grateful: "#6847F5", Nostalgic: "#6366F1",
   };
-  const moodEmoji = mood ? moodEmojis[mood] : null;
+  const moodColor = mood ? (moodColors[mood] ?? "#6847F5") : null;
   
   return (
     <motion.div
@@ -99,13 +99,11 @@ function GiftPreview({ color, ribbon, photoUrl, mood }: { color: string; ribbon:
             <img src={photoUrl} alt="" className="w-full h-full object-cover" />
           </div>
         )}
-        {ribbon === "Heart" && <div className="absolute top-17 left-1/2 -translate-x-1/2 text-xs">❤️</div>}
-        {ribbon === "Stars" && <div className="absolute top-17 left-1/2 -translate-x-1/2 text-xs">⭐</div>}
+        {ribbon === "Heart" && <div className="absolute top-17 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-red-400" />}
+        {ribbon === "Stars" && <div className="absolute top-17 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-amber-400" />}
         {/* Mood sticker */}
-        {moodEmoji && (
-          <div className="absolute -bottom-2 -right-2 w-9 h-9 rounded-full bg-white shadow-md border-2 border-white flex items-center justify-center text-lg">
-            {moodEmoji}
-          </div>
+        {moodColor && (
+          <div className="absolute -bottom-2 -right-2 w-9 h-9 rounded-full shadow-md border-2 border-white" style={{ backgroundColor: moodColor }} />
         )}
       </motion.div>
     </motion.div>
@@ -227,7 +225,7 @@ export default function WrapMemoryPage() {
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <div className="flex flex-col items-center">
-          <h1 className="font-bold text-lg leading-tight">Wrap a Memory ✨</h1>
+          <h1 className="font-bold text-lg leading-tight">Wrap a Memory</h1>
           <span className="text-xs text-muted-foreground font-medium">Let's keep this one.</span>
         </div>
         <div className="w-10 h-10" />
@@ -268,7 +266,7 @@ export default function WrapMemoryPage() {
                     <p className="font-extrabold text-sm text-foreground">Photo</p>
                     <p className="text-[11px] text-muted-foreground">An image says it all</p>
                   </div>
-                  <div className="absolute top-2 right-2 text-lg">📷</div>
+                  <div className="absolute top-2 right-2"><Camera className="w-4 h-4 text-sky-400 opacity-70" /></div>
                 </motion.button>
 
                 {/* Story — folded notebook */}
@@ -315,7 +313,7 @@ export default function WrapMemoryPage() {
                     <p className="font-extrabold text-sm text-foreground">Voice</p>
                     <p className="text-[11px] text-muted-foreground">Say it out loud</p>
                   </div>
-                  <div className="absolute top-2 right-2 text-lg">🎙</div>
+                  <div className="absolute top-2 right-2"><Mic className="w-4 h-4 text-emerald-400 opacity-70" /></div>
                 </motion.button>
 
                 {/* Place — postcard */}
@@ -352,7 +350,7 @@ export default function WrapMemoryPage() {
                   <p className="font-extrabold text-sm text-foreground">Video</p>
                   <p className="text-[11px] text-muted-foreground">Capture the moment in motion</p>
                 </div>
-                <span className="ml-auto text-xl">🎬</span>
+                <Video className="ml-auto w-5 h-5 text-purple-400 opacity-70" />
               </motion.button>
             </motion.div>
           )}
@@ -600,8 +598,8 @@ export default function WrapMemoryPage() {
               <div className="space-y-5 bg-white/70 backdrop-blur-sm rounded-3xl p-5 border border-border/60 shadow-sm">
                 {/* Box Color */}
                 <div>
-                  <span className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest mb-3 block flex items-center gap-1.5">
-                    🎁 Box Color
+                  <span className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest mb-3 block">
+                    Box Color
                   </span>
                   <div className="flex gap-3 items-center">
                     {COLORS.map(c => (
@@ -626,14 +624,14 @@ export default function WrapMemoryPage() {
                 {/* Ribbon */}
                 <div>
                   <span className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-widest mb-3 block">
-                    🎀 Ribbon
+                    Ribbon
                   </span>
                   <div className="flex gap-2 flex-wrap">
                     {[
-                      { id: "Classic", emoji: "🤍" },
-                      { id: "Heart",   emoji: "❤️" },
-                      { id: "Stars",   emoji: "⭐" },
-                      { id: "Minimal", emoji: "🕊️" },
+                      { id: "Classic" },
+                      { id: "Heart" },
+                      { id: "Stars" },
+                      { id: "Minimal" },
                     ].map(r => (
                       <button
                         key={r.id}
@@ -690,7 +688,7 @@ export default function WrapMemoryPage() {
                     ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Wrapping…</>
                     : isUploading
                     ? "Upload in progress…"
-                    : "🎁 Wrap My Memory"}
+                    : "Wrap My Memory"}
                 </motion.button>
               </div>
             </motion.div>
@@ -703,7 +701,7 @@ export default function WrapMemoryPage() {
                 giftColor={formData.giftColor}
                 ribbon={formData.ribbon}
                 photoUrl={formData.photoPreview}
-                successTitle="It's safe with us. 💜"
+                successTitle="It's safe with us."
                 successMessage="Another little piece of your life, beautifully kept."
                 primaryHref="/gifts"
                 primaryLabel="View Gifts"

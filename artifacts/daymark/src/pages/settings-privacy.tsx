@@ -111,7 +111,7 @@ export default function PrivacySettingsPage() {
         body: JSON.stringify(settings),
       });
       if (!res.ok) throw new Error("Server error");
-      toast({ title: "Privacy settings saved 🛡️" });
+      toast({ title: "Privacy settings saved" });
     } catch {
       toast({ title: "Couldn't save", variant: "destructive" });
     }
@@ -221,7 +221,7 @@ export default function PrivacySettingsPage() {
           </Section>
 
           <div className="bg-[#EAE3FF]/50 rounded-2xl p-4 text-xs text-primary font-medium leading-relaxed">
-            🛡️ Daymark defaults favor privacy. Your memories and personal details are never shared without your explicit action.
+            Daymark defaults favor privacy. Your memories and personal details are never shared without your explicit action.
           </div>
 
           <button

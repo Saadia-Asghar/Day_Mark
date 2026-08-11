@@ -16,7 +16,7 @@ export default function FutureGiftsPage() {
       {/* Header */}
       <header className="px-5 pt-12 pb-5 flex items-center justify-between">
         <div>
-          <h1 className="text-[28px] font-extrabold leading-tight">Gifts for Later 🎁</h1>
+          <h1 className="text-[28px] font-extrabold leading-tight">Gifts for Later</h1>
           <p className="text-sm text-muted-foreground font-medium mt-1">
             Messages and memories waiting for the right day.
           </p>

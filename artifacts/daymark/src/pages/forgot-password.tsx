@@ -115,7 +115,7 @@ export default function ForgotPasswordPage() {
           <motion.div key="sent" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
             className="flex flex-col items-center text-center pt-16 px-2">
             <DaymarkCharacter character="marky" pose="envelope" size="lg" animation="float" className="mb-6" />
-            <h1 className="text-2xl font-extrabold mb-2">Check your inbox 💌</h1>
+            <h1 className="text-2xl font-extrabold mb-2">Check your inbox</h1>
             <p className="text-sm text-muted-foreground mb-2">
               If <span className="font-bold text-foreground">{maskedEmail}</span> has a Daymark, we've sent a reset link.
             </p>

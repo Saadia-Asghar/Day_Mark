@@ -3,21 +3,21 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useListMemories } from "@workspace/api-client-react";
 import type { Memory } from "@workspace/api-client-react";
-import { Search } from "lucide-react";
+import { Search, Heart } from "lucide-react";
 import { format } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
 import { DaymarkCharacter } from "@/components/daymark-character";
 
 // ── Category visual config ─────────────────────────────────────────────
 const CATEGORY_CONFIG: Record<string, {
-  tag: string; tagText: string; accent: string; accentText: string; emoji: string; rotate: string;
+  tag: string; tagText: string; accent: string; accentText: string; dot: string; rotate: string;
 }> = {
-  friends:      { tag: "bg-pink-100",   tagText: "text-pink-700",   accent: "#FF719D", accentText: "#fff", emoji: "👯‍♀️", rotate: "rotate-[-0.8deg]" },
-  family:       { tag: "bg-amber-100",  tagText: "text-amber-700",  accent: "#FFC857", accentText: "#333", emoji: "🏡", rotate: "rotate-[0.6deg]" },
-  travel:       { tag: "bg-sky-100",    tagText: "text-sky-700",    accent: "#75C8FF", accentText: "#fff", emoji: "✈️", rotate: "rotate-[-0.5deg]" },
-  achievements: { tag: "bg-violet-100", tagText: "text-violet-700", accent: "#6847F5", accentText: "#fff", emoji: "⭐", rotate: "rotate-[0.8deg]" },
-  college:      { tag: "bg-indigo-100", tagText: "text-indigo-700", accent: "#6366F1", accentText: "#fff", emoji: "🎓", rotate: "rotate-[-0.6deg]" },
-  everyday:     { tag: "bg-emerald-100",tagText: "text-emerald-700",accent: "#9CE2B1", accentText: "#333", emoji: "🌿", rotate: "rotate-[0.4deg]" },
+  friends:      { tag: "bg-pink-100",   tagText: "text-pink-700",   accent: "#FF719D", accentText: "#fff", dot: "#FF6B9D", rotate: "rotate-[-0.8deg]" },
+  family:       { tag: "bg-amber-100",  tagText: "text-amber-700",  accent: "#FFC857", accentText: "#333", dot: "#F59E0B", rotate: "rotate-[0.6deg]" },
+  travel:       { tag: "bg-sky-100",    tagText: "text-sky-700",    accent: "#75C8FF", accentText: "#fff", dot: "#0EA5E9", rotate: "rotate-[-0.5deg]" },
+  achievements: { tag: "bg-violet-100", tagText: "text-violet-700", accent: "#6847F5", accentText: "#fff", dot: "#8B5CF6", rotate: "rotate-[0.8deg]" },
+  college:      { tag: "bg-indigo-100", tagText: "text-indigo-700", accent: "#6366F1", accentText: "#fff", dot: "#6366F1", rotate: "rotate-[-0.6deg]" },
+  everyday:     { tag: "bg-emerald-100",tagText: "text-emerald-700",accent: "#9CE2B1", accentText: "#333", dot: "#10B981", rotate: "rotate-[0.4deg]" },
 };
 const getCfg = (cat: string) => CATEGORY_CONFIG[cat.toLowerCase()] ?? CATEGORY_CONFIG["everyday"];
 
@@ -72,12 +72,14 @@ const LargeCard = ({ memory, index }: CardProps) => {
             {memory.photoUrls?.[0] && (
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             )}
-            {/* Category emoji badge */}
-            <div className={`absolute top-3 left-3 ${cfg.tag} ${cfg.tagText} text-[10px] font-bold px-2.5 py-1 rounded-full`}>
-              {cfg.emoji} {memory.category}
+            {/* Category badge */}
+            <div className={`absolute top-3 left-3 ${cfg.tag} ${cfg.tagText} text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1`}>
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cfg.dot }} />{memory.category}
             </div>
             {memory.isKeptClose && (
-              <div className="absolute top-3 right-3 text-base">❤️</div>
+              <div className="absolute top-3 right-3 w-6 h-6 bg-white/80 rounded-full flex items-center justify-center shadow-sm">
+                <Heart className="w-3 h-3 fill-rose-400 text-rose-400" />
+              </div>
             )}
             {memory.photoUrls?.[0] && (
               <div className="absolute bottom-3 left-3 right-3">
@@ -162,8 +164,8 @@ const FeaturedCard = ({ memory, index }: CardProps) => {
           {/* Text content */}
           <div className={`flex-1 p-3 ${!memory.photoUrls?.[0] ? "pl-4" : ""}`}>
             <div className="flex items-start justify-between gap-1 mb-1">
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${cfg.tagText}`}>
-                {cfg.emoji} {memory.category}
+              <span className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${cfg.tagText}`}>
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cfg.dot }} />{memory.category}
               </span>
               <span className="text-[10px] text-muted-foreground font-mono shrink-0">
                 {format(new Date(memory.date), "MMM d")}
@@ -191,7 +193,9 @@ const FeaturedCard = ({ memory, index }: CardProps) => {
             )}
           </div>
           {memory.isKeptClose && (
-            <div className="px-3 flex items-center text-rose-400">❤️</div>
+            <div className="px-3 flex items-center text-rose-400">
+              <Heart className="w-4 h-4 fill-rose-400" />
+            </div>
           )}
         </div>
       </Link>
@@ -294,13 +298,13 @@ const ScrapbookGrid = ({ memories }: { memories: Memory[] }) => {
 
 // ── Filters ────────────────────────────────────────────────────────────
 const FILTERS = [
-  { label: "All ✨", value: "all" },
-  { label: "Friends 👯‍♀️", value: "friends" },
-  { label: "Family 🏡", value: "family" },
-  { label: "Travel ✈️", value: "travel" },
-  { label: "College 🎓", value: "college" },
-  { label: "Achievements ⭐", value: "achievements" },
-  { label: "Everyday 🌿", value: "everyday" },
+  { label: "All", value: "all" },
+  { label: "Friends", value: "friends" },
+  { label: "Family", value: "family" },
+  { label: "Travel", value: "travel" },
+  { label: "College", value: "college" },
+  { label: "Achievements", value: "achievements" },
+  { label: "Everyday", value: "everyday" },
 ];
 
 // ── Page ───────────────────────────────────────────────────────────────
@@ -383,7 +387,7 @@ export default function GiftsPage() {
                 href="/wrap"
                 className="bg-primary text-white px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] text-sm"
               >
-                Wrap a Memory ✨
+                Wrap a Memory
               </Link>
             )}
           </div>

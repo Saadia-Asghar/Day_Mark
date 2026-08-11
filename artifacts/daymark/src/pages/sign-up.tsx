@@ -154,7 +154,7 @@ export default function SignUpPage() {
               <Mail className="w-9 h-9 text-primary" />
             </div>
 
-            <h1 className="text-2xl font-extrabold mb-2">Check your inbox 💜</h1>
+            <h1 className="text-2xl font-extrabold mb-2">Check your inbox</h1>
             <p className="text-sm text-muted-foreground leading-relaxed mb-1">
               We sent a confirmation link to
             </p>
@@ -210,7 +210,7 @@ export default function SignUpPage() {
             <div className="flex items-end gap-3 mb-6">
               <DaymarkCharacter character="marky" pose="holdingGift" size="sm" animation="float" />
               <div>
-                <h1 className="text-2xl font-extrabold">Create your Daymark ✨</h1>
+                <h1 className="text-2xl font-extrabold">Create your Daymark</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">Your memories start here</p>
               </div>
             </div>

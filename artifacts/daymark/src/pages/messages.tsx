@@ -12,8 +12,8 @@ interface ScheduledMessage {
 }
 interface MessagesData { received: ScheduledMessage[]; scheduled: ScheduledMessage[]; sent: ScheduledMessage[] }
 
-const OCCASION_EMOJI: Record<string, string> = {
-  birthday: "🎂", anniversary: "💍", graduation: "🎓", good_luck: "🍀", just_because: "💜", custom: "✨",
+const OCCASION_COLOR: Record<string, string> = {
+  birthday: "#FF6B9D", anniversary: "#F43F5E", graduation: "#F59E0B", good_luck: "#10B981", just_because: "#6847F5", custom: "#94A3B8",
 };
 
 function Avatar({ user, size = 40 }: { user: OtherUser | null; size?: number }) {
@@ -32,7 +32,7 @@ function dname(u: OtherUser | null) { return u?.displayName ?? u?.firstName ?? u
 // ── Sealed envelope card ───────────────────────────────────────────────────
 function EnvelopeCard({ msg }: { msg: ScheduledMessage }) {
   const [open, setOpen] = useState(false);
-  const emoji = OCCASION_EMOJI[msg.occasionType] ?? "💜";
+  const dotColor = OCCASION_COLOR[msg.occasionType] ?? "#6847F5";
   const isOpened = open;
 
   return (
@@ -68,7 +68,7 @@ function EnvelopeCard({ msg }: { msg: ScheduledMessage }) {
         <div className="p-4 pt-12 flex items-start gap-3">
           <div className="relative flex-shrink-0">
             <Avatar user={msg.otherUser} size={44} />
-            <span className="absolute -bottom-1 -right-1 text-lg leading-none">{emoji}</span>
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white" style={{ backgroundColor: dotColor }} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
@@ -78,7 +78,7 @@ function EnvelopeCard({ msg }: { msg: ScheduledMessage }) {
               </p>
             </div>
             {msg.title && <p className="text-xs font-semibold text-primary mt-0.5">{msg.title}</p>}
-            {!isOpened && <p className="text-xs text-muted-foreground mt-1">Tap to open this letter 💌</p>}
+            {!isOpened && <p className="text-xs text-muted-foreground mt-1">Tap to open this letter</p>}
           </div>
         </div>
 
@@ -103,7 +103,7 @@ function EnvelopeCard({ msg }: { msg: ScheduledMessage }) {
 
 // ── Postcard card for scheduled messages ──────────────────────────────────
 function PostcardCard({ msg, onCancel }: { msg: ScheduledMessage; onCancel: (id: number) => void }) {
-  const emoji = OCCASION_EMOJI[msg.occasionType] ?? "💜";
+  const dotColor = OCCASION_COLOR[msg.occasionType] ?? "#6847F5";
   const days = differenceInDays(new Date(msg.deliveryTimestamp), new Date());
 
   return (
@@ -112,7 +112,7 @@ function PostcardCard({ msg, onCancel }: { msg: ScheduledMessage; onCancel: (id:
 
       {/* Postcard stamp area */}
       <div className="absolute top-3 right-3 w-10 h-12 border-2 border-dashed border-primary/30 rounded-sm flex flex-col items-center justify-center bg-white/60">
-        <span className="text-lg leading-none">{emoji}</span>
+        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: dotColor }} />
         <span className="text-[8px] font-bold text-primary mt-0.5">DAYMARK</span>
       </div>
 
@@ -156,7 +156,7 @@ function PostcardCard({ msg, onCancel }: { msg: ScheduledMessage; onCancel: (id:
 
 // ── Stamped letter for sent messages ──────────────────────────────────────
 function SentLetterCard({ msg }: { msg: ScheduledMessage }) {
-  const emoji = OCCASION_EMOJI[msg.occasionType] ?? "💜";
+  const dotColor = OCCASION_COLOR[msg.occasionType] ?? "#6847F5";
   return (
     <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
       {/* Postmark header */}
@@ -175,7 +175,7 @@ function SentLetterCard({ msg }: { msg: ScheduledMessage }) {
       <div className="p-4 flex items-start gap-3">
         <div className="relative flex-shrink-0">
           <Avatar user={msg.otherUser} size={40} />
-          <span className="absolute -bottom-1 -right-1 text-sm leading-none">{emoji}</span>
+          <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white" style={{ backgroundColor: dotColor }} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm truncate" style={{ fontFamily: "Georgia, serif" }}>
@@ -246,7 +246,9 @@ export default function MessagesPage() {
         {!loading && tab === "received" && (
           data.received.length === 0 ? (
             <div className="text-center py-16">
-              <div className="text-5xl mb-4">💌</div>
+              <div className="w-16 h-16 rounded-full bg-[#EAE3FF] flex items-center justify-center mb-4 mx-auto">
+                <Inbox className="w-8 h-8 text-primary" />
+              </div>
               <p className="font-bold text-foreground">Nothing is waiting yet.</p>
               <p className="text-xs text-muted-foreground mt-2 max-w-[200px] mx-auto">Letters from your people will arrive here on the right day.</p>
             </div>
@@ -256,7 +258,9 @@ export default function MessagesPage() {
         {!loading && tab === "scheduled" && (
           data.scheduled.length === 0 ? (
             <div className="text-center py-16">
-              <div className="text-5xl mb-4">📮</div>
+              <div className="w-16 h-16 rounded-full bg-[#EAE3FF] flex items-center justify-center mb-4 mx-auto">
+                <Clock className="w-8 h-8 text-primary" />
+              </div>
               <p className="font-bold text-foreground">No postcards scheduled yet.</p>
               <p className="text-xs text-muted-foreground mt-2 max-w-[200px] mx-auto">Write something for someone. They'll receive it when you choose.</p>
               <Link href="/people" className="mt-4 inline-block bg-primary text-white text-sm font-bold px-6 py-2.5 rounded-full">Go to My People</Link>
@@ -267,7 +271,9 @@ export default function MessagesPage() {
         {!loading && tab === "sent" && (
           data.sent.length === 0 ? (
             <div className="text-center py-16">
-              <div className="text-5xl mb-4">📨</div>
+              <div className="w-16 h-16 rounded-full bg-[#EAE3FF] flex items-center justify-center mb-4 mx-auto">
+                <Send className="w-8 h-8 text-primary" />
+              </div>
               <p className="font-bold text-foreground">Nothing sent yet.</p>
             </div>
           ) : data.sent.map((m) => <SentLetterCard key={m.id} msg={m} />)

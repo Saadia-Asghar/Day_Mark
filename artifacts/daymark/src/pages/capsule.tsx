@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { Link, useRoute } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Package, Share2, Heart, Loader2 } from "lucide-react";
+import { DaymarkCharacter } from "@/components/daymark-character";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,7 +43,7 @@ interface Capsule {
 }
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const CATEGORY_EMOJI: Record<string, string> = { everyday: "✨", travel: "✈️", food: "🍜", people: "💜", nature: "🌿", celebration: "🎉" };
+const CATEGORY_COLOR: Record<string, string> = { everyday: "#6847F5", travel: "#06B6D4", food: "#F59E0B", people: "#F43F5E", nature: "#10B981", celebration: "#FF6B9D" };
 
 export default function CapsulePage() {
   const [, params] = useRoute("/capsule/:year/:month");
@@ -127,10 +128,10 @@ export default function CapsulePage() {
           <motion.div
             animate={opened ? { scale: [1, 1.2, 0.8, 1.1, 1], rotate: [0, -5, 5, -3, 0] } : { y: [0, -6, 0] }}
             transition={opened ? { duration: 0.8 } : { repeat: Infinity, duration: 2 }}
-            className="text-8xl mb-8 cursor-pointer select-none"
+            className="mb-8 cursor-pointer select-none"
             onClick={!opened ? handleOpen : undefined}
           >
-            🎁
+            <DaymarkCharacter character="marky" pose="celebrate" size="lg" animation="none" />
           </motion.div>
           {!opened ? (
             <>
@@ -140,7 +141,7 @@ export default function CapsulePage() {
                 onClick={handleOpen}
                 className="mt-8 bg-primary text-white font-bold px-8 py-4 rounded-full shadow-[0_0_24px_rgba(104,71,245,0.3)] active:scale-95 transition-all text-base"
               >
-                Unwrap {monthName} 🎀
+                Unwrap {monthName}
               </button>
             </>
           ) : (
@@ -169,13 +170,13 @@ export default function CapsulePage() {
           {/* Stats row */}
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Memories", value: data.memoriesCount ?? 0, emoji: "✨" },
-              { label: "With photos", value: data.photoCount ?? 0, emoji: "📸" },
-              { label: "Kept close", value: data.keptCloseCount ?? 0, emoji: "💜" },
-              { label: "Day streak", value: data.longestStreak ?? 0, emoji: "🔥" },
+              { label: "Memories",    value: data.memoriesCount ?? 0,    color: "#6847F5" },
+              { label: "With photos", value: data.photoCount ?? 0,        color: "#06B6D4" },
+              { label: "Kept close",  value: data.keptCloseCount ?? 0,    color: "#F43F5E" },
+              { label: "Day streak",  value: data.longestStreak ?? 0,     color: "#F59E0B" },
             ].map((s) => (
               <div key={s.label} className="bg-white rounded-2xl border border-border/60 shadow-sm p-4 text-center">
-                <div className="text-2xl mb-1">{s.emoji}</div>
+                <div className="w-3 h-3 rounded-full mb-2 mx-auto" style={{ backgroundColor: s.color }} />
                 <div className="text-2xl font-extrabold">{s.value}</div>
                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mt-0.5">{s.label}</div>
               </div>
@@ -189,7 +190,7 @@ export default function CapsulePage() {
               <div className="space-y-2">
                 {Object.entries(data.categories).sort((a, b) => b[1] - a[1]).map(([cat, count]) => (
                   <div key={cat} className="flex items-center gap-2">
-                    <span className="text-base">{CATEGORY_EMOJI[cat] ?? "✨"}</span>
+                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: CATEGORY_COLOR[cat] ?? "#6847F5" }} />
                     <span className="text-sm font-medium capitalize flex-1">{cat.replace("_", " ")}</span>
                     <span className="text-sm font-bold text-primary">{count}</span>
                   </div>
@@ -205,7 +206,9 @@ export default function CapsulePage() {
               <Link href={`/gifts/${data.forgottenMemory.id}`}>
                 <div className="bg-gradient-to-br from-[#EAE3FF] to-[#FFF9F5] rounded-2xl border border-primary/20 shadow-sm p-4 active:scale-[0.98] transition-all">
                   <div className="flex items-start gap-3">
-                    <span className="text-2xl">{CATEGORY_EMOJI[data.forgottenMemory.category] ?? "✨"}</span>
+                    <div className="w-8 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: `${CATEGORY_COLOR[data.forgottenMemory.category] ?? "#6847F5"}20` }}>
+                      <div className="w-2.5 h-2.5 rounded-full m-auto mt-[11px]" style={{ backgroundColor: CATEGORY_COLOR[data.forgottenMemory.category] ?? "#6847F5" }} />
+                    </div>
                     <div>
                       <p className="font-bold text-sm">{data.forgottenMemory.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
@@ -232,7 +235,7 @@ export default function CapsulePage() {
                         <img src={m.photoUrl} alt={m.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="text-center px-1">
-                          <div className="text-lg">{CATEGORY_EMOJI[m.category] ?? "✨"}</div>
+                          <div className="w-4 h-4 rounded-full mx-auto mb-0.5" style={{ backgroundColor: CATEGORY_COLOR[m.category] ?? "#6847F5" }} />
                           <p className="text-[8px] font-bold text-muted-foreground line-clamp-2 mt-0.5">{m.title}</p>
                         </div>
                       )}
@@ -247,7 +250,7 @@ export default function CapsulePage() {
           <button
             onClick={async () => {
               if (navigator.share) {
-                try { await navigator.share({ title: `My ${monthName} in Little Things`, text: `${data.memoriesCount} memories captured in ${monthName} ${year} on Daymark 💜` }); }
+                try { await navigator.share({ title: `My ${monthName} in Little Things`, text: `${data.memoriesCount} memories captured in ${monthName} ${year} on Daymark` }); }
                 catch { /* cancelled */ }
               }
             }}

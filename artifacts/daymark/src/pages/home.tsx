@@ -7,7 +7,7 @@ import {
 } from "@workspace/api-client-react";
 import type { CalendarEvent, Notification } from "@workspace/api-client-react";
 import { DaymarkCharacter } from "@/components/daymark-character";
-import { Gift, Bell, Camera, Mic, MapPin, Edit3, Plus, X, CheckCheck, Globe2, Sparkles, Package } from "lucide-react";
+import { Gift, Bell, Camera, Mic, MapPin, Edit3, Plus, X, CheckCheck, Globe2, Sparkles, Package, Heart } from "lucide-react";
 import { format, formatDistanceToNow, differenceInYears } from "date-fns";
 import { DmErrorState } from "@/components/daymark";
 import { TapeStrip, GiftFromPastSkeleton, EmptyPastGiftState } from "@/components/scrapbook";
@@ -45,18 +45,21 @@ const BackgroundDoodles = () => (
 );
 
 // ── Event gift-tag card ───────────────────────────────────────────────────
+const EVENT_TAG_COLORS: Record<string, string> = {
+  birthday: "#FF6B9D", travel: "#0EA5E9", anniversary: "#F43F5E", achievement: "#8B5CF6",
+};
 const getEventTagStyle = (type: string) => {
   switch (type) {
     case "birthday":
-      return { bg: "bg-pink-50", border: "border-pink-200", text: "text-pink-700", circle: "border-pink-300", emoji: "🎂", rotate: "-rotate-1" };
+      return { bg: "bg-pink-50", border: "border-pink-200", text: "text-pink-700", circle: "border-pink-300", rotate: "-rotate-1" };
     case "travel":
-      return { bg: "bg-sky-50", border: "border-sky-200", text: "text-sky-700", circle: "border-sky-300", emoji: "✈️", rotate: "rotate-1" };
+      return { bg: "bg-sky-50", border: "border-sky-200", text: "text-sky-700", circle: "border-sky-300", rotate: "rotate-1" };
     case "anniversary":
-      return { bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-700", circle: "border-rose-300", emoji: "❤️", rotate: "-rotate-0.5" };
+      return { bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-700", circle: "border-rose-300", rotate: "-rotate-0.5" };
     case "achievement":
-      return { bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-700", circle: "border-violet-300", emoji: "⭐", rotate: "rotate-0.5" };
+      return { bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-700", circle: "border-violet-300", rotate: "rotate-0.5" };
     default:
-      return { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", circle: "border-amber-300", emoji: "📅", rotate: "-rotate-1" };
+      return { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", circle: "border-amber-300", rotate: "-rotate-1" };
   }
 };
 
@@ -76,7 +79,7 @@ const EventTag = ({ event, index }: { event: CalendarEvent; index: number }) => 
     >
       <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 ${s.circle} bg-[#FFF9F5] z-10`} />
       <div className={`${s.bg} border ${s.border} rounded-2xl px-4 py-3.5 min-w-[88px] flex flex-col items-center shadow-sm`}>
-        <span className="text-2xl mb-1.5">{s.emoji}</span>
+        <div className="w-5 h-5 rounded-full mb-1.5 mx-auto" style={{ backgroundColor: EVENT_TAG_COLORS[event.type] ?? "#F59E0B" }} />
         <span className={`text-xs font-bold text-center leading-tight ${s.text}`}>{event.title}</span>
         <span className={`text-[10px] font-semibold mt-1 opacity-70 ${s.text}`}>{subtitle}</span>
       </div>
@@ -166,22 +169,21 @@ function NotificationsDrawer({ open, onClose }: { open: boolean; onClose: () => 
     });
   };
 
-  const typeIcon: Record<string, string> = {
-    memory_from_past: "💜",
-    birthday_upcoming: "🎂",
-    future_gift_ready: "🔓",
-    shared_memory_updated: "📸",
-    collaborator_invitation: "💌",
-    memory_anniversary: "⭐",
-    // Social feature notification types
-    connection_request: "💜",
-    connection_accepted: "✨",
-    memory_drop: "💌",
-    daylink_updated: "🔗",
-    daylink_milestone: "🌟",
-    scheduled_message_received: "💌",
-    prompt_shared: "💭",
-    globe_reaction: "🌍",
+  const typeColor: Record<string, string> = {
+    memory_from_past: "#6847F5",
+    birthday_upcoming: "#F43F5E",
+    future_gift_ready: "#10B981",
+    shared_memory_updated: "#0EA5E9",
+    collaborator_invitation: "#EC4899",
+    memory_anniversary: "#F59E0B",
+    connection_request: "#6847F5",
+    connection_accepted: "#10B981",
+    memory_drop: "#06B6D4",
+    daylink_updated: "#6847F5",
+    daylink_milestone: "#F59E0B",
+    scheduled_message_received: "#EC4899",
+    prompt_shared: "#8B5CF6",
+    globe_reaction: "#10B981",
   };
 
   return (
@@ -221,7 +223,9 @@ function NotificationsDrawer({ open, onClose }: { open: boolean; onClose: () => 
                 [...Array(3)].map((_, i) => <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />)
               ) : notifications.length === 0 ? (
                 <div className="py-12 flex flex-col items-center text-center gap-2">
-                  <span className="text-3xl">🔔</span>
+                  <div className="w-12 h-12 rounded-full bg-[#EAE3FF] flex items-center justify-center mb-1">
+                    <Bell className="w-6 h-6 text-primary" />
+                  </div>
                   <p className="font-bold text-sm">Everything is quiet for now.</p>
                   <p className="text-xs text-muted-foreground">Daymark will let you know when something special happens.</p>
                 </div>
@@ -234,8 +238,8 @@ function NotificationsDrawer({ open, onClose }: { open: boolean; onClose: () => 
                       n.readAt ? "bg-white/60 border-border/30 opacity-70" : "bg-white border-border shadow-sm"
                     }`}
                   >
-                    <div className="w-9 h-9 rounded-full bg-[#EAE3FF] flex items-center justify-center text-lg flex-shrink-0">
-                      {typeIcon[n.type] ?? "🔔"}
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${typeColor[n.type] ?? "#6847F5"}18` }}>
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: typeColor[n.type] ?? "#6847F5" }} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm leading-tight">{n.title}</p>
@@ -318,7 +322,7 @@ function GlobePreviewCard({ memory }: { memory: { caption?: string | null; locat
             <Globe2 className="w-5 h-5 text-[#6847F5]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-extrabold tracking-[0.12em] text-white/40 uppercase">Moment From Somewhere 🌍</p>
+            <p className="text-[11px] font-extrabold tracking-[0.12em] text-white/40 uppercase">Moment From Somewhere</p>
             <p className="text-sm font-bold text-white mt-1 leading-snug line-clamp-2">
               {memory.caption ?? "A little moment from somewhere in the world."}
             </p>
@@ -368,7 +372,7 @@ function DailyQuestionCard({ prompt, onAnswered }: { prompt: DailyPrompt; onAnsw
   if (done) {
     return (
       <div className="mx-5 bg-white border border-border rounded-2xl p-4 text-center shadow-sm">
-        <p className="text-sm font-bold text-primary">✨ Saved for today</p>
+        <p className="text-sm font-bold text-primary">Saved for today</p>
         <p className="text-xs text-muted-foreground mt-1">Your little answer is safe.</p>
       </div>
     );
@@ -383,7 +387,7 @@ function DailyQuestionCard({ prompt, onAnswered }: { prompt: DailyPrompt; onAnsw
       >
         {/* Tape corner */}
         <div className="absolute -top-1 left-6 w-10 h-3 bg-amber-100/80 border border-amber-200/60 rounded-sm rotate-[-1deg]" />
-        <p className="text-[11px] font-extrabold tracking-[0.1em] text-muted-foreground uppercase mb-2 mt-1">Today's Little Question 💭</p>
+        <p className="text-[11px] font-extrabold tracking-[0.1em] text-muted-foreground uppercase mb-2 mt-1">Today's Little Question</p>
         <p className="text-base font-bold text-foreground leading-snug">{prompt.text}</p>
         <p className="text-xs text-primary font-semibold mt-3">Tap to answer →</p>
       </motion.div>
@@ -436,7 +440,7 @@ function DailyQuestionCard({ prompt, onAnswered }: { prompt: DailyPrompt; onAnsw
                     disabled={!text.trim() || saving}
                     className="flex-1 h-12 bg-primary text-white rounded-xl font-bold text-sm shadow-[0_0_16px_rgba(104,71,245,0.25)] disabled:opacity-50"
                   >
-                    Save as memory ✨
+                    Save as memory
                   </button>
                 </div>
                 <button
@@ -560,7 +564,7 @@ export default function HomePage() {
         <section className="px-5 pt-5 pb-2 relative">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <p className="text-sm font-semibold text-muted-foreground">
-              {firstName ? `${greeting}, ${firstName} ✨` : `${greeting} ✨`}
+              {firstName ? `${greeting}, ${firstName}` : greeting}
             </p>
             <h1 className="text-[28px] leading-[1.2] font-extrabold text-foreground mt-1 max-w-[230px]">
               What will you remember about today?
@@ -577,12 +581,12 @@ export default function HomePage() {
 
         <div className="mx-5 mt-8 mb-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-        {/* ── 2. This Day ✨ ────────────────────────────────────────── */}
+        {/* ── 2. This Day ───────────────────────────────────────────── */}
         <section className="mt-8 px-4">
           <div className="px-1 mb-5 flex items-center gap-2">
             <SparkleIcon className="w-3.5 h-3.5 text-primary" />
             <span className="text-[11px] font-extrabold tracking-[0.12em] text-primary uppercase">
-              {isOnThisDay ? "This Day ✨" : "A Gift From Your Past"}
+              {isOnThisDay ? "This Day" : "A Gift From Your Past"}
             </span>
           </div>
 
@@ -664,7 +668,7 @@ export default function HomePage() {
                         )}
                       </div>
                       <div className="bg-primary text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-sm shadow-primary/20 flex items-center gap-1">
-                        ✨ Open memory
+                        Open memory
                       </div>
                     </div>
                   </div>
@@ -695,7 +699,7 @@ export default function HomePage() {
         {/* ── 3. Important Today ───────────────────────────────────── */}
         <ImportantTodaySection />
 
-        {/* ── 3. Daylinks ✨ ────────────────────────────────────────── */}
+        {/* ── 3. Daylinks ───────────────────────────────────────────── */}
         {daylinks.length > 0 && (
           <section className="mt-10">
             <div className="px-5 mb-4 flex items-center justify-between">
@@ -704,7 +708,7 @@ export default function HomePage() {
                   <path d="M2 6 C2 3 5 1 8 3 L10 6 L12 9 C15 11 18 9 18 6" stroke="#6847F5" strokeWidth="2.2" strokeLinecap="round"/>
                   <path d="M18 6 C18 3 15 1 12 3 L10 6 L8 9 C5 11 2 9 2 6" stroke="#FF719D" strokeWidth="2.2" strokeLinecap="round"/>
                 </svg>
-                <span className="text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground uppercase">Your Daylinks ✨</span>
+                <span className="text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground uppercase">Your Daylinks</span>
               </div>
               <Link href="/connections" className="text-xs font-bold text-primary">See all</Link>
             </div>
@@ -764,7 +768,7 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="px-5">
-              <p className="text-sm text-muted-foreground font-medium italic">Nothing special on the horizon yet. 🗓</p>
+              <p className="text-sm text-muted-foreground font-medium italic">Nothing special on the horizon yet.</p>
             </div>
           )}
         </section>
@@ -774,7 +778,7 @@ export default function HomePage() {
           <div className="px-5 mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground uppercase">Your People</span>
-              <span className="text-sm">❤️</span>
+              <Heart className="w-3.5 h-3.5 fill-primary text-primary" />
             </div>
             <Link href="/people" className="text-xs font-bold text-primary">See all</Link>
           </div>
@@ -879,9 +883,9 @@ function ImportantTodaySection() {
   const hasContent = events.length > 0 || capsuleReady;
   if (!loaded || !hasContent) return null;
 
-  const EVENT_EMOJI: Record<string, string> = {
-    birthday: "🎂", anniversary: "💍", friendship_anniversary: "💜",
-    graduation: "🎓", custom: "✨",
+  const EVENT_COLOR: Record<string, string> = {
+    birthday: "#F43F5E", anniversary: "#EC4899", friendship_anniversary: "#6847F5",
+    graduation: "#8B5CF6", custom: "#F59E0B",
   };
 
   return (
@@ -894,13 +898,13 @@ function ImportantTodaySection() {
         {events.map((ev) => (
           <motion.div key={ev.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-3 bg-white rounded-2xl border border-primary/20 shadow-sm px-4 py-3">
-            <div className="w-10 h-10 rounded-xl bg-[#EAE3FF] flex items-center justify-center text-xl flex-shrink-0">
-              {EVENT_EMOJI[ev.type] ?? "📅"}
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${EVENT_COLOR[ev.type] ?? "#6847F5"}18` }}>
+              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: EVENT_COLOR[ev.type] ?? "#6847F5" }} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-sm leading-tight">{ev.title}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {ev.daysUntil === 0 ? "Today 🎉" : "Tomorrow"}
+                {ev.daysUntil === 0 ? "Today" : "Tomorrow"}
               </p>
             </div>
             {ev.type === "birthday" && (
@@ -920,7 +924,7 @@ function ImportantTodaySection() {
                 <Package className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm">Your memory capsule is ready 🎁</p>
+                <p className="font-bold text-sm">Your memory capsule is ready</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Last month wrapped up. Tap to open.</p>
               </div>
               <span className="text-primary text-lg">→</span>

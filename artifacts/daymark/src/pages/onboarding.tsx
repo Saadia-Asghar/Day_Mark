@@ -18,7 +18,6 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 // ── Spec slides (Section 6) ────────────────────────────────────────────────
 const WELCOME_STEPS = [
   {
-    emoji: "✨",
     title: "Keep your moments",
     desc: "Save photos, stories and little things that matter.",
     character: "marky" as const,
@@ -26,7 +25,6 @@ const WELCOME_STEPS = [
     animation: "float" as const,
   },
   {
-    emoji: "💜",
     title: "Remember with your people",
     desc: "Build Daylinks, shared memories and Future Gifts.",
     character: "hearty" as const,
@@ -34,7 +32,6 @@ const WELCOME_STEPS = [
     animation: "float" as const,
   },
   {
-    emoji: "💌",
     title: "Send something into the future",
     desc: "Save messages for birthdays, anniversaries and meaningful days.",
     character: "marky" as const,
@@ -42,7 +39,6 @@ const WELCOME_STEPS = [
     animation: "float" as const,
   },
   {
-    emoji: "🌍",
     title: "See little moments from everywhere",
     desc: "Explore memories people explicitly choose to share.",
     character: "marky" as const,
@@ -195,7 +191,7 @@ function PersonalSetupStep({ onDone }: { onDone: () => void }) {
   return (
     <div className="flex flex-col items-center w-full px-4">
       <DaymarkCharacter character="marky" pose="celebrate" size="md" animation="float" className="mb-5" />
-      <h1 className="text-2xl font-extrabold text-center mb-1">Almost there ✨</h1>
+      <h1 className="text-2xl font-extrabold text-center mb-1">Almost there</h1>
       <p className="text-sm text-muted-foreground text-center mb-6 max-w-[240px] leading-relaxed">
         A few optional details to personalise your Daymark.
       </p>
@@ -242,7 +238,7 @@ function PersonalSetupStep({ onDone }: { onDone: () => void }) {
         >
           {saving
             ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            : "Start my Daymark ✨"}
+            : "Start my Daymark"}
         </button>
         <button onClick={onDone} className="text-sm text-muted-foreground font-medium">
           Skip for now
@@ -367,7 +363,6 @@ export default function OnboardingPage() {
                 animation={current.animation}
                 className="mb-8"
               />
-              <div className="text-5xl mb-4">{current.emoji}</div>
               <h1 className="text-3xl font-bold text-foreground mb-4">{current.title}</h1>
               <p className="text-lg text-muted-foreground font-medium px-4 max-w-xs leading-relaxed">{current.desc}</p>
             </motion.div>
@@ -382,7 +377,7 @@ export default function OnboardingPage() {
             onClick={nextStep}
             className="w-full bg-primary text-primary-foreground py-4 rounded-2xl text-lg font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all"
           >
-            {step === WELCOME_STEPS.length - 1 ? "Let's go ✨" : "Continue"}
+            {step === WELCOME_STEPS.length - 1 ? "Let's go" : "Continue"}
             {step < WELCOME_STEPS.length - 1 && <ChevronRight className="w-5 h-5" />}
           </button>
         </div>

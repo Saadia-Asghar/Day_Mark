@@ -92,7 +92,7 @@ export default function SignInPage() {
       <div className="flex items-end gap-4 mb-6">
         <DaymarkCharacter character="marky" pose="wave" size="sm" animation="float" />
         <div>
-          <h1 className="text-2xl font-extrabold text-foreground">Welcome back 💜</h1>
+          <h1 className="text-2xl font-extrabold text-foreground">Welcome back</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Sign in to your Daymark</p>
         </div>
       </div>
@@ -180,7 +180,7 @@ export default function SignInPage() {
               </button>
             )}
             {resendSent && (
-              <p className="text-emerald-600 font-semibold">✓ Verification email sent — check your inbox 💌</p>
+              <p className="text-emerald-600 font-semibold">✓ Verification email sent — check your inbox</p>
             )}
           </motion.div>
         )}

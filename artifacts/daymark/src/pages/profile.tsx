@@ -5,7 +5,7 @@ import { useAppAuth } from "@/App";
 import {
   useListMemories, useListPeople, useListFutureGifts,
 } from "@workspace/api-client-react";
-import { ChevronRight, LogOut, X, Check, Camera, Loader2, Mail, Package, Trash2 } from "lucide-react";
+import { ChevronRight, LogOut, X, Check, Camera, Loader2, Mail, Package, Trash2, Pencil, BookOpen, Users, Gift, Lock, Globe, Link2, Bell, Shield } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -90,7 +90,7 @@ function EditProfileSheet({ open, onClose, dbUser }: {
       }
 
       qc.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({ title: "Profile updated ✨" });
+      toast({ title: "Profile updated" });
       onClose();
     } catch (e: any) {
       toast({ title: "Couldn't save changes", description: e?.message, variant: "destructive" });
@@ -268,7 +268,7 @@ function EditProfileSheet({ open, onClose, dbUser }: {
                   <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-700 font-medium flex items-start gap-2">
                     <Mail className="w-4 h-4 mt-0.5 shrink-0" />
                     <div>
-                      <p className="font-bold">Confirmation email sent 💌</p>
+                      <p className="font-bold">Confirmation email sent</p>
                       <p className="text-xs text-emerald-600 mt-0.5">
                         Click the link in your new inbox to confirm the change to <span className="font-semibold">{newEmail}</span>.
                         Your current email stays active until confirmed.
@@ -434,37 +434,37 @@ export default function ProfilePage() {
   const initials = ((user.firstName?.[0] ?? "") + (user.lastName?.[0] ?? "")).toUpperCase() || "M";
 
   const stats = [
-    { label: "Memories",   value: memories?.length ?? 0,     icon: "📸" },
-    { label: "People",     value: people?.length ?? 0,        icon: "❤️" },
-    { label: "Daylinks",   value: daylinksCount ?? 0,         icon: "✨" },
-    { label: "Future",     value: futureGifts?.length ?? 0,   icon: "🔒" },
+    { label: "Memories",  value: memories?.length ?? 0,     color: "#6847F5" },
+    { label: "People",    value: people?.length ?? 0,        color: "#F43F5E" },
+    { label: "Daylinks",  value: daylinksCount ?? 0,         color: "#F59E0B" },
+    { label: "Future",    value: futureGifts?.length ?? 0,   color: "#94A3B8" },
   ];
 
   const menuSections = [
     {
       title: "My Daymark",
       items: [
-        { label: "My Story",           icon: "📖", href: "/home" },
-        { label: "My People",          icon: "❤️", href: "/people" },
-        { label: "My Gifts",           icon: "✨", href: "/gifts" },
-        { label: "Future Gifts",       icon: "🔒", href: "/future-gifts" },
-        { label: "Memory Globe",       icon: "🌍", href: "/globe" },
+        { label: "My Story",           Icon: BookOpen, color: "#6847F5", href: "/home" },
+        { label: "My People",          Icon: Users,    color: "#F43F5E", href: "/people" },
+        { label: "My Gifts",           Icon: Gift,     color: "#F59E0B", href: "/gifts" },
+        { label: "Future Gifts",       Icon: Lock,     color: "#94A3B8", href: "/future-gifts" },
+        { label: "Memory Globe",       Icon: Globe,    color: "#06B6D4", href: "/globe" },
       ],
     },
     {
       title: "Connect",
       items: [
-        { label: "Connections",        icon: "💜", href: "/connections" },
-        { label: "Messages for Later", icon: "💌", href: "/messages" },
-        { label: "Invite Friends",     icon: "🔗", href: "/invite" },
-        { label: "Monthly Capsule",    icon: "🎁", href: "/capsule" },
+        { label: "Connections",        Icon: Users,    color: "#6847F5", href: "/connections" },
+        { label: "Messages for Later", Icon: Mail,     color: "#F43F5E", href: "/messages" },
+        { label: "Invite Friends",     Icon: Link2,    color: "#F59E0B", href: "/invite" },
+        { label: "Monthly Capsule",    Icon: Gift,     color: "#10B981", href: "/capsule" },
       ],
     },
     {
       title: "Settings",
       items: [
-        { label: "Privacy",            icon: "🛡️", href: "/settings/privacy" },
-        { label: "Notifications",      icon: "🔔", href: "/settings/notifications" },
+        { label: "Privacy",            Icon: Shield,   color: "#94A3B8", href: "/settings/privacy" },
+        { label: "Notifications",      Icon: Bell,     color: "#6847F5", href: "/settings/notifications" },
       ],
     },
   ];
@@ -523,7 +523,7 @@ export default function ProfilePage() {
           >
             <Mail className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-amber-800">Confirm your new email 💌</p>
+              <p className="text-xs font-bold text-amber-800">Confirm your new email</p>
               <p className="text-xs text-amber-700 truncate">
                 Check <span className="font-semibold">{pendingEmail.email}</span> and click the link to finish changing your address.
               </p>
@@ -573,7 +573,9 @@ export default function ProfilePage() {
                 {initials}
               </div>
             )}
-            <div className="absolute -bottom-1 -right-1 text-xl">✨</div>
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-sm">
+              <Pencil className="w-3 h-3 text-white" />
+            </div>
           </div>
 
           <h1 className="text-2xl font-extrabold text-foreground">
@@ -604,7 +606,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-5 mt-5">
             {stats.map((s) => (
               <div key={s.label} className="flex flex-col items-center">
-                <span className="text-lg mb-0.5">{s.icon}</span>
+                <div className="w-3 h-3 rounded-full mb-1" style={{ backgroundColor: s.color }} />
                 <span className="text-xl font-extrabold">{s.value}</span>
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">{s.label}</span>
               </div>
@@ -656,14 +658,18 @@ export default function ProfilePage() {
                 item.href ? (
                   <Link key={item.label} href={item.href} className="block outline-none">
                     <div className={`flex items-center gap-3 px-5 py-4 active:bg-muted transition-colors ${i < section.items.length - 1 ? "border-b border-border/50" : ""}`}>
-                      <span className="text-xl">{item.icon}</span>
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${item.color}18` }}>
+                        <item.Icon className="w-4 h-4" style={{ color: item.color }} />
+                      </div>
                       <span className="font-semibold text-sm flex-1">{item.label}</span>
                       <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
                     </div>
                   </Link>
                 ) : (
                   <div key={item.label} className={`flex items-center gap-3 px-5 py-4 ${i < section.items.length - 1 ? "border-b border-border/50" : ""}`}>
-                    <span className="text-xl">{item.icon}</span>
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${item.color}18` }}>
+                      <item.Icon className="w-4 h-4" style={{ color: item.color }} />
+                    </div>
                     <span className="font-semibold text-sm flex-1 text-muted-foreground">{item.label}</span>
                     <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Soon</span>
                   </div>

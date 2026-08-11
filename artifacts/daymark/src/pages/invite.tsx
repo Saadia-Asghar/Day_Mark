@@ -7,7 +7,7 @@
 import { useState, useEffect } from "react";
 import { Link, useRoute } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowLeft, Share2, Copy, Link2, Loader2, Check, X } from "lucide-react";
+import { ArrowLeft, Share2, Copy, Link2, Loader2, Check, X, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAppAuth } from "@/App";
 
@@ -50,7 +50,7 @@ function JoinPage({ token }: { token: string }) {
           {info ? (
             <>
               <h1 className="text-2xl font-extrabold">
-                {info.inviterName} invited you to Daymark 💜
+                {info.inviterName} invited you to Daymark
               </h1>
               <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
                 Keep the little gifts life gives you — memories, moments, the people who make it worth it.
@@ -58,7 +58,7 @@ function JoinPage({ token }: { token: string }) {
             </>
           ) : (
             <>
-              <h1 className="text-2xl font-extrabold">Join Daymark 💜</h1>
+              <h1 className="text-2xl font-extrabold">Join Daymark</h1>
               <p className="text-sm text-muted-foreground mt-3">A home for the moments that matter.</p>
             </>
           )}
@@ -133,7 +133,7 @@ export default function InvitePage() {
   async function handleShare(method: "native" | "whatsapp" | "copy") {
     if (!currentInvite) { await createInvite(); return; }
     const url = currentInvite.url;
-    const text = `Come save little memories on Daymark with me 💜 ${url}`;
+    const text = `Come save little memories on Daymark with me — ${url}`;
 
     switch (method) {
       case "native":
@@ -161,7 +161,9 @@ export default function InvitePage() {
       <div className="px-5 pt-6 space-y-6">
         {/* Hero card */}
         <div className="bg-gradient-to-br from-primary to-[#9B70FF] rounded-3xl p-6 text-white shadow-[0_8px_32px_rgba(104,71,245,0.3)]">
-          <div className="text-4xl mb-3">💜</div>
+          <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center mb-3">
+            <div className="w-6 h-6 rounded-full bg-white/60" />
+          </div>
           <h2 className="text-xl font-extrabold">Invite someone special</h2>
           <p className="text-sm text-white/80 mt-1.5 leading-relaxed">
             The best memories are shared ones. Bring a friend to Daymark.
@@ -210,7 +212,7 @@ export default function InvitePage() {
 
           <button onClick={() => handleShare("whatsapp")} className="w-full flex items-center gap-4 p-4 bg-white rounded-2xl border border-border/60 shadow-sm active:scale-[0.98] transition-all">
             <div className="w-11 h-11 rounded-xl bg-[#dcfce7] flex items-center justify-center">
-              <span className="text-2xl">💬</span>
+              <MessageCircle className="w-6 h-6 text-green-600" />
             </div>
             <div className="text-left">
               <p className="font-bold text-sm">WhatsApp</p>

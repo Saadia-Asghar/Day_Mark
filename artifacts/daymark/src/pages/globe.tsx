@@ -13,7 +13,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, MapPin, X, Flag, Filter, Loader2 } from "lucide-react";
+import { ArrowLeft, MapPin, X, Flag, Filter, Loader2, Globe2 } from "lucide-react";
 import { format, isToday, isThisWeek } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import L from "leaflet";
@@ -46,13 +46,13 @@ interface GlobeMemory {
 type FilterId = "all" | "today" | "week" | "travel" | "people" | "food" | "everyday" | "celebration" | "nature";
 
 // ── Category config ────────────────────────────────────────────────────────
-const CAT: Record<string, { color: string; emoji: string; bg: string }> = {
-  everyday:    { color: "#6847F5", emoji: "✨", bg: "#EAE3FF" },
-  travel:      { color: "#0EA5E9", emoji: "✈️", bg: "#E0F2FE" },
-  food:        { color: "#F97316", emoji: "🍜", bg: "#FFF0E4" },
-  people:      { color: "#EC4899", emoji: "💜", bg: "#FCE7F3" },
-  nature:      { color: "#22C55E", emoji: "🌿", bg: "#DCFCE7" },
-  celebration: { color: "#EAB308", emoji: "🎉", bg: "#FEF9C3" },
+const CAT: Record<string, { color: string; bg: string }> = {
+  everyday:    { color: "#6847F5", bg: "#EAE3FF" },
+  travel:      { color: "#0EA5E9", bg: "#E0F2FE" },
+  food:        { color: "#F97316", bg: "#FFF0E4" },
+  people:      { color: "#EC4899", bg: "#FCE7F3" },
+  nature:      { color: "#22C55E", bg: "#DCFCE7" },
+  celebration: { color: "#EAB308", bg: "#FEF9C3" },
 };
 function catOf(cat: string) { return CAT[cat] ?? CAT.everyday; }
 
@@ -125,8 +125,9 @@ function LeafletMap({ memories, onSelect }: { memories: GlobeMemory[]; onSelect:
 
     for (const cluster of clusters) {
       const primary = cluster.memories[0];
-      const { color, emoji } = catOf(primary.category);
+      const { color } = catOf(primary.category);
       const isCluster = cluster.memories.length > 1;
+      const dotLabel = isCluster ? String(cluster.memories.length) : "·";
 
       // Build custom HTML icon
       const iconHtml = `
@@ -149,13 +150,13 @@ function LeafletMap({ memories, onSelect }: { memories: GlobeMemory[]; onSelect:
             border: 3px solid white;
             box-shadow: 0 2px 12px ${color}60;
             display: flex; align-items: center; justify-content: center;
-            font-size: ${isCluster ? 14 : 12}px;
+            font-size: ${isCluster ? 14 : 16}px;
             color: white;
             font-weight: 900;
             font-family: system-ui;
             cursor: pointer;
           ">
-            ${isCluster ? cluster.memories.length : emoji}
+            ${dotLabel}
           </div>
           ${primary.photoUrl ? `
             <div style="
@@ -199,7 +200,7 @@ function LeafletMap({ memories, onSelect }: { memories: GlobeMemory[]; onSelect:
 // ── Memory card (bottom sheet) ─────────────────────────────────────────────
 
 function MemoryCard({ memory, onClose, onReport }: { memory: GlobeMemory; onClose: () => void; onReport: (id: number) => void }) {
-  const { color, emoji } = catOf(memory.category);
+  const { color } = catOf(memory.category);
   return (
     <motion.div
       initial={{ opacity: 0, y: 60 }}
@@ -218,7 +219,7 @@ function MemoryCard({ memory, onClose, onReport }: { memory: GlobeMemory; onClos
         )}
         <div className="p-4">
           <div className="flex items-center gap-1.5 mb-2">
-            <span className="text-base">{emoji}</span>
+            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
             <span className="text-[11px] font-extrabold uppercase tracking-widest" style={{ color }}>{memory.category}</span>
           </div>
           {memory.caption && (
@@ -240,7 +241,7 @@ function MemoryCard({ memory, onClose, onReport }: { memory: GlobeMemory; onClos
           </div>
           <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/40">
             <span className="text-xs font-bold text-muted-foreground">
-              {memory.displayName === "Anonymous" ? "✨ Anonymous" : `@${memory.username ?? memory.displayName}`}
+              {memory.displayName === "Anonymous" ? "Anonymous" : `@${memory.username ?? memory.displayName}`}
             </span>
             <div className="flex gap-2">
               <button onClick={() => onReport(memory.publicId)} className="flex items-center gap-1 text-xs text-muted-foreground px-2 py-1 rounded-lg active:scale-95">
@@ -260,7 +261,7 @@ function MemoryCard({ memory, onClose, onReport }: { memory: GlobeMemory; onClos
 // ── Feed card ─────────────────────────────────────────────────────────────
 
 function FeedCard({ memory, onSelect }: { memory: GlobeMemory; onSelect: () => void }) {
-  const { color, emoji } = catOf(memory.category);
+  const { color } = catOf(memory.category);
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -272,8 +273,8 @@ function FeedCard({ memory, onSelect }: { memory: GlobeMemory; onSelect: () => v
         {memory.photoUrl ? (
           <img src={memory.photoUrl} alt="" className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border border-border/30" loading="lazy" />
         ) : (
-          <div className="w-16 h-16 rounded-xl flex-shrink-0 flex items-center justify-center text-2xl" style={{ background: `${color}20` }}>
-            {emoji}
+          <div className="w-16 h-16 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ background: `${color}20` }}>
+            <div className="w-5 h-5 rounded-full" style={{ backgroundColor: color }} />
           </div>
         )}
         <div className="flex-1 min-w-0">
@@ -291,7 +292,7 @@ function FeedCard({ memory, onSelect }: { memory: GlobeMemory; onSelect: () => v
             {memory.date && <span className="text-[10px] text-muted-foreground">{format(new Date(memory.date), "MMM d")}</span>}
           </div>
           <span className="text-[10px] font-bold mt-1 block" style={{ color }}>
-            {emoji} {memory.displayName === "Anonymous" ? "Anonymous" : `@${memory.username ?? memory.displayName}`}
+            {memory.displayName === "Anonymous" ? "Anonymous" : `@${memory.username ?? memory.displayName}`}
           </span>
         </div>
       </div>
@@ -301,15 +302,19 @@ function FeedCard({ memory, onSelect }: { memory: GlobeMemory; onSelect: () => v
 
 // ── Filter pills ─────────────────────────────────────────────────────────
 
-const FILTERS: { id: FilterId; label: string; emoji: string }[] = [
-  { id: "all", label: "All", emoji: "🌍" },
-  { id: "today", label: "Today", emoji: "📅" },
-  { id: "week", label: "This Week", emoji: "📆" },
-  { id: "travel", label: "Travel", emoji: "✈️" },
-  { id: "food", label: "Food", emoji: "🍜" },
-  { id: "celebration", label: "Celebration", emoji: "🎉" },
-  { id: "nature", label: "Nature", emoji: "🌿" },
-  { id: "everyday", label: "Everyday", emoji: "✨" },
+const FILTER_COLORS: Record<string, string> = {
+  all: "#6847F5", today: "#F59E0B", week: "#06B6D4", travel: "#0EA5E9",
+  food: "#F97316", celebration: "#EAB308", nature: "#22C55E", everyday: "#6847F5",
+};
+const FILTERS: { id: FilterId; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "today", label: "Today" },
+  { id: "week", label: "This Week" },
+  { id: "travel", label: "Travel" },
+  { id: "food", label: "Food" },
+  { id: "celebration", label: "Celebration" },
+  { id: "nature", label: "Nature" },
+  { id: "everyday", label: "Everyday" },
 ];
 
 function applyFilter(memories: GlobeMemory[], filter: FilterId): GlobeMemory[] {
@@ -371,7 +376,7 @@ export default function GlobePage() {
         credentials: "include",
         body: JSON.stringify({ reason: reportReason }),
       });
-      toast({ title: "Report submitted. Thank you 💜" });
+      toast({ title: "Report submitted. Thank you." });
     } catch { /* silent */ }
     setReportId(null);
     setReportReason("");
@@ -412,13 +417,13 @@ export default function GlobePage() {
               onClick={() => setViewMode("map")}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === "map" ? "bg-white shadow text-primary" : "text-muted-foreground"}`}
             >
-              🗺 Map
+              Map
             </button>
             <button
               onClick={() => setViewMode("feed")}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === "feed" ? "bg-white shadow text-primary" : "text-muted-foreground"}`}
             >
-              📋 Feed
+              Feed
             </button>
           </div>
         </div>
@@ -433,7 +438,7 @@ export default function GlobePage() {
                 filter === f.id ? "bg-primary text-white shadow-sm" : "bg-white border border-border/60 text-foreground"
               }`}
             >
-              <span>{f.emoji}</span> {f.label}
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: FILTER_COLORS[f.id] ?? "#6847F5" }} /> {f.label}
             </button>
           ))}
         </div>
@@ -457,7 +462,9 @@ export default function GlobePage() {
         <div className="flex-1 relative z-0">
           {filtered.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center py-16 px-8 text-center">
-              <div className="text-5xl mb-4">🌍</div>
+              <div className="w-16 h-16 rounded-full bg-[#EAE3FF] flex items-center justify-center mb-4 mx-auto">
+              <Globe2 className="w-8 h-8 text-primary" />
+            </div>
               <p className="font-bold text-foreground">No memories match this filter yet.</p>
               <p className="text-xs text-muted-foreground mt-2">Be the first — publish a memory with a location to the globe.</p>
               <Link href="/gifts" className="mt-4 inline-block bg-primary text-white text-sm font-bold px-6 py-2.5 rounded-full">
@@ -541,7 +548,7 @@ export default function GlobePage() {
       {viewMode === "map" && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[999] pointer-events-none">
           <div className="bg-white/80 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] text-muted-foreground font-medium shadow-sm border border-border/40 whitespace-nowrap">
-            📍 City-level locations only · No exact GPS shared
+            City-level locations only · No exact GPS shared
           </div>
         </div>
       )}

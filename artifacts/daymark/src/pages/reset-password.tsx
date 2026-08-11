@@ -209,7 +209,7 @@ export default function ResetPasswordPage() {
           <motion.div key="success" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
             className="flex flex-col items-center text-center pt-16">
             <DaymarkCharacter character="marky" pose="celebrate" size="lg" animation="celebrate" className="mb-6" />
-            <h1 className="text-2xl font-extrabold mb-2">Your password has been changed ✨</h1>
+            <h1 className="text-2xl font-extrabold mb-2">Your password has been changed</h1>
             <p className="text-sm text-muted-foreground mb-8">You're all set. Sign in with your new password.</p>
             <button onClick={() => setLocation("/sign-in?passwordReset=1")}
               className="w-full max-w-sm h-[52px] bg-primary text-white rounded-full font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] flex items-center justify-center active:scale-[0.97] transition-all">
