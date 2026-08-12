@@ -23,6 +23,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 /** Session-storage key used to authorise the reset-password page. */
 export const RECOVERY_FLAG = "daymark_recovery_mode";
+export const RECOVERY_REQUEST_KEY = "daymark_recovery_requested_at";
 
 /** localStorage key — set when a user initiates an email change, cleared on confirmation. */
 export const PENDING_EMAIL_KEY = "daymark_pending_email_change";
@@ -44,6 +45,10 @@ export default function AuthCallbackPage() {
     const username = params.get("username");
     // `mode=recovery` is set by forgot-password.tsx to flag recovery intent.
     const isRecoveryIntent = params.get("mode") === "recovery";
+    const hasRecoveryToken = hashParams.get("type") === "recovery";
+    const recoveryRequestedAt = Number(sessionStorage.getItem(RECOVERY_REQUEST_KEY));
+    const hasRecentRecoveryRequest = Number.isFinite(recoveryRequestedAt)
+      && Date.now() - recoveryRequestedAt < 60 * 60 * 1000;
 
     let cancelled = false;
 
@@ -59,6 +64,7 @@ export default function AuthCallbackPage() {
         // User clicked a password-reset link.
         // Set a short-lived flag so /reset-password knows the session is genuine.
         sessionStorage.setItem(RECOVERY_FLAG, "1");
+        sessionStorage.removeItem(RECOVERY_REQUEST_KEY);
         clearTimeout(timer);
         setLocation("/reset-password");
         return;
@@ -102,10 +108,11 @@ export default function AuthCallbackPage() {
 
     // URL detection can complete before this component subscribes. Recover
     // from the already-created recovery session instead of timing out.
-    if (isRecoveryIntent) {
+    if (isRecoveryIntent && (hasRecoveryToken || hasRecentRecoveryRequest)) {
       void supabase.auth.getSession().then(({ data: { session } }) => {
         if (!cancelled && session) {
           sessionStorage.setItem(RECOVERY_FLAG, "1");
+          sessionStorage.removeItem(RECOVERY_REQUEST_KEY);
           clearTimeout(timer);
           setLocation("/reset-password");
         }

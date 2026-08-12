@@ -12,6 +12,7 @@ import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { DaymarkCharacter } from "@/components/daymark-character";
+import { RECOVERY_REQUEST_KEY } from "./auth-callback";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -35,11 +36,13 @@ export default function ForgotPasswordPage() {
       // Route through /auth/callback so the already-mounted listener catches the
       // PASSWORD_RECOVERY event before redirecting to /reset-password.
       const redirectTo = `${window.location.origin}${basePath}/auth/callback?mode=recovery`;
+      sessionStorage.setItem(RECOVERY_REQUEST_KEY, String(Date.now()));
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         email.trim(),
         { redirectTo },
       );
       if (resetError) {
+        sessionStorage.removeItem(RECOVERY_REQUEST_KEY);
         const message = resetError.message.toLowerCase();
         if (message.includes("rate") || message.includes("too many")) {
           setError("Too many reset requests. Please wait a few minutes and try again.");

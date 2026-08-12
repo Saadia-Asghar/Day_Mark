@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link, useLocation } from "wouter";
-import { Eye, EyeOff, Check, X, ArrowLeft, Mail, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Check, X, ArrowLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { DaymarkCharacter } from "@/components/daymark-character";
 
@@ -57,9 +57,6 @@ export default function SignUpPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [resendLoading, setResendLoading] = useState(false);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -77,27 +74,13 @@ export default function SignUpPage() {
     }, 500);
   }, [username]);
 
-  // Cooldown countdown for resend button
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendCooldown]);
-
-  const handleResend = async () => {
-    if (resendCooldown > 0 || resendLoading) return;
-    setResendLoading(true);
-    await supabase.auth.resend({ type: "signup", email: email.trim() }).catch(() => undefined);
-    setResendLoading(false);
-    setResendCooldown(60);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (password !== confirmPassword) { setError("Passwords don't match."); return; }
     if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
-    if (isValidUsername(username) && usernameAvail === false) { setError("That username is already taken. Try another."); return; }
+    if (!isValidUsername(username)) { setError("Username must be 3–24 characters using letters, numbers, or _."); return; }
+    if (usernameAvail === false) { setError("That username is already taken. Try another."); return; }
     setLoading(true);
 
     try {
@@ -115,8 +98,9 @@ export default function SignUpPage() {
       if (signUpError) {
         setError(friendlyError(signUpError.message));
       } else if (!data.session) {
-        // Email confirmation required — account created, awaiting verification
-        setAwaitingConfirmation(true);
+        setError(
+          "Your account was created, but instant signup is not enabled. Ask the Daymark administrator to disable Confirm email in Supabase, then sign in.",
+        );
       } else {
         if (isValidUsername(username)) {
           await fetch(`${basePath}/api/auth/profile`, {
@@ -135,67 +119,6 @@ export default function SignUpPage() {
     }
     setLoading(false);
   };
-
-  // ── Awaiting email confirmation screen ──────────────────────────────────
-  if (awaitingConfirmation) {
-    return (
-      <div className="min-h-[100dvh] bg-[#FFF9F5] flex flex-col items-center justify-center px-6 pb-10">
-        <AnimatePresence>
-          <motion.div
-            key="confirm"
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="w-full max-w-sm text-center"
-          >
-            {/* Icon */}
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-              <Mail className="w-9 h-9 text-primary" />
-            </div>
-
-            <h1 className="text-2xl font-extrabold mb-2">Check your inbox</h1>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-1">
-              We sent a confirmation link to
-            </p>
-            <p className="text-sm font-bold text-foreground mb-6 break-all">{email}</p>
-
-            <div className="bg-white border border-border rounded-2xl px-5 py-4 text-left mb-6 shadow-sm">
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Click the link in the email to activate your account, then come back here to sign in.
-                If you don't see it, check your spam folder.
-              </p>
-            </div>
-
-            {/* Resend */}
-            <button
-              onClick={handleResend}
-              disabled={resendCooldown > 0 || resendLoading}
-              className="w-full h-[52px] border-2 border-primary text-primary rounded-full font-bold flex items-center justify-center gap-2 active:scale-[0.97] disabled:opacity-50 transition-all mb-4"
-            >
-              {resendLoading
-                ? <Loader2 className="w-4 h-4 animate-spin" />
-                : resendCooldown > 0
-                  ? `Resend in ${resendCooldown}s`
-                  : "Resend confirmation email"}
-            </button>
-
-            <Link href="/sign-in">
-              <button className="w-full h-[52px] bg-primary text-white rounded-full font-bold shadow-[0_0_20px_rgba(104,71,245,0.3)] flex items-center justify-center gap-2 active:scale-[0.97] transition-all">
-                Go to sign in
-              </button>
-            </Link>
-
-            <button
-              onClick={() => { setAwaitingConfirmation(false); setError(null); }}
-              className="mt-4 text-sm text-muted-foreground underline-offset-2 hover:underline"
-            >
-              Use a different email
-            </button>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-[100dvh] bg-[#FFF9F5] flex flex-col px-6 pt-14 pb-10 overflow-x-hidden">
@@ -229,7 +152,7 @@ export default function SignUpPage() {
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold text-sm">@</div>
                   <input type="text" value={username}
                     onChange={e => { const v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 24); setUsername(v); setError(null); }}
-                    placeholder="yourname" autoCapitalize="none" autoCorrect="off" autoComplete="username"
+                    placeholder="yourname" autoCapitalize="none" autoCorrect="off" autoComplete="username" required
                     className="w-full pl-9 pr-10 py-3.5 bg-white border-2 border-border rounded-2xl text-sm outline-none focus:border-primary transition-colors" />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2">
                     {usernameChecking ? <div className="w-4 h-4 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
@@ -267,7 +190,9 @@ export default function SignUpPage() {
                     {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                {confirmPassword && password !== confirmPassword && <p className="text-xs text-red-500 mt-1">Passwords don't match.</p>}
+                {confirmPassword && password !== confirmPassword && error !== "Passwords don't match." && (
+                  <p className="text-xs text-red-500 mt-1">Passwords don't match.</p>
+                )}
               </div>
 
               {error && (
