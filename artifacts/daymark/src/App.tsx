@@ -42,7 +42,7 @@ import ForgotPasswordPage from '@/pages/forgot-password';
 import AuthCallbackPage from '@/pages/auth-callback';
 import ResetPasswordPage from '@/pages/reset-password';
 
-import { type ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import { type ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase, syncAuthCookie } from '@/lib/supabase';
 import { setAuthTokenGetter } from '@workspace/api-client-react';
@@ -160,6 +160,9 @@ type SSEStatus = 'connected' | 'reconnecting' | 'restored';
 function useSSEUpdates(isAuthenticated: boolean) {
   const qc = useQueryClient();
   const [status, setStatus] = useState<SSEStatus>('connected');
+  // Only show "Reconnecting…" if SSE had a successful open before —
+  // avoids the banner firing on first-ever 401 (e.g. during onboarding).
+  const hasEverConnected = useRef(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -194,6 +197,7 @@ function useSSEUpdates(isAuthenticated: boolean) {
       es.addEventListener('globe.reaction', () => invalidate(['/api/globe/memories']));
 
       es.addEventListener('open', () => {
+        hasEverConnected.current = true;
         if (reconnectTimer) {
           setStatus('restored');
           setTimeout(() => setStatus('connected'), 2500);
@@ -204,8 +208,10 @@ function useSSEUpdates(isAuthenticated: boolean) {
       });
 
       es.addEventListener('error', () => {
-        if (!reconnectTimer) {
-          reconnectTimer = setTimeout(() => setStatus('reconnecting'), 3000);
+        // Only surface the banner if we had a real connection before.
+        // A first-ever error (e.g. 401 on onboarding) should be silent.
+        if (!reconnectTimer && hasEverConnected.current) {
+          reconnectTimer = setTimeout(() => setStatus('reconnecting'), 5000);
         }
       });
     }

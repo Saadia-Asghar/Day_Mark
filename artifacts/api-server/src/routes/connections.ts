@@ -191,6 +191,23 @@ router.delete("/connections/:id", requireAuth, async (req, res): Promise<void> =
   res.status(204).send();
 });
 
+// ── GET /api/users/check-username?q=username ──────────────────────────────
+// Public endpoint — used during sign-up/onboarding to check availability.
+// Returns only { available: boolean }; never exposes user rows.
+
+router.get("/users/check-username", async (req, res): Promise<void> => {
+  const q = String(req.query.q ?? "").toLowerCase().replace(/^@/, "").trim();
+  if (!q || q.length < 3) { res.json({ available: false }); return; }
+
+  const [existing] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.username, q))
+    .limit(1);
+
+  res.json({ available: !existing });
+});
+
 // ── GET /api/users/search?q=username ──────────────────────────────────────
 // Find a Daymark user by @username (no full directory)
 

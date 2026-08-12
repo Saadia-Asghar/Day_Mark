@@ -67,11 +67,10 @@ export default function SignUpPage() {
     setUsernameChecking(true);
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`${basePath}/api/users/search?q=${encodeURIComponent(username)}`);
+        const res = await fetch(`${basePath}/api/users/check-username?q=${encodeURIComponent(username)}`);
         if (res.ok) {
           const d = await res.json();
-          const taken = (d.users ?? []).some((u: { username?: string }) => u.username?.toLowerCase() === username.toLowerCase());
-          setUsernameAvail(!taken);
+          setUsernameAvail(d.available === true);
         }
       } catch { /* silent */ }
       setUsernameChecking(false);

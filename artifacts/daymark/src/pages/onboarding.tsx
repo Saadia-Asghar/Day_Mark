@@ -68,11 +68,10 @@ function UsernameStep({ onDone }: { onDone: () => void }) {
     setChecking(true);
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`${basePath}/api/users/search?q=${encodeURIComponent(v)}`, { credentials: "include" });
+        const res = await fetch(`${basePath}/api/users/check-username?q=${encodeURIComponent(v)}`);
         if (res.ok) {
-          const data = await res.json();
-          const taken = (data.users ?? []).some((u: { username?: string }) => u.username?.toLowerCase() === v);
-          setAvailable(!taken);
+          const d = await res.json();
+          setAvailable(d.available === true);
         }
       } catch { /* silent */ }
       setChecking(false);
