@@ -1,4 +1,4 @@
-import { verify } from 'jsonwebtoken';
+import { createClient } from '@supabase/supabase-js';
 import { eq } from 'drizzle-orm';
 import { db, usersTable, pool } from '@workspace/db';
 import { type NextFunction, type Request, type Response } from 'express';
@@ -11,8 +11,15 @@ declare global {
   }
 }
 
+// Admin client used solely to verify user tokens — service role never leaves the server.
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } },
+);
+
 /**
- * Extract the Supabase JWT token string from the incoming request.
+ * Extract the raw access token from the incoming request.
  * Checks: 1. Authorization: Bearer <token>  2. sb-token cookie (set by the SPA)
  */
 function getTokenString(req: Request): string | null {
@@ -28,23 +35,22 @@ function getTokenString(req: Request): string | null {
   return null;
 }
 
-interface DecodedJWT {
-  sub: string;
-  email?: string;
-}
-
-function decodeJWT(req: Request): DecodedJWT | null {
+/**
+ * Verify the token with Supabase and return { sub, email } — or null on failure.
+ * Uses supabase.auth.getUser() so the algorithm and secret are handled by Supabase itself.
+ */
+async function verifyToken(req: Request): Promise<{ sub: string; email?: string } | null> {
   const token = getTokenString(req);
   if (!token) {
     console.warn('[requireAuth] no token found (no Bearer header, no sb-token cookie)');
     return null;
   }
-  try {
-    return verify(token, process.env.SUPABASE_JWT_SECRET!, { algorithms: ['HS256'] }) as DecodedJWT;
-  } catch (err) {
-    console.warn('[requireAuth] JWT verification failed:', (err as Error).message);
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !data.user) {
+    console.warn('[requireAuth] token verification failed:', error?.message ?? 'no user returned');
     return null;
   }
+  return { sub: data.user.id, email: data.user.email };
 }
 
 /**
@@ -102,15 +108,16 @@ async function resolveUser(
 /**
  * requireAuth — Express middleware.
  *
- * Verifies the Supabase JWT, resolves (or provisions) the local DB user row,
- * and attaches it to req.dbUser. Returns 401 if authentication fails.
+ * Verifies the Supabase token (via supabase.auth.getUser), resolves (or
+ * provisions) the local DB user row, and attaches it to req.dbUser.
+ * Returns 401 if authentication fails.
  */
 export async function requireAuth(
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  const decoded = decodeJWT(req);
+  const decoded = await verifyToken(req);
   if (!decoded) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
@@ -129,7 +136,7 @@ export async function requireAuth(
 /**
  * optionalAuth — like requireAuth but never sends 401.
  *
- * Attaches req.dbUser when a valid JWT is present; otherwise leaves it unset.
+ * Attaches req.dbUser when a valid token is present; otherwise leaves it unset.
  * Use for routes that serve both authenticated and anonymous clients.
  */
 export async function optionalAuth(
@@ -137,7 +144,7 @@ export async function optionalAuth(
   _res: Response,
   next: NextFunction,
 ): Promise<void> {
-  const decoded = decodeJWT(req);
+  const decoded = await verifyToken(req);
   if (decoded) {
     const dbUser = await resolveUser(decoded.sub, decoded.email);
     if (dbUser) req.dbUser = dbUser;

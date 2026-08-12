@@ -200,7 +200,7 @@ export default function SignUpPage() {
   return (
     <div className="min-h-[100dvh] bg-[#FFF9F5] flex flex-col px-6 pt-14 pb-10 overflow-x-hidden">
       <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}>
-            <Link href="/auth">
+            <Link href="/">
               <button className="w-9 h-9 rounded-full bg-white border border-border shadow-sm flex items-center justify-center mb-5 active:scale-95 transition-all">
                 <ArrowLeft className="w-4 h-4" />
               </button>

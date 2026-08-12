@@ -275,9 +275,10 @@ export default function OnboardingPage() {
   const finish = () => {
     // Optimistically mark onboarding complete in the cache RIGHT NOW so the
     // route guard at /home lets us through even if the API call is slow/fails.
+    // The query stores the flat user object (queryFn returns data.user directly)
     qc.setQueryData(['/api/auth/user'], (old: Record<string, unknown> | undefined) => {
-      if (!old?.user) return old;
-      return { ...old, user: { ...(old.user as Record<string, unknown>), onboardingCompleted: true } };
+      if (!old) return old;
+      return { ...old, onboardingCompleted: true };
     });
     setLocation("/home");
     // Persist in the background; on success refetch to sync server state.

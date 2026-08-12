@@ -83,7 +83,7 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#FFF9F5] flex flex-col px-6 pt-14 pb-10 overflow-x-hidden">
-      <Link href="/auth">
+      <Link href="/">
         <button className="w-9 h-9 rounded-full bg-white border border-border shadow-sm flex items-center justify-center mb-6 active:scale-95 transition-all">
           <ArrowLeft className="w-4 h-4" />
         </button>
