@@ -40,7 +40,7 @@ function decodeJWT(req: Request): DecodedJWT | null {
     return null;
   }
   try {
-    return verify(token, process.env.SUPABASE_JWT_SECRET!) as DecodedJWT;
+    return verify(token, process.env.SUPABASE_JWT_SECRET!, { algorithms: ['HS256'] }) as DecodedJWT;
   } catch (err) {
     console.warn('[requireAuth] JWT verification failed:', (err as Error).message);
     return null;

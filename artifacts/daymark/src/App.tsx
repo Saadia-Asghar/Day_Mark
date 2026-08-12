@@ -301,7 +301,7 @@ function ProtectedRoute({
   const { isAuthenticated, isLoading, user } = useAppAuth();
 
   if (isLoading) return <AppLoadingScreen />;
-  if (!isAuthenticated) return <Redirect to="/auth" />;
+  if (!isAuthenticated) return <Redirect to="/sign-in" />;
 
   // Authenticated user who hasn't completed onboarding → send to /onboarding
   if (requireOnboarding && user?.onboardingCompleted === false) {
