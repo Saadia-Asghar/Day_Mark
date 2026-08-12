@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, AtSign, Check, X, Camera } from "lucide-react";
 import { useCompleteOnboarding } from "@workspace/api-client-react";
 import { DaymarkCharacter } from "@/components/daymark-character";
+import { authFetch } from "@/lib/supabase";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -85,10 +86,9 @@ function UsernameStep({ onDone }: { onDone: () => void }) {
     if (!canContinue) return;
     setSaving(true);
     try {
-      await fetch(`${basePath}/api/auth/profile`, {
+      await authFetch(`${basePath}/api/auth/profile`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ username: value }),
       });
     } catch { /* best effort */ }
@@ -171,10 +171,9 @@ function PersonalSetupStep({ onDone }: { onDone: () => void }) {
     if (city.trim()) body.city = city.trim();
     if (Object.keys(body).length > 0) {
       try {
-        await fetch(`${basePath}/api/auth/profile`, {
+        await authFetch(`${basePath}/api/auth/profile`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify(body),
         });
       } catch { /* best effort */ }

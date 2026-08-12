@@ -15,7 +15,7 @@
  * redirect destinations — the `mode` query param controls intent,
  * never an arbitrary `next=` URL.
  */
-import { supabase } from "@/lib/supabase";
+import { supabase, authFetch } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { useLocation, useSearch } from "wouter";
 
@@ -87,10 +87,9 @@ export default function AuthCallbackPage() {
         // Persist the username chosen during sign-up (best effort).
         if (username) {
           try {
-            await fetch(`${basePath}/api/auth/profile`, {
+            await authFetch(`${basePath}/api/auth/profile`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              credentials: "include",
               body: JSON.stringify({ username }),
             });
           } catch { /* best effort — onboarding will prompt if still missing */ }

@@ -35,10 +35,14 @@ interface DecodedJWT {
 
 function decodeJWT(req: Request): DecodedJWT | null {
   const token = getTokenString(req);
-  if (!token) return null;
+  if (!token) {
+    console.warn('[requireAuth] no token found (no Bearer header, no sb-token cookie)');
+    return null;
+  }
   try {
     return verify(token, process.env.SUPABASE_JWT_SECRET!) as DecodedJWT;
-  } catch {
+  } catch (err) {
+    console.warn('[requireAuth] JWT verification failed:', (err as Error).message);
     return null;
   }
 }
