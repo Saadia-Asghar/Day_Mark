@@ -115,6 +115,7 @@ function UsernameStep({ onDone }: { onDone: () => void }) {
           className="w-full pl-9 pr-10 py-3.5 bg-white border-2 border-border rounded-2xl text-sm font-bold outline-none focus:border-primary transition-colors"
           autoCapitalize="none"
           autoCorrect="off"
+          autoComplete="username"
         />
         {value.length >= 3 && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2">

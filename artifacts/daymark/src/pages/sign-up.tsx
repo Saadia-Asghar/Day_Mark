@@ -230,7 +230,7 @@ export default function SignUpPage() {
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold text-sm">@</div>
                   <input type="text" value={username}
                     onChange={e => { const v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 24); setUsername(v); setError(null); }}
-                    placeholder="yourname" autoCapitalize="none" autoCorrect="off"
+                    placeholder="yourname" autoCapitalize="none" autoCorrect="off" autoComplete="username"
                     className="w-full pl-9 pr-10 py-3.5 bg-white border-2 border-border rounded-2xl text-sm outline-none focus:border-primary transition-colors" />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2">
                     {usernameChecking ? <div className="w-4 h-4 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />

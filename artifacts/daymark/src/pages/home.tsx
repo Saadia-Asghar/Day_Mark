@@ -35,9 +35,9 @@ const BackgroundDoodles = () => (
     <circle cx="22" cy="510" r="5" fill="#FFB58A" opacity="0.09" />
     <circle cx="30" cy="504" r="4" fill="#FF719D" opacity="0.07" />
     <circle cx="14" cy="505" r="3.5" fill="#FFB58A" opacity="0.07" />
-    <text x="362" y="195" fontSize="11" fill="#FF719D" opacity="0.11">♡</text>
-    <text x="10" y="390" fontSize="9" fill="#6847F5" opacity="0.1">✦</text>
-    <text x="368" y="440" fontSize="8" fill="#FFC857" opacity="0.1">✦</text>
+    <path d="M362 190.5c-0.5-1-1.5-1.6-2.6-1.6s-2.1 0.6-2.6 1.6c-0.5 1-0.3 2.2 0.5 3l2.1 1.9 2.1-1.9c0.8-0.8 1-2 0.5-3z" fill="#FF719D" opacity="0.11" />
+    <path d="M10 386.5l0.6 2 2 0.6-2 0.6-0.6 2-0.6-2-2-0.6 2-0.6z" fill="#6847F5" opacity="0.1" />
+    <path d="M368 436.5l0.5 1.7 1.7 0.5-1.7 0.5-0.5 1.7-0.5-1.7-1.7-0.5 1.7-0.5z" fill="#FFC857" opacity="0.1" />
     <circle cx="200" cy="12" r="2" fill="#6847F5" opacity="0.07" />
     <circle cx="214" cy="12" r="1.5" fill="#6847F5" opacity="0.05" />
     <circle cx="186" cy="12" r="1.5" fill="#6847F5" opacity="0.05" />
