@@ -40,18 +40,17 @@ export default function LandingPage() {
 
           {/* CTAs */}
           <div className="flex flex-col gap-3 pt-2">
-            <Link href="/auth">
+            <Link href="/sign-up">
               <button className="w-full h-[52px] bg-primary text-white rounded-full text-base font-bold shadow-[0_0_24px_rgba(104,71,245,0.35)] flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.97] transition-all">
-                Start Your Daymark
+                Create your Daymark
                 <ArrowRight className="w-4 h-4" />
               </button>
             </Link>
-            <a
-              href="#how-it-works"
-              className="w-full h-[52px] bg-white border-2 border-border rounded-full text-base font-bold text-foreground flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all"
-            >
-              See how it works
-            </a>
+            <Link href="/sign-in">
+              <button className="w-full h-[52px] bg-white border-2 border-border rounded-full text-base font-bold text-foreground flex items-center justify-center hover:bg-muted active:scale-[0.97] transition-all">
+                Sign in
+              </button>
+            </Link>
           </div>
         </motion.div>
 
@@ -141,9 +140,9 @@ export default function LandingPage() {
           <p className="text-sm text-white/80 font-semibold mb-6 leading-relaxed">
             Join thousands of people treating their memories like the gifts they really are.
           </p>
-          <Link href="/auth">
+          <Link href="/sign-up">
             <button className="w-full h-[52px] bg-white text-primary rounded-full text-base font-bold shadow-lg hover:opacity-95 active:scale-[0.97] transition-all">
-              Start Your Daymark
+              Create your Daymark
             </button>
           </Link>
         </div>
